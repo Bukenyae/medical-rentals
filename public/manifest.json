@@ -1,0 +1,54 @@
+{
+  "name": "Medical Rental Property Platform",
+  "short_name": "MedRentals",
+  "description": "Comprehensive platform for managing short-term rental properties near medical facilities",
+  "start_url": "/?source=pwa",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
+  "categories": ["medical", "rentals", "housing", "travel"],
+  "dir": "ltr",
+  "lang": "en-US",
+  "prefer_related_applications": false,
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Browse Properties",
+      "short_name": "Properties",
+      "description": "View available rental properties",
+      "url": "/properties",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Go to your dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/icons/screenshot-1.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "platform": "wide",
+      "label": "Homescreen of Medical Rental Platform"
+    }
+  ]
+}
