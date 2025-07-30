@@ -1,15 +1,7 @@
 {
-  "version": 2,
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm ci",
   "framework": "nextjs",
-  "outputDirectory": ".next",
-  "regions": ["iad1"],
-  "github": {
-    "silent": true,
-    "autoAlias": true
-  },
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
   "headers": [
     {
       "source": "/api/(.*)",
@@ -21,7 +13,7 @@
       ]
     },
     {
-      "source": "/(.*)\\.(?:jpg|jpeg|gif|png|svg|webp|avif)",
+      "source": "/(.*\\.(jpg|jpeg|gif|png|svg|webp|avif))",
       "headers": [
         {
           "key": "Cache-Control",
@@ -30,20 +22,11 @@
       ]
     },
     {
-      "source": "/(.*)\\.(?:js|css)",
+      "source": "/(.*\\.(js|css))",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
         }
       ]
     }
