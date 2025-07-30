@@ -43,20 +43,20 @@ CREATE TRIGGER update_recurring_patterns_updated_at
 CREATE OR REPLACE FUNCTION apply_recurring_pattern(
   pattern_id UUID
 )
-RETURNS SETOF calendar_availability AS $
+RETURNS SETOF calendar_availability AS $$
 DECLARE
   pattern recurring_patterns;
-  current_date DATE;
+  curr_date DATE;
   day_of_week INTEGER;
 BEGIN
   -- Get pattern details
   SELECT * INTO pattern FROM recurring_patterns WHERE id = pattern_id;
   
   -- Loop through each date in the range
-  current_date := pattern.start_date;
-  WHILE current_date <= pattern.end_date LOOP
+  curr_date := pattern.start_date;
+  WHILE curr_date <= pattern.end_date LOOP
     -- Get day of week (0-6, Sunday-Saturday)
-    day_of_week := EXTRACT(DOW FROM current_date);
+    day_of_week := EXTRACT(DOW FROM curr_date);
     
     -- Check if this day of week is included in the pattern
     IF day_of_week = ANY(pattern.days_of_week) THEN
@@ -71,7 +71,7 @@ BEGIN
       )
       VALUES (
         pattern.property_id,
-        current_date,
+        curr_date,
         pattern.is_available,
         pattern.custom_price,
         pattern.notes
@@ -86,18 +86,18 @@ BEGIN
     END IF;
     
     -- Move to next day
-    current_date := current_date + INTERVAL '1 day';
+    curr_date := curr_date + INTERVAL '1 day';
   END LOOP;
   
   RETURN;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 -- Create function to calculate seasonal pricing factors
 CREATE OR REPLACE FUNCTION get_seasonal_pricing_factor(
   date_to_check DATE
 )
-RETURNS DECIMAL(4,2) AS $
+RETURNS DECIMAL(4,2) AS $$
 DECLARE
   month INTEGER;
   day_of_week INTEGER;
@@ -128,7 +128,7 @@ BEGIN
   -- Return combined factor
   RETURN seasonal_factor * weekend_factor;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
 
 -- Create function to generate dynamic pricing
 CREATE OR REPLACE FUNCTION generate_dynamic_pricing(
@@ -137,10 +137,10 @@ CREATE OR REPLACE FUNCTION generate_dynamic_pricing(
   end_date DATE,
   demand_factor DECIMAL(4,2) DEFAULT 1.0
 )
-RETURNS SETOF calendar_availability AS $
+RETURNS SETOF calendar_availability AS $$
 DECLARE
   base_price DECIMAL(10,2);
-  current_date DATE;
+  curr_date DATE;
   seasonal_factor DECIMAL(4,2);
   dynamic_price DECIMAL(10,2);
 BEGIN
@@ -150,10 +150,10 @@ BEGIN
   WHERE id = property_uuid;
   
   -- Loop through each date in the range
-  current_date := start_date;
-  WHILE current_date <= end_date LOOP
+  curr_date := start_date;
+  WHILE curr_date <= end_date LOOP
     -- Get seasonal factor
-    seasonal_factor := get_seasonal_pricing_factor(current_date);
+    seasonal_factor := get_seasonal_pricing_factor(curr_date);
     
     -- Calculate dynamic price
     dynamic_price := ROUND(base_price * seasonal_factor * demand_factor);
@@ -168,7 +168,7 @@ BEGIN
     )
     VALUES (
       property_uuid,
-      current_date,
+      curr_date,
       true,
       dynamic_price
     )
@@ -179,9 +179,9 @@ BEGIN
     RETURNING *;
     
     -- Move to next day
-    current_date := current_date + INTERVAL '1 day';
+    curr_date := curr_date + INTERVAL '1 day';
   END LOOP;
   
   RETURN;
 END;
-$ language 'plpgsql';
+$$ language 'plpgsql';
