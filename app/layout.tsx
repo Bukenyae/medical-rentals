@@ -1,16 +1,11 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
 
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-})
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Medical Rental Property Platform',
-  description: 'Comprehensive platform for managing short-term rental properties near medical facilities',
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#3b82f6',
+  title: 'Medical Rentals',
+  description: 'Short-term rentals near medical facilities',
 }
 
 export default function RootLayout({
@@ -20,9 +15,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        {children}
-      </body>
+      <body className={inter.className}>{children}</body>
     </html>
   )
 }
