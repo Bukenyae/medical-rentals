@@ -74,7 +74,7 @@ export default async function Home() {
               </div>
             ) : (
               <p className="text-gray-600">
-                Ready to find your perfect medical stay accommodation!
+                Welcome! Ready to find your perfect medical stay accommodation.
               </p>
             )}
           </div>
