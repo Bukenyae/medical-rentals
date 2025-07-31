@@ -26,7 +26,8 @@ export default function SimpleSignUp() {
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
           data: {
-            role: 'guest'
+            role: 'guest',
+            email_confirm: false
           }
         }
       })
