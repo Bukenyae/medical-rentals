@@ -203,8 +203,9 @@ export default function SearchBar({
                       const isInRange = selectedCheckIn && selectedCheckOut && 
                         day.date > selectedCheckIn && day.date < selectedCheckOut;
                       
-                      const isDisabled = day.isPast || 
-                        (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn);
+                      const isDisabled =
+                        day.isPast ||
+                        (calendarMode === 'checkout' && selectedCheckIn !== null && day.date <= selectedCheckIn);
 
                       return (
                         <button
@@ -389,8 +390,9 @@ export default function SearchBar({
                       const isInRange = selectedCheckIn && selectedCheckOut && 
                         day.date > selectedCheckIn && day.date < selectedCheckOut;
                       
-                      const isDisabled = day.isPast || 
-                        (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn);
+                      const isDisabled =
+                        day.isPast ||
+                        (calendarMode === 'checkout' && selectedCheckIn !== null && day.date <= selectedCheckIn);
 
                       return (
                         <button
