@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import AuthButton from './AuthButton';
 import SearchBar from './SearchBar';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 interface HeaderProps {
   selectedLocation: string;
@@ -26,6 +28,8 @@ export default function Header({
   onGuestsChange
 }: HeaderProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,6 +39,16 @@ export default function Header({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const {
+        data: { user }
+      } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, [supabase.auth]);
 
   return (
     <>
@@ -46,7 +60,7 @@ export default function Header({
               <Heart className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 fill-current" />
               <span className="hidden sm:block text-lg sm:text-2xl font-bold text-black truncate">Bayou Medical Rentals</span>
             </Link>
-            <AuthButton />
+            <AuthButton user={user} />
           </div>
         </div>
       </header>
@@ -78,7 +92,7 @@ export default function Header({
               </div>
               
               <div className="flex-shrink-0">
-                <AuthButton />
+                <AuthButton user={user} />
               </div>
             </div>
           </div>
