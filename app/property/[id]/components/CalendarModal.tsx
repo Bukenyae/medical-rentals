@@ -123,8 +123,8 @@ export default function CalendarModal({
               const isInRange = selectedCheckIn && selectedCheckOut && 
                 day.date > selectedCheckIn && day.date < selectedCheckOut;
               
-              const isDisabled = day.isPast || 
-                (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn);
+              const isDisabled = Boolean(day.isPast || 
+                (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn));
 
               return (
                 <button
