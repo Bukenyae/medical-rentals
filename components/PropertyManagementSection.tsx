@@ -32,7 +32,7 @@ export default function PropertyManagementSection() {
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
-          src="/images/Properties/LexingtonNight/WellcomeDrs.png"
+          src="/images/properties/LexingtonNight/WellcomeDrs.png"
           alt="Welcome doctors - property management background"
           fill
           className="object-cover"
