@@ -1,0 +1,66 @@
+export const PROPERTY_DATA = {
+  '1': {
+    id: '1',
+    title: "995 N Leighton Dr, Baton Rouge, LA 70806",
+    location: "Maryrose Place, Baton Rouge, LA",
+    rating: 4.9,
+    reviewCount: 127,
+    price: 129,
+    description: "Spacious single family home with high-speed internet, full kitchen and workspace. Perfect for nurses and medical staff.",
+    bedrooms: 3,
+    bathrooms: 2,
+    sqft: 1931,
+    proximityBadges: [
+      { text: "14 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
+      { text: "16 min drive to BR General Hospital", bgColor: "bg-green-100", textColor: "text-green-800" }
+    ]
+  },
+  '2': {
+    id: '2',
+    title: "214 S Acadian Thruway, Baton Rouge, LA 70806",
+    location: "Acadian Village, Baton Rouge, LA",
+    rating: 4.8,
+    reviewCount: 89,
+    price: 149,
+    description: "Luxury accommodation for doctors with proximity to mid-city night-life, walkable distance to BR General and schools.",
+    bedrooms: 3,
+    bathrooms: 2,
+    sqft: 1736,
+    proximityBadges: [
+      { text: "10 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
+      { text: "4 min drive to BR General Hospital - Mid City", bgColor: "bg-green-100", textColor: "text-green-800" }
+    ]
+  },
+  '3': {
+    id: '3',
+    title: "2978 Lexington Dr, Baton Rouge, LA 70808",
+    location: "Lexington Lakes, Baton Rouge, LA",
+    rating: 4.7,
+    reviewCount: 156,
+    price: 109,
+    description: "Quiet neighborhood perfect for pediatric nurses and specialists. Family-friendly area with nearby parks and cafes.",
+    bedrooms: 3,
+    bathrooms: 2,
+    sqft: 2218,
+    proximityBadges: [
+      { text: "7 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
+      { text: "20 min drive to BR General Hospital", bgColor: "bg-green-100", textColor: "text-green-800" }
+    ]
+  }
+};
+
+export const PROPERTY_IMAGES = {
+  '1': "/images/properties/Leighton/dining-chats.jpg",
+  '2': "/images/properties/Leighton/kitchen-chats.jpg", 
+  '3': "/images/properties/Leighton/living-room-chats.jpg"
+};
+
+export const PROPERTY_DETAIL_IMAGES = [
+  "/images/properties/Leighton/living-room.jpg",
+  "/images/properties/Leighton/bedroom-one.jpg",
+  "/images/properties/Leighton/kitchen.jpg",
+  "/images/properties/Leighton/bathroom.jpg",
+  "/images/properties/Leighton/bedroom-two.jpg",
+  "/images/properties/Leighton/dining-one.jpg",
+  "/images/properties/Leighton/dining-two.jpg"
+];
