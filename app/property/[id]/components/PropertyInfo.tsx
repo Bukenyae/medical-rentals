@@ -59,8 +59,9 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       {/* Host Information */}
       <div className="flex items-center justify-between pb-6 border-b border-gray-200">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">
-            Hosted by {property.host.name}
+          <h2 className="text-xl">
+            <span className="text-[#888]">Hosted by</span>{' '}
+            <span className="text-black font-semibold">{property.host.name}</span>
           </h2>
           {property.host.rating !== undefined && (
             <div className="flex items-center text-sm text-gray-600 mt-1 space-x-1">
