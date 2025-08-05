@@ -15,6 +15,14 @@ import PropertyInfo from './components/PropertyInfo';
 import ReviewsSection from './components/ReviewsSection';
 import { PROPERTY_DATA, PROPERTY_DETAIL_IMAGES } from '@/lib/data/properties';
 
+const DEFAULT_HOST = {
+  name: 'Sarah',
+  avatar: '/images/host-avatar.jpg',
+  joinedYear: '2019',
+  reviewCount: 89,
+  rating: 4.8,
+};
+
 interface PropertyDetailsProps {
   params: {
     id: string;
@@ -88,28 +96,24 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const nights = calculateNights();
 
   // Property data matching the property cards
-  const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA] || PROPERTY_DATA['1'];
+  const property =
+    PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA] || PROPERTY_DATA['1'];
 
-  const defaultHost = {
-    name: "Sarah",
-    avatar: "/images/host-avatar.jpg",
-    joinedYear: "2019",
-    reviewCount: 89,
-    rating: 4.8
-  };
+  const host =
+    'host' in property && property.host ? property.host : DEFAULT_HOST;
 
   const propertyWithDefaults = {
     ...property,
-    host: property.host || defaultHost,
+    host,
     images: PROPERTY_DETAIL_IMAGES,
     amenities: [
-      { icon: Wifi, label: "Free WiFi" },
-      { icon: Car, label: "Free parking" },
+      { icon: Wifi, label: 'Free WiFi' },
+      { icon: Car, label: 'Free parking' },
       { icon: Tv, label: "55\" HDTV" },
-      { icon: Utensils, label: "Full kitchen" },
-      { icon: Waves, label: "Pool access" },
-      { icon: Shield, label: "Self check-in" }
-    ]
+      { icon: Utensils, label: 'Full kitchen' },
+      { icon: Waves, label: 'Pool access' },
+      { icon: Shield, label: 'Self check-in' },
+    ],
   };
 
   return (
