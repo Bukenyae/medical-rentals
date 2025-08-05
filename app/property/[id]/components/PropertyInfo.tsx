@@ -1,6 +1,7 @@
 'use client';
 
 import { Star } from 'lucide-react';
+import Image from 'next/image';
 
 interface PropertyInfoProps {
   property: {
@@ -23,6 +24,7 @@ interface PropertyInfoProps {
     }>;
     host: {
       name: string;
+      avatar?: string;
     };
   };
 }
@@ -65,11 +67,21 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
             <span>{property.sqft} sqft</span>
           </div>
         </div>
-        <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-          <span className="text-lg font-semibold text-gray-700">
-            {property.host.name.charAt(0)}
-          </span>
-        </div>
+        {property.host.avatar ? (
+          <Image
+            src={property.host.avatar}
+            alt={property.host.name}
+            width={48}
+            height={48}
+            className="w-12 h-12 rounded-full object-cover"
+          />
+        ) : (
+          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+            <span className="text-lg font-semibold text-gray-700">
+              {property.host.name.charAt(0)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Property Description */}
