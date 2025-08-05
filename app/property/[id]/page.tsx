@@ -15,6 +15,14 @@ import PropertyInfo from './components/PropertyInfo';
 import ReviewsSection from './components/ReviewsSection';
 import { PROPERTY_DATA, PROPERTY_DETAIL_IMAGES } from '@/lib/data/properties';
 
+const DEFAULT_HOST = {
+  name: 'Sarah',
+  avatar: '/images/host-avatar.jpg',
+  joinedYear: '2019',
+  reviewCount: 89,
+  rating: 4.8,
+};
+
 interface PropertyDetailsProps {
   params: {
     id: string;
@@ -89,16 +97,11 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
 
   // Property data matching the property cards
   const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA] || PROPERTY_DATA['1'];
-  
+  const host = property.host ?? DEFAULT_HOST;
+
   const propertyWithDefaults = {
     ...property,
-    host: {
-      name: "Sarah",
-      avatar: "/images/host-avatar.jpg",
-      joinedYear: "2019",
-      reviewCount: 89,
-      rating: 4.8
-    },
+    host,
     images: PROPERTY_DETAIL_IMAGES,
     amenities: [
       { icon: Wifi, label: "Free WiFi" },
