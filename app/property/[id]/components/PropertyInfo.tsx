@@ -23,6 +23,10 @@ interface PropertyInfoProps {
     }>;
     host: {
       name: string;
+      avatar?: string;
+      joinedYear?: string;
+      reviewCount?: number;
+      rating?: number;
     };
   };
 }

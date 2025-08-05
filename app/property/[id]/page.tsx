@@ -89,16 +89,18 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
 
   // Property data matching the property cards
   const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA] || PROPERTY_DATA['1'];
-  
+
+  const defaultHost = {
+    name: "Sarah",
+    avatar: "/images/host-avatar.jpg",
+    joinedYear: "2019",
+    reviewCount: 89,
+    rating: 4.8
+  };
+
   const propertyWithDefaults = {
     ...property,
-    host: {
-      name: "Sarah",
-      avatar: "/images/host-avatar.jpg",
-      joinedYear: "2019",
-      reviewCount: 89,
-      rating: 4.8
-    },
+    host: property.host || defaultHost,
     images: PROPERTY_DETAIL_IMAGES,
     amenities: [
       { icon: Wifi, label: "Free WiFi" },

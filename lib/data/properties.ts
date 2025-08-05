@@ -13,7 +13,14 @@ export const PROPERTY_DATA = {
     proximityBadges: [
       { text: "14 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
       { text: "16 min drive to BR General Hospital", bgColor: "bg-green-100", textColor: "text-green-800" }
-    ]
+    ],
+    host: {
+      name: "Agnes Andrews",
+      avatar: "/images/team/agnes-andrews.jpg",
+      joinedYear: "2020",
+      reviewCount: 127,
+      rating: 4.9
+    }
   },
   '2': {
     id: '2',
@@ -29,7 +36,14 @@ export const PROPERTY_DATA = {
     proximityBadges: [
       { text: "10 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
       { text: "4 min drive to BR General Hospital - Mid City", bgColor: "bg-green-100", textColor: "text-green-800" }
-    ]
+    ],
+    host: {
+      name: "Agnes Andrews",
+      avatar: "/images/team/agnes-andrews.jpg",
+      joinedYear: "2020",
+      reviewCount: 89,
+      rating: 4.8
+    }
   },
   '3': {
     id: '3',
@@ -45,7 +59,14 @@ export const PROPERTY_DATA = {
     proximityBadges: [
       { text: "7 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
       { text: "20 min drive to BR General Hospital", bgColor: "bg-green-100", textColor: "text-green-800" }
-    ]
+    ],
+    host: {
+      name: "Nayo Andrews",
+      avatar: "/images/team/nayo-andrews.jpg",
+      joinedYear: "2021",
+      reviewCount: 156,
+      rating: 4.7
+    }
   }
 };
 
