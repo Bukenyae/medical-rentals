@@ -111,7 +111,6 @@ export default function SearchBar({
 
   const locations = [
     { name: 'Concord Estates', address: '2978 Lexington Dr, Baton Rouge, LA 70808', propertyId: '3' },
-    { name: 'N Acadian Thruway', address: '214 S Acadian Thruway, Baton Rouge, LA 70806', propertyId: '2' },
     { name: 'Maryrose Place', address: '995 N Leighton Dr, Baton Rouge, LA 70806', propertyId: '1' }
   ];
 

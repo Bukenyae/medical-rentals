@@ -22,29 +22,6 @@ export const PROPERTY_DATA = {
       rating: 4.9
     }
   },
-  '2': {
-    id: '2',
-    title: "214 S Acadian Thruway, Baton Rouge, LA 70806",
-    location: "Acadian Village, Baton Rouge, LA",
-    rating: 4.8,
-    reviewCount: 89,
-    price: 149,
-    description: "Luxury accommodation for doctors with proximity to mid-city night-life, walkable distance to BR General and schools.",
-    bedrooms: 3,
-    bathrooms: 2,
-    sqft: 1736,
-    proximityBadges: [
-      { text: "10 min drive to Our Lady of the Lake Hospital", bgColor: "bg-blue-100", textColor: "text-blue-800" },
-      { text: "4 min drive to BR General Hospital - Mid City", bgColor: "bg-green-100", textColor: "text-green-800" }
-    ],
-    host: {
-      name: "Agnes Andrews",
-      avatar: "/images/team/agnes-andrews.jpg",
-      joinedYear: "2020",
-      reviewCount: 89,
-      rating: 4.8
-    }
-  },
   '3': {
     id: '3',
     title: "2978 Lexington Dr, Baton Rouge, LA 70808",
@@ -72,7 +49,6 @@ export const PROPERTY_DATA = {
 
 export const PROPERTY_IMAGES = {
   '1': "/images/properties/Leighton/dining-chats.jpg",
-  '2': "/images/properties/Leighton/kitchen-chats.jpg", 
   '3': "/images/properties/Leighton/living-room-chats.jpg"
 };
 
