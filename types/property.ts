@@ -85,7 +85,6 @@ export const COMMON_AMENITIES = [
   'Heating',
   'TV',
   'Parking',
-  'Pool',
   'Hot tub',
   'Gym',
   'Elevator',
@@ -97,7 +96,10 @@ export const COMMON_AMENITIES = [
   'First aid kit',
   'Fire extinguisher',
   'Carbon monoxide alarm',
-  'Smoke alarm'
+  'Smoke alarm',
+  'Fully furnished house',
+  'In-unit washer and dryer',
+  'Flexible lease terms (days/weeks/months)',
 ] as const
 
 export type PropertyAmenity = typeof COMMON_AMENITIES[number]
