@@ -44,7 +44,7 @@ export default function PropertyCard({
       href={`/property/${id}`} 
       className="block bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
     >
-      <div className="h-80 relative overflow-hidden">
+      <div className="h-96 relative overflow-hidden">
         <Image
           src={imageUrl}
           alt={imageAlt}

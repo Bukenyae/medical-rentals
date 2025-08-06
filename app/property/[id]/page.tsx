@@ -24,6 +24,7 @@ import PropertyGallery from './components/PropertyGallery';
 import PropertyInfo from './components/PropertyInfo';
 import ReviewsSection from './components/ReviewsSection';
 import { PROPERTY_DATA, PROPERTY_DETAIL_IMAGES } from '@/lib/data/properties';
+import { notFound } from 'next/navigation';
 
 const DEFAULT_HOST = {
   name: 'Sarah',
@@ -106,8 +107,10 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const nights = calculateNights();
 
   // Property data matching the property cards
-  const property =
-    PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA] || PROPERTY_DATA['1'];
+  const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA];
+  if (!property) {
+    notFound();
+  }
 
   const host =
     'host' in property && property.host ? property.host : DEFAULT_HOST;
