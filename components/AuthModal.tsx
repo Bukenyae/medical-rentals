@@ -81,6 +81,21 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
     setLoading(false);
   };
 
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setMessage('');
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setEmail('');
     setPassword('');
@@ -212,6 +227,15 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
               {loading ? 'Please wait...' : (mode === 'signin' ? 'Sign In' : 'Create Account')}
             </button>
           </form>
+
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="mt-4 w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Please wait...' : 'Sign in with Google'}
+          </button>
 
           {/* Mode Switch */}
           <div className="mt-6 text-center">
