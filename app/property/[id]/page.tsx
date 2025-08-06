@@ -1,6 +1,16 @@
 'use client';
 
-import { Heart, Wifi, Car, Tv, Utensils, Waves, Shield } from 'lucide-react';
+import {
+  Heart,
+  Wifi,
+  Car,
+  Tv,
+  Utensils,
+  Sofa,
+  WashingMachine,
+  CalendarClock,
+  Shield,
+} from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
@@ -111,7 +121,12 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       { icon: Car, label: 'Free parking' },
       { icon: Tv, label: "55\" HDTV" },
       { icon: Utensils, label: 'Full kitchen' },
-      { icon: Waves, label: 'Pool access' },
+      { icon: Sofa, label: 'Fully furnished house' },
+      { icon: WashingMachine, label: 'In-unit washer and dryer' },
+      {
+        icon: CalendarClock,
+        label: 'Flexible lease terms (days/weeks/months)',
+      },
       { icon: Shield, label: 'Self check-in' },
     ],
   };
