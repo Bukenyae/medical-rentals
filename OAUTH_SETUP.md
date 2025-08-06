@@ -63,6 +63,14 @@ This error occurs when Google OAuth is not properly configured in your Supabase 
    - Paste the Client ID and Client Secret
    - Save the configuration
 
+3. **Update environment variables**
+   - Add these to your `.env.local` (and `.env.local.example`):
+     ```
+     NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+     NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=your_google_client_secret
+     ```
+   - Make sure the same variables are configured in your deployment environment (e.g., Vercel project settings)
+
 ## Step 4: Verify Configuration
 
 1. **Check your current Google Cloud Console settings**

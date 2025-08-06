@@ -78,8 +78,8 @@ NEXT_PUBLIC_SITE_URL=https://your-production-domain.com
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_production_google_maps_api_key
 
 # OAuth Provider Configuration (if using)
-GOOGLE_CLIENT_ID=your_production_google_client_id
-GOOGLE_CLIENT_SECRET=your_production_google_client_secret
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_production_google_client_id
+NEXT_PUBLIC_GOOGLE_CLIENT_SECRET=your_production_google_client_secret
 ```
 
 ## 4. Vercel Deployment Setup
