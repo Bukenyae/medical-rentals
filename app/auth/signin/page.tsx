@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Heart } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 export default function SignIn() {
@@ -37,10 +37,16 @@ export default function SignIn() {
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="flex justify-center">
-            <Heart className="h-12 w-12 text-blue-600" />
+            <Image
+              src="/images/logo/BR%20Logo.png"
+              alt="Belle Rouge Properties logo"
+              width={48}
+              height={48}
+              className="h-12 w-12"
+            />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Sign in to Bayou Medical Rentals
+            Sign in to Belle Rouge Properties
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Or{' '}

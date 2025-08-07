@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
-import { Heart, X, Eye, EyeOff } from 'lucide-react';
+import { X, Eye, EyeOff } from 'lucide-react';
+import Image from 'next/image';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -133,10 +134,16 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
           {/* Header */}
           <div className="text-center mb-6">
             <div className="flex justify-center mb-4">
-              <Heart className="h-10 w-10 text-blue-600" />
+              <Image
+                src="/images/logo/BR%20Logo.png"
+                alt="Belle Rouge Properties logo"
+                width={40}
+                height={40}
+                className="h-10 w-10"
+              />
             </div>
             <h2 className="text-2xl font-bold text-gray-900">
-              {mode === 'signin' ? 'Welcome back' : 'Join Bayou Medical Rentals'}
+              {mode === 'signin' ? 'Welcome back' : 'Join Belle Rouge Properties'}
             </h2>
             <p className="text-sm text-gray-600 mt-2">
               {mode === 'signin' 

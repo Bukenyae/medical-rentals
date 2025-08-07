@@ -18,7 +18,7 @@ export default function PropertyManagementSection() {
     {
       icon: Award,
       title: "Quality Guarantee",
-      description: "We guarantee clean, comfortable accommodations that meet healthcare professional standards."
+      description: "We guarantee clean, comfortable accommodations that meet the needs of medical staff, academics, military members, and young professionals."
     },
     {
       icon: HeadphonesIcon,
@@ -33,7 +33,7 @@ export default function PropertyManagementSection() {
       <div className="absolute inset-0">
         <Image
           src="/images/properties/LexingtonNight/WellcomeDrs.png"
-          alt="Welcome doctors - property management background"
+          alt="Welcome professionals - property management background"
           fill
           className="object-cover"
         />
@@ -47,7 +47,7 @@ export default function PropertyManagementSection() {
             Professional Property Management
           </h2>
           <p className="text-lg md:text-xl lg:text-2xl text-gray-200 mb-8 leading-relaxed">
-            We handle every detail so you can focus on what matters most - your patients and your work.
+            We handle every detail so you can focus on what matters most—your work, studies, service, and life.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">

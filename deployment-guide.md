@@ -1,6 +1,6 @@
-# Medical Rentals Platform Deployment Guide
+# Belle Rouge Properties Platform Deployment Guide
 
-This guide outlines the steps to deploy the Medical Rentals platform to production using GitHub, Supabase, and Vercel.
+This guide outlines the steps to deploy the Belle Rouge Properties platform to production using GitHub, Supabase, and Vercel. The service supports short-term rentals for medical staff, academics, military members, college students, graduates, and young professionals.
 
 ## Prerequisites
 
@@ -19,7 +19,7 @@ git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/yourusername/medical-rentals.git
+git remote add origin https://github.com/yourusername/belle-rouge-properties.git
 git push -u origin main
 ```
 

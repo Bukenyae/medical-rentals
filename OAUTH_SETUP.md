@@ -1,5 +1,7 @@
 # Google OAuth Setup Guide
 
+Belle Rouge Properties serves medical staff, academics, military members, college students, graduates, and young professionals.
+
 ## Issue: "Safari Can't Find the Server" during Google OAuth
 
 This error occurs when Google OAuth is not properly configured in your Supabase project. Here's how to fix it:
@@ -8,7 +10,7 @@ This error occurs when Google OAuth is not properly configured in your Supabase 
 
 1. **Go to your Supabase project dashboard**
    - Visit: https://supabase.com/dashboard
-   - Select your `medical-rentals` project
+   - Select your `belle-rouge-properties` project
 
 2. **Navigate to Authentication Settings**
    - Click on "Authentication" in the left sidebar
@@ -41,7 +43,7 @@ This error occurs when Google OAuth is not properly configured in your Supabase 
 4. **Configure OAuth Consent Screen**
    - Go to "APIs & Services" > "OAuth consent screen"
    - Fill in required fields:
-     - App name: "Medical Rentals"
+     - App name: "Belle Rouge Properties"
      - User support email: your email
      - Developer contact: your email
 
@@ -67,8 +69,8 @@ This error occurs when Google OAuth is not properly configured in your Supabase 
 
 1. **Check your current Google Cloud Console settings**
    From your screenshot, I can see you already have:
-   - Authorized JavaScript origins: `https://medical-rentals-oz88.vercel.app`
-   - Authorized redirect URIs: `https://medical-rentals-oz88.vercel.app/auth/callback`
+   - Authorized JavaScript origins: `https://belle-rouge-properties-oz88.vercel.app`
+   - Authorized redirect URIs: `https://belle-rouge-properties-oz88.vercel.app/auth/callback`
 
 2. **Add the missing Supabase redirect URI**
    You need to add this to your Google Cloud Console:
@@ -103,7 +105,7 @@ If you're still having issues:
    - Ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are correct
 
 3. **Test with the API endpoint**
-   - Visit: `https://medical-rentals-oz88.vercel.app/api/test-properties`
+   - Visit: `https://belle-rouge-properties-oz88.vercel.app/api/test-properties`
    - This will show if basic authentication is working
 
 ## Quick Fix for Testing

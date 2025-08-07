@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  Heart,
   Wifi,
   Car,
   Tv,
@@ -16,6 +15,7 @@ import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 // Import components
 import BookingCard from './components/BookingCard';
@@ -141,8 +141,14 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center">
-              <Heart className="h-8 w-8 text-blue-600 mr-2" />
-              <h1 className="text-2xl font-bold text-gray-900">Bayou Medical Rentals</h1>
+              <Image
+                src="/images/logo/BR%20Logo.png"
+                alt="Belle Rouge Properties logo"
+                width={32}
+                height={32}
+                className="h-8 w-8 mr-2"
+              />
+              <h1 className="text-2xl font-bold text-gray-900">Belle Rouge Properties</h1>
             </Link>
             <nav className="flex items-center space-x-4">
               <AuthButton user={user} />

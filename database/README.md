@@ -1,10 +1,10 @@
-# Medical Rentals Database
+# Belle Rouge Properties Database
 
-This directory contains database migrations, schema definitions, and maintenance scripts for the Medical Rentals platform.
+This directory contains database migrations, schema definitions, and maintenance scripts for the Belle Rouge Properties platform, serving medical staff, academics, military members, college students, graduates, and young professionals.
 
 ## Database Structure
 
-The Medical Rentals platform uses Supabase (PostgreSQL) as its database with the following core tables:
+The Belle Rouge Properties platform uses Supabase (PostgreSQL) as its database with the following core tables:
 
 - `properties` - Property listings with details and amenities
 - `bookings` - Booking records with guest information and status

@@ -48,7 +48,7 @@ export default function HeroSection({
             ))}
           </div>
           <div className="text-gray-900 text-center sm:text-left sm:ml-6">
-            <p className="text-base sm:text-lg font-semibold">Trusted by 500+ medical professionals</p>
+            <p className="text-base sm:text-lg font-semibold">Trusted by 500+ medical staff, academics, military members, students, and young professionals</p>
             <p className="text-sm sm:text-base text-gray-600">Average rating: 4.8/5 stars</p>
           </div>
         </div>

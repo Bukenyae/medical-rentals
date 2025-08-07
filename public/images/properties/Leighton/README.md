@@ -1,22 +1,22 @@
 # Leighton Property Images
 
-This folder contains the professional images for the Medical Rentals property cards.
+This folder contains the professional images for the Belle Rouge Properties listing cards.
 
 ## Image Assignments:
 
 ### Property Card 1 - "Luxury 2BR - General Hospital"
 **File:** `dining-room-medical-professionals.jpg`
-**Description:** Elegant dining room scene with medical professionals enjoying a meal together
+**Description:** Elegant dining room scene with professionals enjoying a meal together
 **Usage:** Main hero image for Property Card 1 (0.3 mi to General Hospital)
 
 ### Property Card 2 - "Modern 1BR - Medical Center" 
 **File:** `kitchen-medical-team.jpg`
-**Description:** Modern kitchen with medical team socializing and collaborating
+**Description:** Modern kitchen with a diverse group of professionals socializing and collaborating
 **Usage:** Main hero image for Property Card 2 (0.2 mi to Medical Center)
 
 ### Property Card 3 - "Cozy 1BR - Pediatric Specialists"
 **File:** `living-room-medical-staff.jpg` 
-**Description:** Comfortable living room with medical professionals relaxing
+**Description:** Comfortable living room with professionals relaxing
 **Usage:** Main hero image for Property Card 3 (0.5 mi to Children's Hospital)
 
 ## Technical Specifications:
