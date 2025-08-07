@@ -99,10 +99,7 @@ export default function PropertyCard({
           </div>
           <div className="text-right">
             <div className="text-2xl font-bold text-gray-900">
-              Price: From ${baseRate}
-              <span className="text-base font-normal text-gray-500">
-                {' '}/ night
-              </span>
+              From ${baseRate} <span className="text-base font-normal text-gray-500">/ night</span>
             </div>
             <div className="mt-1 space-y-1 text-sm text-gray-600">
               <div className="flex items-center">
