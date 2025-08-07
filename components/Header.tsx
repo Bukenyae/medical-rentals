@@ -56,13 +56,15 @@ export default function Header({
       <header className="absolute top-0 left-0 right-0 z-50 bg-transparent">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            <Link href="/" className="flex items-center space-x-2">
+            <Link href="/" className="flex items-center space-x-3">
               <Image
                 src="/images/logo/BR%20Logo.png"
                 alt="Belle Rouge Properties logo"
-                width={32}
-                height={32}
-                className="h-6 w-6 sm:h-8 sm:w-8"
+                width={64}
+                height={64}
+                priority
+                quality={100}
+                className="h-10 w-10 sm:h-14 sm:w-14 filter saturate-150 contrast-125 drop-shadow-md"
               />
               <span className="hidden sm:block text-lg sm:text-2xl font-bold text-black truncate">Belle Rouge Properties</span>
             </Link>
@@ -78,13 +80,15 @@ export default function Header({
         <div className="bg-white shadow-lg border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-14 sm:h-16 gap-2 sm:gap-4">
-              <Link href="/" className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+              <Link href="/" className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
                 <Image
                   src="/images/logo/BR%20Logo.png"
                   alt="Belle Rouge Properties logo"
-                  width={24}
-                  height={24}
-                  className="h-5 w-5 sm:h-6 sm:w-6"
+                  width={48}
+                  height={48}
+                  priority
+                  quality={100}
+                  className="h-7 w-7 sm:h-9 sm:w-9 filter saturate-150 contrast-125 drop-shadow-md"
                 />
                 <span className="hidden sm:block text-sm sm:text-lg font-bold text-gray-900">Belle Rouge Properties</span>
               </Link>
