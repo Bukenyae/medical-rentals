@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star } from 'lucide-react';
+import { Star, Check } from 'lucide-react';
 
 interface ProximityBadge {
   text: string;
@@ -31,7 +31,7 @@ export default function PropertyCard({
   description,
   rating,
   reviewCount,
-  price,
+  price: _price,
   bedrooms,
   bathrooms,
   sqft,
@@ -39,9 +39,13 @@ export default function PropertyCard({
   imageUrl,
   imageAlt
 }: PropertyCardProps) {
+  const baseRate = 50;
+  const weeklyRate = Math.round(baseRate * 0.8);
+  const monthlyRate = Math.round(baseRate * 0.6);
+
   return (
-    <Link 
-      href={`/property/${id}`} 
+    <Link
+      href={`/property/${id}`}
       className="block bg-white rounded-3xl shadow-xl overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer"
     >
       <div className="h-96 relative overflow-hidden">
@@ -78,7 +82,7 @@ export default function PropertyCard({
           ))}
         </div>
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center">
               <span className="mr-1">🏠</span>
@@ -93,8 +97,29 @@ export default function PropertyCard({
               <span>{bathrooms}</span>
             </div>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            ${price}<span className="text-base font-normal text-gray-500">/night</span>
+          <div className="text-right">
+            <div className="text-2xl font-bold text-gray-900">
+              Price: From ${baseRate}
+              <span className="text-base font-normal text-gray-500">
+                {' '}/ night
+              </span>
+            </div>
+            <div className="mt-1 space-y-1 text-sm text-gray-600">
+              <div className="flex items-center">
+                <Check className="w-4 h-4 mr-1 text-green-600" />
+                <span>
+                  Weekly stays (7+ nights):
+                  <span className="text-green-700"> 20% off — ${weeklyRate} / night</span>
+                </span>
+              </div>
+              <div className="flex items-center">
+                <Check className="w-4 h-4 mr-1 text-green-600" />
+                <span>
+                  Monthly stays (21+ nights):
+                  <span className="text-green-700"> 40% off — ${monthlyRate} / night</span>
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
