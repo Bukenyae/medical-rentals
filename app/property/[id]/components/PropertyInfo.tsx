@@ -108,12 +108,12 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
         </p>
       </div>
 
-      {/* Medical Professionals Description */}
+      {/* Traveling Professionals Description */}
       <div className="pb-6 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Perfect for Medical Professionals</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Perfect for Traveling Professionals</h3>
         <p className="text-gray-600">
-          Specially designed for traveling nurses, doctors, and healthcare workers. 
-          Quiet neighborhood with easy hospital access and dedicated workspace.
+          Specially designed for traveling nurses, visiting scholars, military personnel, and young professionals.
+          Quiet neighborhood with easy access to hospitals, campuses, and bases plus a dedicated workspace.
         </p>
       </div>
 

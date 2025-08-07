@@ -7,8 +7,8 @@ export default function CustomerSuccessSection() {
     {
       icon: Users,
       number: "500+",
-      label: "Medical Professionals Served",
-      description: "Trusted by healthcare workers nationwide"
+      label: "Professionals Served",
+      description: "Trusted by medical staff, academics, military members, students, and young professionals nationwide"
     },
     {
       icon: Star,
@@ -30,11 +30,11 @@ export default function CustomerSuccessSection() {
         {/* Header */}
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Trusted by Healthcare Heroes
+            Trusted by Professionals Nationwide
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Our commitment to excellence has made us the preferred choice for 
-            traveling medical professionals across the region.
+            Our commitment to excellence has made us the preferred choice for
+            traveling medical staff, visiting scholars, service members, college students, and young professionals across the region.
           </p>
         </div>
 
@@ -64,7 +64,7 @@ export default function CustomerSuccessSection() {
             ))}
           </div>
           <blockquote className="text-2xl md:text-3xl text-gray-800 mb-8 italic font-light leading-relaxed max-w-4xl mx-auto">
-            "Bayou Medical Rentals made my 3-month assignment in Baton Rouge feel like home. 
+            "Belle Rouge Properties made my 3-month assignment in Baton Rouge feel like home.
             The proximity to the hospital and the quality of the accommodation exceeded all my expectations."
           </blockquote>
           <div className="inline-block">

@@ -20,13 +20,13 @@ export default function ReviewsSection({ rating, reviewCount }: ReviewsSectionPr
       name: "Dr. Nia Jenkins",
       image: "/images/Reviewers/Dr. Nia Jenkins.jpg",
       date: "February 2025",
-      content: "Bayou Medical Rentals exceeded my expectations. The property was immaculate and the location was perfect for my hospital rotations."
+      content: "Belle Rouge Properties exceeded my expectations. The property was immaculate and the location was perfect for my hospital rotations and graduate research."
     },
     {
       name: "Erica Rogers, NP",
       image: "/images/Reviewers/Erica Rogers.NP.jpg",
       date: "January 2025",
-      content: "Fantastic stay! The workspace was perfect for charting and the kitchen had everything I needed. Highly recommend for medical professionals."
+      content: "Fantastic stay! The workspace was perfect for charting and study sessions. Highly recommend for medical staff, visiting scholars, and young professionals."
     },
     {
       name: "Marley Aguillard, NP",

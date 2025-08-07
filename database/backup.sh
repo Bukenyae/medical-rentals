@@ -1,11 +1,11 @@
 #!/bin/bash
-# Database backup script for Medical Rentals platform
+# Database backup script for Belle Rouge Properties platform
 # This script should be run on a schedule (e.g., daily via cron)
 
 # Configuration
 BACKUP_DIR="/path/to/backup/directory"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
-BACKUP_FILE="$BACKUP_DIR/medical_rentals_backup_$TIMESTAMP.sql"
+BACKUP_FILE="$BACKUP_DIR/belle_rouge_properties_backup_$TIMESTAMP.sql"
 
 # Ensure backup directory exists
 mkdir -p $BACKUP_DIR
@@ -29,7 +29,7 @@ if [ $? -eq 0 ]; then
   gzip $BACKUP_FILE
   
   # Remove backups older than 30 days
-  find $BACKUP_DIR -name "medical_rentals_backup_*.sql.gz" -type f -mtime +30 -delete
+  find $BACKUP_DIR -name "belle_rouge_properties_backup_*.sql.gz" -type f -mtime +30 -delete
   
   echo "Cleaned up old backups"
 else

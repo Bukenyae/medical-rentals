@@ -5,8 +5,8 @@ import GoogleOneTap from '@/components/GoogleOneTap'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Medical Rentals',
-  description: 'Short-term rentals near medical facilities',
+  title: 'Belle Rouge Properties',
+  description: 'Flexible short-term rentals for medical staff, academics, military members, students, and young professionals',
 }
 
 export default function RootLayout({

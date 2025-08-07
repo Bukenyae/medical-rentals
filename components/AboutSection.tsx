@@ -7,19 +7,19 @@ export default function AboutSection() {
     {
       name: "Agnes Andrews",
       role: "CEO",
-      description: "Agnes founded Bayou Medical Rentals to provide exceptional housing for healthcare heroes. With 40+ years in insurance services, she understands the unique importance of reliability, facility management, and customer satisfaction.",
+      description: "Agnes founded Belle Rouge Properties to provide exceptional housing for professionals from all walks of life. With 40+ years in insurance services, she understands the unique importance of reliability, facility management, and customer satisfaction.",
       image: "/images/team/agnes-andrews.jpg"
     },
     {
       name: "Kinda Andrews",
       role: "CMO",
-      description: "Kinda leads our marketing efforts with a focus on building authentic relationships with healthcare institutions. Her strategic approach ensures our properties reach the right medical professionals at the right time.",
+      description: "Kinda leads our marketing efforts with a focus on building authentic relationships with hospitals, universities, and community organizations. Her strategic approach ensures our properties reach medical staff, academics, military members, and young professionals at the right time.",
       image: "/images/team/kinda-andrews.jpg"
     },
     {
       name: "Nayo Andrews",
       role: "COO",
-      description: "Nayo oversees operations to ensure every guest experience exceeds expectations. Her attention to detail and commitment to excellence maintains the highest standards across all Bayou Medical Rentals properties.",
+      description: "Nayo oversees operations to ensure every guest experience exceeds expectations. Her attention to detail and commitment to excellence maintains the highest standards across all Belle Rouge Properties locations.",
       image: "/images/team/nayo-andrews.jpg"
     }
   ];
@@ -32,8 +32,9 @@ export default function AboutSection() {
             About Us
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We're a family-owned business dedicated to providing exceptional accommodations 
-            for healthcare professionals. Our mission is to ensure you have a comfortable, 
+            We're a family-owned business dedicated to providing exceptional accommodations
+            for medical staff, academics, military personnel, college students, graduates,
+            and young professionals. Our mission is to ensure you have a comfortable,
             safe, and convenient home away from home.
           </p>
         </div>

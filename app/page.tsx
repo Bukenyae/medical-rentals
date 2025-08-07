@@ -95,7 +95,7 @@ export default function Home() {
                 sqft={property.sqft}
                 proximityBadges={property.proximityBadges}
                 imageUrl={PROPERTY_IMAGES[id as keyof typeof PROPERTY_IMAGES]}
-                imageAlt={`Medical professionals at ${property.location}`}
+                imageAlt={`Professionals at ${property.location}`}
               />
             ))}
           </div>
