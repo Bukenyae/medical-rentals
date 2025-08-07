@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Star, Calendar, Minus, Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Star, Calendar, Minus, Plus, Info } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import AuthModal from '@/components/AuthModal';
 
@@ -31,13 +31,18 @@ export default function BookingCard({
   user
 }: BookingCardProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
-  // Calculate pricing components
-  const basePrice = property.price * nights * guests;
-  const cleaningFee = 25;
-  const serviceFee = 36;
-  const taxFee = Math.round((basePrice + cleaningFee + serviceFee) * 0.08);
-  const totalPrice = basePrice + cleaningFee + serviceFee + taxFee;
+
+  const weeklyRate = Math.round(property.price * 0.8);
+  const monthlyRate = Math.round(property.price * 0.6);
+  const discountRate = nights >= 21 ? 0.4 : nights >= 7 ? 0.2 : 0;
+  const standardSubtotal = property.price * nights * guests;
+  const discountAmount = Math.round(standardSubtotal * discountRate);
+  const subtotal = standardSubtotal - discountAmount;
+  const cleaningRate = nights > 21 ? 0.07 : nights >= 8 ? 0.15 : 0.3;
+  const cleaningFee = Math.round(subtotal * cleaningRate);
+  const serviceFee = Math.round(subtotal * 0.14);
+  const taxFee = Math.round(subtotal * 0.13);
+  const totalPrice = subtotal + cleaningFee + serviceFee + taxFee;
 
   // Handle Reserve button click
   const handleReserve = () => {
@@ -56,7 +61,7 @@ export default function BookingCard({
     <div className="lg:col-span-1">
       <div className="sticky top-24">
         <div className="border border-gray-200 rounded-xl p-6 shadow-lg booking-card">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-2">
             <div className="text-2xl font-semibold">
               ${property.price}<span className="text-base font-normal text-gray-500">/night</span>
             </div>
@@ -65,6 +70,15 @@ export default function BookingCard({
               <span className="font-medium">{property.rating}</span>
               <span className="text-gray-500 ml-1">({property.reviewCount})</span>
             </div>
+          </div>
+          <div className="flex items-center text-xs text-gray-500 mb-6">
+            <Info className="w-4 h-4 mr-1" />
+            <span
+              className="underline cursor-help"
+              title={`Stay 7+ nights: 20% off — $${weeklyRate} / night\nStay 21+ nights: 40% off — $${monthlyRate} / night`}
+            >
+              How pricing works
+            </span>
           </div>
 
           {/* Date Selection */}
@@ -124,19 +138,31 @@ export default function BookingCard({
           {/* Price Breakdown */}
           <div className="space-y-3 text-sm mb-4">
             <div className="flex justify-between">
-              <span className="text-gray-700">${property.price} x {nights} {nights === 1 ? 'night' : 'nights'} x {guests} {guests === 1 ? 'guest' : 'guests'}</span>
-              <span className="text-gray-900">${basePrice}</span>
+              <span className="text-gray-700">
+                ${property.price} x {nights} {nights === 1 ? 'night' : 'nights'} x {guests} {guests === 1 ? 'guest' : 'guests'}
+              </span>
+              <span className="text-gray-900">${standardSubtotal}</span>
+            </div>
+            {discountRate > 0 && (
+              <div className="flex justify-between text-green-700">
+                <span>{nights >= 21 ? 'Monthly discount (40%)' : 'Weekly discount (20%)'}</span>
+                <span>- ${discountAmount}</span>
+              </div>
+            )}
+            <div className="flex justify-between">
+              <span className="text-gray-700">Subtotal</span>
+              <span className="text-gray-900">${subtotal}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Cleaning fee</span>
+              <span className="text-gray-700">Cleaning fee ({Math.round(cleaningRate * 100)}%)</span>
               <span className="text-gray-900">${cleaningFee}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Service fee</span>
+              <span className="text-gray-700">Service fee (14%)</span>
               <span className="text-gray-900">${serviceFee}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Tax fee (8%)</span>
+              <span className="text-gray-700">Taxes (13%)</span>
               <span className="text-gray-900">${taxFee}</span>
             </div>
             <div className="border-t border-gray-200 pt-3 mb-4">
