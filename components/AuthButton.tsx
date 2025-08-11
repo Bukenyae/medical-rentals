@@ -15,11 +15,13 @@ export default function AuthButton({ user }: AuthButtonProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [modalMode, setModalMode] = useState<'signin' | 'signup'>('signin')
+  const [forceRole, setForceRole] = useState<'guest' | 'host'>('guest')
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     setIsMenuOpen(false)
-    window.location.reload()
+    // Send user to homepage to avoid landing on a protected portal route
+    window.location.replace('/')
   }
 
   const toggleMenu = () => {
@@ -78,19 +80,19 @@ export default function AuthButton({ user }: AuthButtonProps) {
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
           <button
-            onClick={() => { setModalMode('signup'); setShowAuthModal(true); setIsMenuOpen(false) }}
+            onClick={() => { setForceRole('guest'); setModalMode('signup'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Guest Sign Up
           </button>
           <button
-            onClick={() => { setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
+            onClick={() => { setForceRole('guest'); setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Guest Sign In
           </button>
           <button
-            onClick={() => { setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
+            onClick={() => { setForceRole('host'); setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Host Sign In
@@ -102,6 +104,7 @@ export default function AuthButton({ user }: AuthButtonProps) {
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode={modalMode}
+        forceRole={forceRole}
       />
     </div>
   )
