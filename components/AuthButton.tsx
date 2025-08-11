@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
-// AuthModal removed from production flow; using dedicated pages
+import AuthModal from '@/components/AuthModal'
 
 interface AuthButtonProps {
   user: User | null
@@ -13,7 +13,8 @@ interface AuthButtonProps {
 export default function AuthButton({ user }: AuthButtonProps) {
   const supabase = createClient()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  // Modal deprecated; routes used instead
+  const [showAuthModal, setShowAuthModal] = useState(false)
+  const [modalMode, setModalMode] = useState<'signin' | 'signup'>('signin')
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -77,13 +78,13 @@ export default function AuthButton({ user }: AuthButtonProps) {
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
           <button
-            onClick={() => go('/auth/signup')}
+            onClick={() => { setModalMode('signup'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Guest Sign Up
           </button>
           <button
-            onClick={() => go('/auth/guest')}
+            onClick={() => { setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Guest Sign In
@@ -97,7 +98,11 @@ export default function AuthButton({ user }: AuthButtonProps) {
         </div>
       )}
       
-      {/* No modal; navigation-based auth */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        initialMode={modalMode}
+      />
     </div>
   )
 }
