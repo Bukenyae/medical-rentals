@@ -60,6 +60,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
     const { error } = await supabase.auth.signUp({
       email,
       password,
+      options: { data: { role: 'guest' } },
     });
 
     if (error) {

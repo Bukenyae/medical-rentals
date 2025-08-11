@@ -85,8 +85,8 @@ export default function BookingCard({
   // Handle Reserve button click
   const handleReserve = () => {
     if (!user) {
-      // Redirect unauthenticated users to the guest portal to continue
-      router.push('/portal/guest');
+      // Open in-page auth modal for a seamless guest flow
+      setShowAuthModal(true);
     } else {
       // TODO: Implement reservation flow for authenticated users
       // This could redirect to a checkout page or open a payment modal
