@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Header from '@/components/Header';
 import HeroSection from '@/components/HeroSection';
 import PropertyCard from '@/components/PropertyCard';
@@ -8,12 +8,28 @@ import AboutSection from '@/components/AboutSection';
 import PropertyManagementSection from '@/components/PropertyManagementSection';
 import CustomerSuccessSection from '@/components/CustomerSuccessSection';
 import { PROPERTY_DATA, PROPERTY_IMAGES } from '@/lib/data/properties';
+import { createClient } from '@/lib/supabase/client';
+
+interface DbProperty {
+  id: string;
+  title: string;
+  address: string;
+  nightly_price: number;
+  bedrooms: number;
+  bathrooms: number;
+  sqft: number | null;
+  cover_image_url: string | null;
+  is_published: boolean;
+}
 
 export default function Home() {
+  const supabase = useMemo(() => createClient(), []);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedDates, setSelectedDates] = useState('');
   const [selectedGuests, setSelectedGuests] = useState(1);
   const [selectedPropertyId, setSelectedPropertyId] = useState('');
+  const [dbProperties, setDbProperties] = useState<DbProperty[]>([]);
+  const [loadingProps, setLoadingProps] = useState(false);
 
   const handleLocationChange = (location: string, propertyId: string) => {
     setSelectedLocation(location);
@@ -27,6 +43,20 @@ export default function Home() {
   const handleGuestsChange = (guests: number) => {
     setSelectedGuests(guests);
   };
+
+  useEffect(() => {
+    async function load() {
+      setLoadingProps(true);
+      const { data, error } = await supabase
+        .from('properties')
+        .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+      if (!error && data) setDbProperties(data as unknown as DbProperty[]);
+      setLoadingProps(false);
+    }
+    load();
+  }, [supabase]);
 
   return (
     <div className="min-h-screen bg-white">
@@ -81,22 +111,34 @@ export default function Home() {
           
           {/* Property Cards Grid - Mobile Optimized */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-            {Object.entries(PROPERTY_DATA).map(([id, property]) => (
-              <PropertyCard
-                key={id}
-                id={id}
-                title={property.title}
-                description={property.description}
-                rating={property.rating}
-                reviewCount={property.reviewCount}
-                price={property.price}
-                bedrooms={property.bedrooms}
-                bathrooms={property.bathrooms}
-                sqft={property.sqft}
-                proximityBadges={property.proximityBadges}
-                imageUrl={PROPERTY_IMAGES[id as keyof typeof PROPERTY_IMAGES]}
-                imageAlt={`Professionals at ${property.location}`}
-              />
+            {(dbProperties.length > 0 ? dbProperties.map((p) => ({
+              id: p.id,
+              title: p.title,
+              description: 'Comfortable, furnished rental for professionals.',
+              rating: 4.8,
+              reviewCount: 120,
+              price: p.nightly_price,
+              bedrooms: p.bedrooms,
+              bathrooms: p.bathrooms,
+              sqft: p.sqft ?? 0,
+              proximityBadges: [],
+              imageUrl: p.cover_image_url ?? '/images/placeholder/house.jpg',
+              imageAlt: p.title,
+            })) : Object.entries(PROPERTY_DATA).map(([id, property]) => ({
+              id,
+              title: property.title,
+              description: property.description,
+              rating: property.rating,
+              reviewCount: property.reviewCount,
+              price: property.price,
+              bedrooms: property.bedrooms,
+              bathrooms: property.bathrooms,
+              sqft: property.sqft,
+              proximityBadges: property.proximityBadges,
+              imageUrl: PROPERTY_IMAGES[id as keyof typeof PROPERTY_IMAGES],
+              imageAlt: `Professionals at ${property.location}`,
+            })) ).map((card) => (
+              <PropertyCard key={card.id} {...card} />
             ))}
           </div>
         </div>
