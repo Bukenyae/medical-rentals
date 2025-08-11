@@ -17,6 +17,10 @@ interface PropertyCardProps {
   rating: number;
   reviewCount: number;
   price: number;
+  weeklyDiscountPct?: number;
+  weeklyPrice?: number;
+  monthlyDiscountPct?: number;
+  monthlyPrice?: number;
   bedrooms: number;
   bathrooms: number;
   sqft: number;
@@ -32,6 +36,10 @@ export default function PropertyCard({
   rating,
   reviewCount,
   price,
+  weeklyDiscountPct,
+  weeklyPrice,
+  monthlyDiscountPct,
+  monthlyPrice,
   bedrooms,
   bathrooms,
   sqft,
@@ -39,8 +47,10 @@ export default function PropertyCard({
   imageUrl,
   imageAlt
 }: PropertyCardProps) {
-  const weeklyRate = Math.round(price * 0.8);
-  const monthlyRate = Math.round(price * 0.6);
+  const weeklyPct = typeof weeklyDiscountPct === 'number' ? weeklyDiscountPct : 20;
+  const monthlyPct = typeof monthlyDiscountPct === 'number' ? monthlyDiscountPct : 40;
+  const weeklyRate = typeof weeklyPrice === 'number' ? weeklyPrice : Math.round(price * (1 - weeklyPct / 100));
+  const monthlyRate = typeof monthlyPrice === 'number' ? monthlyPrice : Math.round(price * (1 - monthlyPct / 100));
 
   return (
     <Link

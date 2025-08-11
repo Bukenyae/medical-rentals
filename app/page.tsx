@@ -14,12 +14,14 @@ interface DbProperty {
   id: string;
   title: string;
   address: string;
-  nightly_price: number;
+  description: string | null;
   bedrooms: number;
   bathrooms: number;
-  sqft: number | null;
   cover_image_url: string | null;
   is_published: boolean;
+  nightly_price: number | null;
+  proximity_badge_1?: string | null;
+  proximity_badge_2?: string | null;
 }
 
 export default function Home() {
@@ -49,7 +51,7 @@ export default function Home() {
       setLoadingProps(true);
       const { data, error } = await supabase
         .from('properties')
-        .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
+        .select('id,title,address,description,bedrooms,bathrooms,cover_image_url,is_published,nightly_price,proximity_badge_1,proximity_badge_2')
         .eq('is_published', true)
         .order('created_at', { ascending: false });
       if (!error && data) setDbProperties(data as unknown as DbProperty[]);
@@ -114,14 +116,17 @@ export default function Home() {
             {(dbProperties.length > 0 ? dbProperties.map((p) => ({
               id: p.id,
               title: p.title,
-              description: 'Comfortable, furnished rental for professionals.',
+              description: p.description ?? 'Comfortable, furnished rental for professionals.',
               rating: 4.8,
               reviewCount: 120,
-              price: p.nightly_price,
+              price: p.nightly_price ?? 150,
               bedrooms: p.bedrooms,
               bathrooms: p.bathrooms,
-              sqft: p.sqft ?? 0,
-              proximityBadges: [],
+              sqft: 0,
+              proximityBadges: [
+                ...(p.proximity_badge_1 ? [{ text: p.proximity_badge_1, bgColor: 'bg-blue-50', textColor: 'text-blue-700' }] : []),
+                ...(p.proximity_badge_2 ? [{ text: p.proximity_badge_2, bgColor: 'bg-blue-50', textColor: 'text-blue-700' }] : []),
+              ],
               imageUrl: p.cover_image_url ?? '/images/placeholder/house.jpg',
               imageAlt: p.title,
             })) : Object.entries(PROPERTY_DATA).map(([id, property]) => ({
