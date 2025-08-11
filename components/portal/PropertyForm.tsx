@@ -404,7 +404,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               <label className="text-sm">About the space
                 <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={aboutSpace} onChange={e => setAboutSpace(e.target.value)} />
               </label>
-              <label className="text-sm">Perfect for Traveling Professionals
+              <label className="text-sm">The indoor & outdoor experiences
                 <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={professionalsDesc} onChange={e => setProfessionalsDesc(e.target.value)} />
               </label>
 
@@ -461,26 +461,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
 
         {/* Right: previews & media depending on step */}
         <div className="space-y-4">
-          {step === 2 && (
-            <>
-              {/* Hero Preview */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Property details hero preview</h4>
-                <div className="rounded-xl overflow-hidden border bg-white">
-                  <div className="aspect-[16/9] bg-gray-100">
-                    <img src={displayImageUrl} alt="hero preview" className="w-full h-full object-cover" />
-                  </div>
-                  <div className="p-4">
-                    <div className="text-lg font-semibold text-gray-900">{title || 'Untitled Property'}</div>
-                    <div className="text-sm text-gray-600">{address || 'Address to be added'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Availability calendar (block dates) */}
-              <CalendarBlocker blockedDates={blockedDates} onToggle={onToggleBlocked} />
-            </>
-          )}
+          
           
 
           {step === 1 && (
