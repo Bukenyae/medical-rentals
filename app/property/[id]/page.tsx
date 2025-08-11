@@ -13,7 +13,7 @@ import {
 import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -49,7 +49,23 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const [selectedCheckOut, setSelectedCheckOut] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout'>('checkin');
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+
+  // Supabase property + images
+  interface DbPropertyRow {
+    id: string;
+    title: string;
+    address: string;
+    nightly_price: number;
+    bedrooms: number;
+    bathrooms: number;
+    sqft: number | null;
+    cover_image_url: string | null;
+    is_published: boolean;
+  }
+  interface DbImageRow { id: string; url: string; is_approved: boolean; sort_order: number; }
+  const [dbProperty, setDbProperty] = useState<DbPropertyRow | null>(null);
+  const [dbImages, setDbImages] = useState<string[]>([]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -58,6 +74,29 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     };
     getUser();
   }, [supabase.auth]);
+
+  useEffect(() => {
+    async function loadDb() {
+      const pid = params.id;
+      const { data: prop, error } = await supabase
+        .from('properties')
+        .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
+        .eq('id', pid)
+        .limit(1)
+        .maybeSingle();
+      if (!error && prop) setDbProperty(prop as unknown as DbPropertyRow);
+
+      const { data: imgs } = await supabase
+        .from('property_images')
+        .select('id,url,is_approved,sort_order')
+        .eq('property_id', pid)
+        .eq('is_approved', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true });
+      if (imgs && imgs.length > 0) setDbImages(imgs.map(i => i.url));
+    }
+    void loadDb();
+  }, [params.id, supabase]);
 
   // Handler functions
   const handleGuestChange = (increment: boolean) => {
@@ -117,8 +156,19 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
 
   const propertyWithDefaults = {
     ...property,
+    // Override with Supabase data when available
+    title: dbProperty?.title ?? property.title,
+    location: dbProperty?.address ?? property.location,
+    price: dbProperty?.nightly_price ?? property.price,
+    bedrooms: dbProperty?.bedrooms ?? property.bedrooms,
+    bathrooms: dbProperty?.bathrooms ?? property.bathrooms,
+    sqft: dbProperty?.sqft ?? property.sqft,
     host,
-    images: PROPERTY_DETAIL_IMAGES,
+    images: (dbImages.length > 0
+      ? dbImages
+      : dbProperty?.cover_image_url
+        ? [dbProperty.cover_image_url, ...PROPERTY_DETAIL_IMAGES]
+        : PROPERTY_DETAIL_IMAGES),
     amenities: [
       { icon: Wifi, label: 'Free WiFi' },
       { icon: Car, label: 'Free parking' },
