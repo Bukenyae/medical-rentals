@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/client'
 import { User } from '@supabase/supabase-js'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
-import AuthModal from './AuthModal'
+// AuthModal removed from production flow; using dedicated pages
 
 interface AuthButtonProps {
   user: User | null
@@ -13,8 +13,7 @@ interface AuthButtonProps {
 export default function AuthButton({ user }: AuthButtonProps) {
   const supabase = createClient()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [showAuthModal, setShowAuthModal] = useState(false)
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin')
+  // Modal deprecated; routes used instead
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -26,10 +25,9 @@ export default function AuthButton({ user }: AuthButtonProps) {
     setIsMenuOpen(!isMenuOpen)
   }
 
-  const openAuthModal = (mode: 'signin' | 'signup') => {
-    setAuthMode(mode)
-    setShowAuthModal(true)
+  const go = (path: string) => {
     setIsMenuOpen(false)
+    window.location.href = path
   }
 
   if (user) {
@@ -79,26 +77,21 @@ export default function AuthButton({ user }: AuthButtonProps) {
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
           <button
-            onClick={() => openAuthModal('signin')}
+            onClick={() => go('/auth/guest')}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Sign In
+            Guest Sign In
           </button>
           <button
-            onClick={() => openAuthModal('signup')}
+            onClick={() => go('/auth/host')}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Sign Up
+            Host Sign In
           </button>
         </div>
       )}
       
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        initialMode={authMode}
-      />
+      {/* No modal; navigation-based auth */}
     </div>
   )
 }

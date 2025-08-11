@@ -23,17 +23,25 @@ export default function AuthCodeError() {
           </p>
         </div>
 
-        <div className="space-y-4">
-          <Link
-            href="/auth/signin"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Try signing in again
-          </Link>
-          
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link
+              href="/auth/guest"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Guest Sign In
+            </Link>
+            <Link
+              href="/auth/host"
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Host Sign In
+            </Link>
+          </div>
+
           <Link
             href="/"
-            className="text-blue-600 hover:text-blue-500"
+            className="inline-block text-blue-600 hover:text-blue-500"
           >
             ← Back to home
           </Link>
