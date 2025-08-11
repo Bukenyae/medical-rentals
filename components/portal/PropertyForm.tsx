@@ -197,7 +197,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     }
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,address,description,nightly_price,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,map_url,is_published,cover_image_url")
+      .select("id,title,address,description,nightly_price,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url")
       .order("created_at", { ascending: false });
     if (!error && data) setMyProps(data as PropertyRow[]);
     setLoading(false);
@@ -229,7 +229,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         proximity_badge_2: proximityBadge2 || null,
         bedrooms,
         bathrooms,
-        map_url: null,
       };
 
       const trySave = async (body: Record<string, unknown>) => {
@@ -265,7 +264,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             proximity_badge_2: proximityBadge2 || null,
             bedrooms,
             bathrooms,
-            map_url: null,
           };
           await trySave(fallback);
         } else {
@@ -464,32 +462,25 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         {/* Right: previews & media depending on step */}
         <div className="space-y-4">
           {step === 2 && (
-            <div>
-              <h4 className="font-medium mb-2">Cover image for card & hero</h4>
-              {selectedId ? (
-                approvedImages.length > 0 ? (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
-                      {approvedImages.map((img) => (
-                        <button key={img.id} className={`border rounded-md overflow-hidden hover:ring-2 hover:ring-emerald-500 ${displayImageUrl === img.url ? 'ring-2 ring-emerald-600' : ''}`}
-                          onClick={() => applyCoverImage(img.url)} type="button" title="Use as cover image">
-                          <div className="aspect-video bg-gray-100">
-                            <img src={img.url} alt="cover option" className="w-full h-full object-cover" />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-gray-500">Tip: Select one image to use as the property card image on the homepage and the hero image on the details page.</p>
+            <>
+              {/* Hero Preview */}
+              <div className="space-y-2">
+                <h4 className="font-medium">Property details hero preview</h4>
+                <div className="rounded-xl overflow-hidden border bg-white">
+                  <div className="aspect-[16/9] bg-gray-100">
+                    <img src={displayImageUrl} alt="hero preview" className="w-full h-full object-cover" />
                   </div>
-                ) : (
-                  <div className="text-sm text-gray-500">No approved images yet. Upload images in Media Manager and approve one to enable selection.</div>
-                )
-              ) : (
-                <div className="text-sm text-gray-500">Create and save the property first to select a cover image.</div>
-              )}
-            </div>
-          )}
+                  <div className="p-4">
+                    <div className="text-lg font-semibold text-gray-900">{title || 'Untitled Property'}</div>
+                    <div className="text-sm text-gray-600">{address || 'Address to be added'}</div>
+                  </div>
+                </div>
+              </div>
 
+              {/* Availability calendar (block dates) */}
+              <CalendarBlocker blockedDates={blockedDates} onToggle={onToggleBlocked} />
+            </>
+          )}
           
 
           {step === 1 && (
@@ -616,29 +607,27 @@ function CalendarBlocker({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
-        <h4 className="font-medium">Availability calendar</h4>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="px-2 py-1 border rounded"
-            onClick={() => setCursor(new Date(year, month - 1, 1))}
-            aria-label="Previous month"
-            title="Previous month"
-          >
-            ←
-          </button>
-          <div className="text-sm text-gray-700 min-w-[140px] text-center">{monthLabel}</div>
-          <button
-            type="button"
-            className="px-2 py-1 border rounded"
-            onClick={() => setCursor(new Date(year, month + 1, 1))}
-            aria-label="Next month"
-            title="Next month"
-          >
-            →
-          </button>
-        </div>
+      <h4 className="font-medium">Availability calendar</h4>
+      <div className="flex items-center justify-center gap-2">
+        <button
+          type="button"
+          className="px-2 py-1 border rounded"
+          onClick={() => setCursor(new Date(year, month - 1, 1))}
+          aria-label="Previous month"
+          title="Previous month"
+        >
+          ←
+        </button>
+        <div className="text-sm text-gray-700 min-w-[140px] text-center">{monthLabel}</div>
+        <button
+          type="button"
+          className="px-2 py-1 border rounded"
+          onClick={() => setCursor(new Date(year, month + 1, 1))}
+          aria-label="Next month"
+          title="Next month"
+        >
+          →
+        </button>
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-600">
