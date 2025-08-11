@@ -77,6 +77,12 @@ export default function AuthButton({ user }: AuthButtonProps) {
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 py-2 z-50">
           <button
+            onClick={() => go('/auth/signup')}
+            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Guest Sign Up
+          </button>
+          <button
             onClick={() => go('/auth/guest')}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
