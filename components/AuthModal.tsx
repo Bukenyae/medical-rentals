@@ -27,6 +27,25 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
     setMounted(true);
   }, []);
 
+  // Prevent background scroll to avoid layout shift/flicker when modal opens
+  useEffect(() => {
+    if (!mounted) return;
+    if (isOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isOpen, mounted]);
+
+  const redirectAfterAuth = async () => {
+    const { data } = await supabase.auth.getUser();
+    const role = data.user?.user_metadata?.role || 'guest';
+    const target = role === 'host' || role === 'admin' ? '/portal/host' : '/portal/guest';
+    window.location.replace(target);
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -41,7 +60,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
       setMessage(error.message);
     } else {
       onClose();
-      window.location.reload(); // Refresh to update auth state
+      await redirectAfterAuth();
     }
     setLoading(false);
   };
@@ -76,7 +95,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
         
         if (!signInError) {
           onClose();
-          window.location.reload();
+          await redirectAfterAuth();
         }
       }, 1000);
     }
