@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import AuthGate from "@/components/portal/AuthGate";
 import SidebarTabs from "@/components/portal/SidebarTabs";
 import SectionFeedback from "@/components/portal/SectionFeedback";
@@ -82,33 +82,43 @@ export default function HostPortalPage() {
   }, []);
 
   // Fetch lightweight publish status for the selected property
+  const fetchStatus = useCallback(async (pid: string) => {
+    // properties: map_url and is_published
+    const { data: prop } = await supabase
+      .from('properties')
+      .select('map_url,is_published,cover_image_url')
+      .eq('id', pid)
+      .maybeSingle();
+    setHasMapLink(!!prop?.map_url);
+    setHasCoverImage(!!prop?.cover_image_url);
+    setIsPublished(!!prop?.is_published);
+    // property_images: approved exists?
+    const { count } = await supabase
+      .from('property_images')
+      .select('id', { count: 'exact', head: true })
+      .eq('property_id', pid)
+      .eq('is_approved', true);
+    setHasApprovedImage((count ?? 0) > 0);
+  }, [supabase]);
+
   useEffect(() => {
-    async function fetchStatus(pid: string) {
-      // properties: map_url and is_published
-      const { data: prop } = await supabase
-        .from('properties')
-        .select('map_url,is_published,cover_image_url')
-        .eq('id', pid)
-        .maybeSingle();
-      setHasMapLink(!!prop?.map_url);
-      setHasCoverImage(!!prop?.cover_image_url);
-      setIsPublished(!!prop?.is_published);
-      // property_images: approved exists?
-      const { count } = await supabase
-        .from('property_images')
-        .select('id', { count: 'exact', head: true })
-        .eq('property_id', pid)
-        .eq('is_approved', true);
-      setHasApprovedImage((count ?? 0) > 0);
+    if (!selectedPropertyId) return;
+    void fetchStatus(selectedPropertyId);
+  }, [selectedPropertyId, fetchStatus]);
+
+  async function publishSelected() {
+    if (!selectedPropertyId) return;
+    const { error } = await supabase
+      .from('properties')
+      .update({ is_published: true })
+      .eq('id', selectedPropertyId);
+    if (error) {
+      alert(error.message);
+      return;
     }
-    if (selectedPropertyId) {
-      void fetchStatus(selectedPropertyId);
-    } else {
-      setHasMapLink(false);
-      setHasApprovedImage(false);
-      setIsPublished(false);
-    }
-  }, [selectedPropertyId, supabase]);
+    await fetchStatus(selectedPropertyId);
+    alert('Property published');
+  }
 
   return (
     <AuthGate allowRoles={["host", "admin"]}>
@@ -193,7 +203,7 @@ export default function HostPortalPage() {
                   hasApprovedImage={hasApprovedImage}
                   hasCoverImage={hasCoverImage}
                   isPublished={isPublished}
-                  onPublish={() => { /* TODO: wire actual publish action */ }}
+                  onPublish={publishSelected}
                 />
               </div>
             </div>
