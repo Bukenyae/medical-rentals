@@ -63,6 +63,27 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   const [aboutSpace, setAboutSpace] = useState<string>("");
   const [professionalsDesc, setProfessionalsDesc] = useState<string>("");
   const [amenitiesCsv, setAmenitiesCsv] = useState<string>("");
+  const AMENITY_OPTIONS = useMemo(
+    () => [
+      "Free WiFi",
+      "Free parking",
+      "55\" HDTV",
+      "Full kitchen",
+      "Fully furnished house",
+      "In-unit washer and dryer",
+      "Flexible lease terms (days/weeks/months)",
+      "Self check-in",
+    ],
+    []
+  );
+  const [selectedAmenities, setSelectedAmenities] = useState<Set<string>>(new Set());
+  const [cleaningFeePct, setCleaningFeePct] = useState<number>(0);
+  const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set()); // ISO date strings
+
+  // Host profile (derived)
+  const [hostNameDerived, setHostNameDerived] = useState<string>("");
+  const [hostAvatarDerived, setHostAvatarDerived] = useState<string>("");
+  const [hostJoinedYear, setHostJoinedYear] = useState<string>("");
 
   // approved images for preview/cover selection
   const [approvedImages, setApprovedImages] = useState<ApprovedImageRow[]>([]);
@@ -78,6 +99,25 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   useEffect(() => {
     void refresh();
   }, []);
+
+  // derive host info from profile
+  useEffect(() => {
+    (async () => {
+      const { data: userRes } = await supabase.auth.getUser();
+      const uid = userRes.user?.id;
+      if (!uid) return;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, created_at")
+        .eq("id", uid)
+        .single();
+      if (data) {
+        setHostNameDerived((data.full_name as string) || "");
+        setHostAvatarDerived((data.avatar_url as string) || "");
+        if (data.created_at) setHostJoinedYear(String(new Date(data.created_at).getFullYear()));
+      }
+    })();
+  }, [supabase]);
 
   useEffect(() => {
     if (selectedId) onPropertySelected?.(selectedId);
@@ -116,63 +156,82 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   }
 
   async function handleSave() {
-    setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { setLoading(false); return; }
+
+      if (!title || !address) {
+        alert("Title and address are required.");
+        setLoading(false);
+        return;
+      }
+
+      // Primary payload including discount fields
+      const primary: Record<string, unknown> = {
+        title,
+        address,
+        description,
+        nightly_price: nightlyPrice,
+        weekly_discount_pct: weeklyDiscountPct,
+        weekly_price: weeklyPrice,
+        monthly_discount_pct: monthlyDiscountPct,
+        monthly_price: monthlyPrice,
+        proximity_badge_1: proximityBadge1 || null,
+        proximity_badge_2: proximityBadge2 || null,
+        bedrooms,
+        bathrooms,
+        map_url: null,
+      };
+
+      const trySave = async (body: Record<string, unknown>) => {
+        if (selectedId) {
+          const { error } = await supabase.from('properties').update(body).eq('id', selectedId);
+          if (error) throw error;
+        } else {
+          const { data, error } = await supabase.from('properties').insert([body]).select('id').single();
+          if (error) throw error;
+          setSelectedId(data.id);
+        }
+      };
+
+      try {
+        await trySave(primary);
+      } catch (e: any) {
+        const msg: string = e?.message || '';
+        // If discount columns are missing in the DB, retry with a minimal payload
+        if (
+          msg.includes('weekly_discount_pct') ||
+          msg.includes('monthly_discount_pct') ||
+          msg.includes('weekly_price') ||
+          msg.includes('monthly_price') ||
+          msg.includes('schema cache') ||
+          msg.includes('column')
+        ) {
+          const fallback: Record<string, unknown> = {
+            title,
+            address,
+            description,
+            nightly_price: nightlyPrice,
+            proximity_badge_1: proximityBadge1 || null,
+            proximity_badge_2: proximityBadge2 || null,
+            bedrooms,
+            bathrooms,
+            map_url: null,
+          };
+          await trySave(fallback);
+        } else {
+          throw e;
+        }
+      }
+
+      await refresh();
       setLoading(false);
-      return;
-    }
-
-    if (!title || !address) {
-      alert("Title and address are required.");
+    } catch (err) {
+      console.error(err);
+      alert((err as any)?.message || 'Failed to save');
       setLoading(false);
-      return;
     }
-
-    if (selectedId) {
-      const { error } = await supabase
-        .from("properties")
-        .update({
-          title,
-          address,
-          description,
-          nightly_price: nightlyPrice,
-          weekly_discount_pct: weeklyDiscountPct,
-          weekly_price: weeklyPrice,
-          monthly_discount_pct: monthlyDiscountPct,
-          monthly_price: monthlyPrice,
-          proximity_badge_1: proximityBadge1 || null,
-          proximity_badge_2: proximityBadge2 || null,
-          bedrooms,
-          bathrooms,
-        })
-        .eq("id", selectedId);
-      if (error) alert(error.message);
-    } else {
-      const { data: inserted, error } = await supabase
-        .from("properties")
-        .insert({
-          title,
-          address,
-          description,
-          nightly_price: nightlyPrice,
-          weekly_discount_pct: weeklyDiscountPct,
-          weekly_price: weeklyPrice,
-          monthly_discount_pct: monthlyDiscountPct,
-          monthly_price: monthlyPrice,
-          proximity_badge_1: proximityBadge1 || null,
-          proximity_badge_2: proximityBadge2 || null,
-          bedrooms,
-          bathrooms,
-        })
-        .select("id")
-        .single();
-      if (error) alert(error.message);
-      if (inserted?.id) setSelectedId(inserted.id);
-    }
-
-    await refresh();
-    setLoading(false);
   }
 
   function loadIntoForm(p?: PropertyRow) {
@@ -287,23 +346,56 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             </>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="text-sm">Host name
-                  <input className="mt-1 w-full border rounded-md px-3 py-2" value={hostName} onChange={e => setHostName(e.target.value)} />
-                </label>
-                <label className="text-sm">Host avatar URL
-                  <input className="mt-1 w-full border rounded-md px-3 py-2" value={hostAvatarUrl} onChange={e => setHostAvatarUrl(e.target.value)} />
-                </label>
+              {/* Host derived */}
+              <div className="flex items-center gap-3 p-2 border rounded-md bg-gray-50">
+                <img src={hostAvatarDerived || "/images/placeholder/avatar.png"} alt="host avatar" className="w-10 h-10 rounded-full object-cover" />
+                <div className="text-sm">
+                  <div className="font-medium">{hostNameDerived || hostName || "Host"}</div>
+                  {hostJoinedYear && <div className="text-xs text-gray-600">Host since {hostJoinedYear}</div>}
+                </div>
               </div>
+
               <label className="text-sm">About the space
                 <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={aboutSpace} onChange={e => setAboutSpace(e.target.value)} />
               </label>
               <label className="text-sm">Perfect for Traveling Professionals
                 <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={professionalsDesc} onChange={e => setProfessionalsDesc(e.target.value)} />
               </label>
-              <label className="text-sm">What this place offers (comma-separated)
-                <input className="mt-1 w-full border rounded-md px-3 py-2" placeholder="Wi-Fi, Parking, Workspace" value={amenitiesCsv} onChange={e => setAmenitiesCsv(e.target.value)} />
-              </label>
+
+              {/* Amenity badges */}
+              <div>
+                <div className="text-sm font-medium mb-1">What this place offers</div>
+                <div className="flex flex-wrap gap-2">
+                  {AMENITY_OPTIONS.map((label) => {
+                    const active = selectedAmenities.has(label);
+                    return (
+                      <button
+                        type="button"
+                        key={label}
+                        onClick={() => {
+                          const next = new Set(selectedAmenities);
+                          if (next.has(label)) next.delete(label); else next.add(label);
+                          setSelectedAmenities(next);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs border ${active ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`}
+                        title={label}
+                      >
+                        {label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Cleaning fee */}
+              <div className="mt-2">
+                <label className="text-sm">Cleaning fee (% of subtotal)</label>
+                <div className="mt-1 flex items-center gap-2">
+                  <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(Math.max(0, cleaningFeePct - 1))}>-</button>
+                  <input type="number" className="w-24 border rounded-md px-3 py-2" value={cleaningFeePct} onChange={e => setCleaningFeePct(Math.max(0, Number(e.target.value)))} />
+                  <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(cleaningFeePct + 1)}>+</button>
+                </div>
+              </div>
 
               <div className="flex items-center gap-2 pt-2">
                 <button type="button" onClick={() => setStep(1)} className="px-4 py-2 rounded-md border">Back</button>
@@ -386,29 +478,8 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
                 </div>
               </div>
 
-              {/* Booking widget preview */}
-              <div className="space-y-2">
-                <h4 className="font-medium">Booking widget preview</h4>
-                <div className="border rounded-xl p-3 bg-white">
-                  <div className="text-lg font-semibold text-gray-900">${nightlyPrice} <span className="text-sm text-gray-600">night</span></div>
-                  <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                    <div className="border rounded-md p-2">
-                      <div className="text-gray-500">Check-in</div>
-                      <div className="text-gray-900">Select date</div>
-                    </div>
-                    <div className="border rounded-md p-2">
-                      <div className="text-gray-500">Check-out</div>
-                      <div className="text-gray-900">Select date</div>
-                    </div>
-                    <div className="col-span-2 border rounded-md p-2">
-                      <div className="text-gray-500">Guests</div>
-                      <div className="text-gray-900">1 guest</div>
-                    </div>
-                  </div>
-                  <button className="w-full mt-3 bg-emerald-600 text-white py-2 rounded-md">Request to book</button>
-                  <div className="text-[11px] text-gray-600 mt-2">Weekly: ${weeklyPrice}/night • Monthly: ${monthlyPrice}/night</div>
-                </div>
-              </div>
+              {/* Availability calendar (block dates) */}
+              <CalendarBlocker blockedDates={blockedDates} setBlockedDates={setBlockedDates} />
             </>
           )}
         </div>
@@ -435,6 +506,112 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Lightweight calendar blocker for Step 2
+function CalendarBlocker({
+  blockedDates,
+  setBlockedDates,
+}: {
+  blockedDates: Set<string>;
+  setBlockedDates: (next: Set<string>) => void;
+}) {
+  const [cursor, setCursor] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+
+  const year = cursor.getFullYear();
+  const month = cursor.getMonth();
+  const monthStartWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const weeks: Array<Array<number | null>> = [];
+  let currentWeek: Array<number | null> = new Array(monthStartWeekday).fill(null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    currentWeek.push(day);
+    if (currentWeek.length === 7) {
+      weeks.push(currentWeek);
+      currentWeek = [];
+    }
+  }
+  if (currentWeek.length) {
+    while (currentWeek.length < 7) currentWeek.push(null);
+    weeks.push(currentWeek);
+  }
+
+  const fmt = (y: number, m: number, d: number) =>
+    new Date(Date.UTC(y, m, d)).toISOString().slice(0, 10);
+
+  const toggle = (d: number) => {
+    const iso = fmt(year, month, d);
+    const next = new Set(blockedDates);
+    if (next.has(iso)) next.delete(iso); else next.add(iso);
+    setBlockedDates(next);
+  };
+
+  const monthLabel = cursor.toLocaleDateString(undefined, {
+    month: 'long',
+    year: 'numeric',
+  });
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <h4 className="font-medium">Availability calendar</h4>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="px-2 py-1 border rounded"
+            onClick={() => setCursor(new Date(year, month - 1, 1))}
+            aria-label="Previous month"
+            title="Previous month"
+          >
+            ←
+          </button>
+          <div className="text-sm text-gray-700 min-w-[140px] text-center">{monthLabel}</div>
+          <button
+            type="button"
+            className="px-2 py-1 border rounded"
+            onClick={() => setCursor(new Date(year, month + 1, 1))}
+            aria-label="Next month"
+            title="Next month"
+          >
+            →
+          </button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1 text-[11px] text-gray-600">
+        {['Su','Mo','Tu','We','Th','Fr','Sa'].map((d) => (
+          <div key={d} className="px-1 py-1 text-center">{d}</div>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {weeks.flatMap((w, wi) =>
+          w.map((d, di) => {
+            if (!d) return <div key={`${wi}-${di}`} className="h-8" />;
+            const iso = fmt(year, month, d);
+            const active = blockedDates.has(iso);
+            return (
+              <button
+                key={`${wi}-${di}`}
+                type="button"
+                onClick={() => toggle(d)}
+                className={`h-8 text-sm rounded border ${active ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-white text-gray-800 border-gray-200'}`}
+                aria-pressed={active}
+                aria-label={`Toggle ${iso}`}
+                title={active ? `Unavailable: ${iso}` : `Available: ${iso}`}
+              >
+                {d}
+              </button>
+            );
+          })
+        )}
+      </div>
+      <div className="text-xs text-gray-600">Click dates to toggle unavailable. These dates will be used to disable booking on the guest calendar after we wire persistence.</div>
     </div>
   );
 }
