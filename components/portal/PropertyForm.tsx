@@ -11,7 +11,6 @@ interface PropertyRow {
   id: string;
   title: string;
   address: string;
-  nightly_price: number;
   bedrooms: number;
   bathrooms: number;
   sqft: number | null;
@@ -35,8 +34,9 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
-  const [nightlyPrice, setNightlyPrice] = useState<number>(150);
+  const [nightlyPrice, setNightlyPrice] = useState<number>(150); // preview-only until schema column exists
   const [bedrooms, setBedrooms] = useState<number>(3);
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [sqft, setSqft] = useState<number | "">(1100);
@@ -86,7 +86,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     }
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,address,nightly_price,bedrooms,bathrooms,sqft,map_url,is_published,cover_image_url")
+      .select("id,title,address,bedrooms,bathrooms,sqft,map_url,is_published,cover_image_url")
       .order("created_at", { ascending: false });
     if (!error && data) setMyProps(data as PropertyRow[]);
     setLoading(false);
@@ -112,7 +112,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         .update({
           title,
           address,
-          nightly_price: nightlyPrice,
           bedrooms,
           bathrooms,
           sqft: sqft === "" ? null : Number(sqft),
@@ -125,7 +124,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         .insert({
           title,
           address,
-          nightly_price: nightlyPrice,
           bedrooms,
           bathrooms,
           sqft: sqft === "" ? null : Number(sqft),
@@ -144,20 +142,21 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     if (!p) {
       setSelectedId(null);
       setTitle("");
+      setDescription("");
       setAddress("");
-      setNightlyPrice(150);
       setBedrooms(3);
       setBathrooms(2);
       setSqft(1100);
       return;
     }
     setSelectedId(p.id);
-    setTitle(p.title ?? "");
-    setAddress(p.address ?? "");
-    setNightlyPrice(p.nightly_price ?? 0);
-    setBedrooms(p.bedrooms ?? 0);
-    setBathrooms(p.bathrooms ?? 0);
-    setSqft(p.sqft ?? "");
+    setTitle(p.title);
+    setDescription(""); // description not yet persisted server-side
+    setAddress(p.address);
+    setNightlyPrice(150);
+    setBedrooms(p.bedrooms);
+    setBathrooms(p.bathrooms);
+    setSqft(p.sqft ?? 1100);
   }
 
   async function applyCoverImage(url: string) {
@@ -185,6 +184,9 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         <div className="space-y-3">
         <label className="text-sm">Title
           <input className="mt-1 w-full border rounded-md px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} />
+        </label>
+        <label className="text-sm">Description
+          <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
         </label>
         <label className="text-sm">Address
           <input className="mt-1 w-full border rounded-md px-3 py-2" value={address} onChange={e => setAddress(e.target.value)} />
@@ -245,6 +247,9 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
                   <div className="font-semibold text-gray-900 truncate">{title || "Untitled"}</div>
                   <div className="text-sm text-gray-700">${nightlyPrice}/night</div>
                 </div>
+                {description && (
+                  <div className="text-xs text-gray-700 mt-1 line-clamp-2">{description}</div>
+                )}
                 <div className="text-xs text-gray-600 mt-1 truncate">{address || "Address TBD"}</div>
                 <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft</div>
               </div>
@@ -290,7 +295,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             >
               <div className="text-sm font-medium">{p.title}</div>
               <div className="text-xs text-gray-600">{p.address}</div>
-              <div className="text-xs text-gray-500 mt-1">{p.bedrooms} bd • {p.bathrooms} ba • ${p.nightly_price}/night</div>
+              <div className="text-xs text-gray-500 mt-1">{p.bedrooms} bd • {p.bathrooms} ba</div>
               <div className={`text-[11px] mt-1 ${p.is_published ? 'text-green-600' : 'text-amber-600'}`}>{p.is_published ? 'Published' : 'Unpublished'}</div>
             </button>
           ))}
