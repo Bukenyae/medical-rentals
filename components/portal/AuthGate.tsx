@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { getSupabase } from "@/lib/supabaseClient";
+import { createClient } from "@/lib/supabase/client";
 
 interface AuthGateProps {
   allowRoles: ("guest" | "host" | "admin")[];
@@ -20,9 +20,9 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
   const [role, setRole] = useState<SessionLike["role"]>("guest");
 
   const isProd = useMemo(() => process.env.NODE_ENV === 'production', []);
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
-    const supabase = getSupabase();
     // Always try local session first for preview flow
     try {
       // Dev override via query params: ?as=host|admin&email=...

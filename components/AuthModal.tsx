@@ -44,7 +44,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
     if (didRedirect.current) return;
     didRedirect.current = true;
     const { data } = await supabase.auth.getUser();
-    const role = data.user?.user_metadata?.role || 'guest';
+    const email = data.user?.email || '';
+    const metaRole = (data.user?.user_metadata?.role as 'guest' | 'host' | 'admin' | undefined) || undefined;
+    const role = metaRole ?? (email === 'bkanuel@gmail.com' ? 'admin' : 'guest');
     const target = role === 'host' || role === 'admin' ? '/portal/host' : '/portal/guest';
     window.location.replace(target);
   };
