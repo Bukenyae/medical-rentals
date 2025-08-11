@@ -140,6 +140,54 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     else setApprovedImages([]);
   }, [selectedId, supabase]);
 
+  // Load existing unavailable dates for the selected property
+  useEffect(() => {
+    (async () => {
+      if (!selectedId) {
+        setBlockedDates(new Set());
+        return;
+      }
+      const { data, error } = await supabase
+        .from('property_unavailable_dates')
+        .select('date')
+        .eq('property_id', selectedId);
+      if (!error && data) {
+        const set = new Set<string>(
+          data.map((r: { date: string }) => new Date(r.date).toISOString().slice(0, 10))
+        );
+        setBlockedDates(set);
+      }
+    })();
+  }, [selectedId, supabase]);
+
+  // Toggle handler with optimistic updates and Supabase persistence
+  const onToggleBlocked = async (iso: string, nextActive: boolean) => {
+    const previous = new Set(blockedDates);
+    const optimistic = new Set(blockedDates);
+    if (nextActive) optimistic.add(iso); else optimistic.delete(iso);
+    setBlockedDates(optimistic);
+    if (!selectedId) return;
+    if (nextActive) {
+      const { error } = await supabase
+        .from('property_unavailable_dates')
+        .insert([{ property_id: selectedId, date: iso }]);
+      if (error) {
+        setBlockedDates(previous);
+        alert(error.message || 'Failed to block date');
+      }
+    } else {
+      const { error } = await supabase
+        .from('property_unavailable_dates')
+        .delete()
+        .eq('property_id', selectedId)
+        .eq('date', iso);
+      if (error) {
+        setBlockedDates(previous);
+        alert(error.message || 'Failed to unblock date');
+      }
+    }
+  };
+
   async function refresh() {
     setLoading(true);
     const { data: session } = await supabase.auth.getUser();
@@ -392,7 +440,15 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
                 <label className="text-sm">Cleaning fee (% of subtotal)</label>
                 <div className="mt-1 flex items-center gap-2">
                   <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(Math.max(0, cleaningFeePct - 1))}>-</button>
-                  <input type="number" className="w-24 border rounded-md px-3 py-2" value={cleaningFeePct} onChange={e => setCleaningFeePct(Math.max(0, Number(e.target.value)))} />
+                  <input
+                    type="number"
+                    className="w-24 border rounded-md px-3 py-2"
+                    value={cleaningFeePct}
+                    onChange={e => setCleaningFeePct(Math.max(0, Number(e.target.value)))}
+                    placeholder="0"
+                    title="Cleaning fee percentage"
+                    aria-label="Cleaning fee percentage"
+                  />
                   <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(cleaningFeePct + 1)}>+</button>
                 </div>
               </div>
@@ -433,6 +489,8 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               )}
             </div>
           )}
+
+          
 
           {step === 1 && (
             <div className="space-y-2">
@@ -479,7 +537,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               </div>
 
               {/* Availability calendar (block dates) */}
-              <CalendarBlocker blockedDates={blockedDates} setBlockedDates={setBlockedDates} />
+              <CalendarBlocker blockedDates={blockedDates} onToggle={onToggleBlocked} />
             </>
           )}
         </div>
@@ -513,10 +571,10 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
 // Lightweight calendar blocker for Step 2
 function CalendarBlocker({
   blockedDates,
-  setBlockedDates,
+  onToggle,
 }: {
   blockedDates: Set<string>;
-  setBlockedDates: (next: Set<string>) => void;
+  onToggle: (iso: string, nextActive: boolean) => void | Promise<void>;
 }) {
   const [cursor, setCursor] = useState(() => {
     const d = new Date();
@@ -547,9 +605,8 @@ function CalendarBlocker({
 
   const toggle = (d: number) => {
     const iso = fmt(year, month, d);
-    const next = new Set(blockedDates);
-    if (next.has(iso)) next.delete(iso); else next.add(iso);
-    setBlockedDates(next);
+    const nextActive = !blockedDates.has(iso);
+    void onToggle(iso, nextActive);
   };
 
   const monthLabel = cursor.toLocaleDateString(undefined, {
