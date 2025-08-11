@@ -14,6 +14,8 @@ import Card from "@/components/portal/Card";
 import Icon from "@/components/portal/Icon";
 import SidebarItem from "@/components/portal/SidebarItem";
 import BottomBar from "@/components/portal/BottomBar";
+import PaymentsList from "@/components/portal/PaymentsList";
+import TenantsList from "@/components/portal/TenantsList";
 
 export default function HostPortalPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
@@ -201,6 +203,18 @@ export default function HostPortalPage() {
               <Card title="Property feedback & updates">
                 <SectionFeedback sections={sections} />
               </Card>
+            </section>
+
+            {/* Operations: Payments & Tenants (search-aware stubs) */}
+            <section>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card title="Payments">
+                  <PaymentsList query={searchQuery} />
+                </Card>
+                <Card title="Tenants">
+                  <TenantsList query={searchQuery} />
+                </Card>
+              </div>
             </section>
 
             {/* Bottom bar metrics */}
