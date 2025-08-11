@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/lib/supabase/client';
 import { X, Eye, EyeOff } from 'lucide-react';
@@ -22,6 +22,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
   const [showPassword, setShowPassword] = useState(false);
   const [mounted, setMounted] = useState(false);
   const supabase = createClient();
+  const didRedirect = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -40,6 +41,8 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
   }, [isOpen, mounted]);
 
   const redirectAfterAuth = async () => {
+    if (didRedirect.current) return;
+    didRedirect.current = true;
     const { data } = await supabase.auth.getUser();
     const role = data.user?.user_metadata?.role || 'guest';
     const target = role === 'host' || role === 'admin' ? '/portal/host' : '/portal/guest';
@@ -48,6 +51,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading || didRedirect.current) return;
     setLoading(true);
     setMessage('');
 
@@ -137,7 +141,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity z-[99998]"
-        onClick={onClose}
+        onClick={loading ? undefined : onClose}
       />
       
       {/* Modal */}
