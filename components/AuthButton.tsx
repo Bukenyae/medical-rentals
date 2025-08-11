@@ -90,7 +90,7 @@ export default function AuthButton({ user }: AuthButtonProps) {
             Guest Sign In
           </button>
           <button
-            onClick={() => go('/auth/host')}
+            onClick={() => { setModalMode('signin'); setShowAuthModal(true); setIsMenuOpen(false) }}
             className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Host Sign In
