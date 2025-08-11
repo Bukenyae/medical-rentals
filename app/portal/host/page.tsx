@@ -20,6 +20,7 @@ export default function HostPortalPage() {
   const supabase = useMemo(() => createClient(), []);
   const [hasMapLink, setHasMapLink] = useState(false);
   const [hasApprovedImage, setHasApprovedImage] = useState(false);
+  const [hasCoverImage, setHasCoverImage] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -84,10 +85,11 @@ export default function HostPortalPage() {
       // properties: map_url and is_published
       const { data: prop } = await supabase
         .from('properties')
-        .select('map_url,is_published')
+        .select('map_url,is_published,cover_image_url')
         .eq('id', pid)
         .maybeSingle();
       setHasMapLink(!!prop?.map_url);
+      setHasCoverImage(!!prop?.cover_image_url);
       setIsPublished(!!prop?.is_published);
       // property_images: approved exists?
       const { count } = await supabase
@@ -187,6 +189,7 @@ export default function HostPortalPage() {
                   selectedPropertyId={selectedPropertyId}
                   hasMapLink={hasMapLink}
                   hasApprovedImage={hasApprovedImage}
+                  hasCoverImage={hasCoverImage}
                   isPublished={isPublished}
                   onPublish={() => { /* TODO: wire actual publish action */ }}
                 />

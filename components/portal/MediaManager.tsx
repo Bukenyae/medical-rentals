@@ -22,6 +22,7 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
   const supabase = useMemo(() => createClient(), []);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,13 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
   async function refresh() {
     if (!propertyId) return;
     setLoading(true);
+    // get property cover first
+    const { data: prop } = await supabase
+      .from('properties')
+      .select('cover_image_url')
+      .eq('id', propertyId)
+      .maybeSingle();
+    setCoverUrl(prop?.cover_image_url ?? null);
     const { data, error } = await supabase
       .from("property_images")
       .select("id,property_id,url,alt,sort_order,is_approved,created_at")
@@ -137,12 +145,17 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
                   <img src={img.url} alt={img.alt ?? ""} className="w-full h-full object-cover" />
                 </div>
                 <div className="p-2 space-y-1">
-                  <div className="text-xs truncate" title={img.alt ?? ''}>{img.alt ?? 'Untitled'}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs truncate" title={img.alt ?? ''}>{img.alt ?? 'Untitled'}</div>
+                    {coverUrl === img.url && (
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 text-emerald-700 px-2 py-0.5 text-[10px] font-medium">Cover</span>
+                    )}
+                  </div>
                   <div className="flex items-center justify-between">
                     <button onClick={() => toggleApprove(img)} className={`text-xs px-2 py-1 rounded ${img.is_approved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                       {img.is_approved ? 'Approved' : 'Unapproved'}
                     </button>
-                    <button onClick={() => setCover(img)} className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700">Set cover</button>
+                    <button onClick={() => setCover(img)} disabled={coverUrl === img.url} className={`text-xs px-2 py-1 rounded ${coverUrl === img.url ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-100 text-blue-700'}`}>Set cover</button>
                   </div>
                   <div className="flex items-center justify-between">
                     <button onClick={() => reorder(img, -1)} className="text-xs text-gray-600 hover:text-gray-900">↑</button>

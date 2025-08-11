@@ -7,6 +7,7 @@ interface PublishChecklistProps {
   selectedPropertyId: string | null;
   hasMapLink: boolean;
   hasApprovedImage: boolean;
+  hasCoverImage: boolean;
   isPublished: boolean;
   onPublish?: () => void;
 }
@@ -15,22 +16,24 @@ export default function PublishChecklist({
   selectedPropertyId,
   hasMapLink,
   hasApprovedImage,
+  hasCoverImage,
   isPublished,
   onPublish,
 }: PublishChecklistProps) {
-  const items = [
+  // Prerequisites to publish (4 steps)
+  const prereqs = [
     { label: "Select or create a property", done: !!selectedPropertyId },
     { label: "Save a valid Google Maps link", done: hasMapLink },
     { label: "Approve at least one photo", done: hasApprovedImage },
-    { label: "Then publish from the Location card", done: isPublished },
+    { label: "Set a cover image (used on homepage & hero)", done: hasCoverImage },
   ];
-  const complete = items.filter((i) => i.done).length;
-  const readyToPublish = complete >= 3 && !isPublished; // prerequisites complete
+  const complete = prereqs.filter((i) => i.done).length;
+  const readyToPublish = complete === 4 && !isPublished;
 
   return (
     <Card title="Publish status" right={<Badge tone={complete === 4 ? "success" : "muted"}>{complete}/4 complete</Badge>}>
       <ul className="space-y-3">
-        {items.map((it, i) => (
+        {prereqs.map((it, i) => (
           <li key={i} className="flex items-start gap-3">
             <span
               className={`mt-0.5 inline-flex w-5 h-5 items-center justify-center rounded-full border ${
