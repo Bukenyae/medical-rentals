@@ -57,7 +57,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   }, []);
 
   useEffect(() => {
-    onPropertySelected?.(selectedId);
+    if (selectedId) onPropertySelected?.(selectedId);
   }, [selectedId, onPropertySelected]);
 
   // Fetch approved images when a property is selected to power previews/cover selection
