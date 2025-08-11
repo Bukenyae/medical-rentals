@@ -318,7 +318,7 @@ export default function SearchBar({
                   {selectedLocation ? selectedLocation.split(',')[0] : 'Location'}
                 </span>
               </div>
-              <div className="absolute top-full left-0 right-0 sm:right-auto sm:w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1">
+              <div className="absolute top-full left-0 right-0 sm:right-auto sm:w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1">
                 <div className="p-2 max-h-60 overflow-y-auto">
                   {locations.map((location) => (
                     <div
@@ -342,7 +342,7 @@ export default function SearchBar({
                   {selectedDates || 'Dates'}
                 </span>
               </div>
-              <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1 w-80">
+              <div className="absolute top-full left-0 bg-white border border-gray-200 rounded-xl shadow-lg z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1 w-80">
                 <div className="p-4">
                   {/* Calendar Header */}
                   <div className="flex items-center justify-between mb-4">
@@ -446,7 +446,7 @@ export default function SearchBar({
                   {selectedGuests > 0 ? `${selectedGuests}` : 'Guests'}
                 </span>
               </div>
-              <div className="absolute top-full right-0 w-48 sm:w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1">
+              <div className="absolute top-full right-0 w-48 sm:w-64 bg-white border border-gray-200 rounded-xl shadow-lg z-30 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 mt-1">
                 <div className="p-3 sm:p-4">
                   <div className="flex items-center justify-between py-2">
                     <span className="text-sm font-medium text-gray-900">Guests</span>

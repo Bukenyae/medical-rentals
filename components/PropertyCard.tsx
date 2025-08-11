@@ -97,20 +97,26 @@ export default function PropertyCard({
             </div>
           </div>
           <div className="text-right">
-            <div className="text-2xl font-bold text-gray-900">
-              From ${price}<span className="text-base font-normal text-gray-500">/night</span>
+            <div className="text-3xl font-extrabold text-gray-900">
+              From ${price} <span className="text-base font-medium text-gray-500">/ night</span>
             </div>
-            <div className="mt-1 space-y-1 text-sm text-green-700">
-              <div className="flex items-center">
-                <Check className="w-4 h-4 mr-1" />
+            <div className="mt-2 flex flex-col space-y-1 text-xs text-gray-600">
+              <div className="flex items-center justify-end space-x-2">
+                <span className="inline-flex items-center rounded-full border border-gray-300 px-2 py-0.5">
+                  <Check className="w-3 h-3 mr-1 text-gray-600" />
+                  <span className="font-medium">Weekly Discount</span>
+                </span>
                 <span>
-                  Weekly stays (7+ nights): 20% off — ${weeklyRate} / night
+                  7+ nights: 20% off — ${weeklyRate} / night
                 </span>
               </div>
-              <div className="flex items-center">
-                <Check className="w-4 h-4 mr-1" />
+              <div className="flex items-center justify-end space-x-2">
+                <span className="inline-flex items-center rounded-full border border-gray-300 px-2 py-0.5">
+                  <Check className="w-3 h-3 mr-1 text-gray-600" />
+                  <span className="font-medium">Monthly Discount</span>
+                </span>
                 <span>
-                  Monthly stays (21+ nights): 40% off — ${monthlyRate} / night
+                  21+ nights: 40% off — ${monthlyRate} / night
                 </span>
               </div>
             </div>

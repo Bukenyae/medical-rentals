@@ -8,7 +8,7 @@ export default function CustomerSuccessSection() {
       icon: Users,
       number: "500+",
       label: "Professionals Served",
-      description: "Trusted by medical staff, academics, military members, students, and young professionals nationwide"
+      description: "Safe haven for every professional community"
     },
     {
       icon: Star,
@@ -50,7 +50,7 @@ export default function CustomerSuccessSection() {
                   {stat.number}
                 </div>
                 <div className="text-xl font-semibold text-gray-900 mb-3">{stat.label}</div>
-                <p className="text-gray-600 leading-relaxed">{stat.description}</p>
+                <p className="text-gray-600 leading-relaxed sm:whitespace-nowrap">{stat.description}</p>
               </div>
             </div>
           ))}

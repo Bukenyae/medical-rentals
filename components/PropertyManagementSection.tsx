@@ -43,11 +43,21 @@ export default function PropertyManagementSection() {
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="w-full md:w-2/3 lg:w-1/2 xl:w-1/3">
+          {/* Logo above title */}
+          <div className="mb-4">
+            <Image
+              src="/images/logo/Belle Rouge Properties.png"
+              alt="Belle Rouge Properties"
+              width={200}
+              height={60}
+              className="h-auto w-[160px] md:w-[200px] object-contain"
+            />
+          </div>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
             Professional Property Management
           </h2>
           <p className="text-lg md:text-xl lg:text-2xl text-gray-200 mb-8 leading-relaxed">
-            We handle every detail so you can focus on what matters most—your work, studies, service, and life.
+            Owns and operates these properties with the view that we can handle every detail so you can focus on what matters most—your work, studies, service, and life.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">

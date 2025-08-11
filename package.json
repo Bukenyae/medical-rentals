@@ -9,12 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "2.2.0",
     "@supabase/ssr": "^0.0.10",
     "@supabase/supabase-js": "^2.38.0",
+    "lucide-react": "^0.536.0",
     "next": "14.0.0",
     "react": "^18",
-    "react-dom": "^18",
-    "lucide-react": "^0.536.0"
+    "react-dom": "^18"
   },
   "devDependencies": {
     "@types/node": "^20",
