@@ -10,9 +10,10 @@ interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   initialMode?: 'signin' | 'signup';
+  forceRole?: 'guest' | 'host';
 }
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, initialMode = 'signin', forceRole }: AuthModalProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,8 +47,9 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }: A
     const { data } = await supabase.auth.getUser();
     const email = data.user?.email || '';
     const metaRole = (data.user?.user_metadata?.role as 'guest' | 'host' | 'admin' | undefined) || undefined;
-    const role = metaRole ?? (email === 'bkanuel@gmail.com' ? 'admin' : 'guest');
-    const target = role === 'host' || role === 'admin' ? '/portal/host' : '/portal/guest';
+    // If caller forces a role, prefer it
+    const effectiveRole = forceRole ?? (metaRole ?? (email === 'bkanuel@gmail.com' ? 'admin' : 'guest'));
+    const target = effectiveRole === 'host' || effectiveRole === 'admin' ? '/portal/host' : '/portal/guest';
     window.location.replace(target);
   };
 
