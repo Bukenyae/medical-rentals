@@ -120,7 +120,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         .eq("id", selectedId);
       if (error) alert(error.message);
     } else {
-      const { error } = await supabase
+      const { data: inserted, error } = await supabase
         .from("properties")
         .insert({
           title,
@@ -129,9 +129,11 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           bedrooms,
           bathrooms,
           sqft: sqft === "" ? null : Number(sqft),
-          created_by: user.id,
-        });
+        })
+        .select("id")
+        .single();
       if (error) alert(error.message);
+      if (inserted?.id) setSelectedId(inserted.id);
     }
 
     await refresh();
