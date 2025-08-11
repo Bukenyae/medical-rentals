@@ -15,6 +15,7 @@ interface SessionLike {
 
 export default function AuthGate({ allowRoles, children }: AuthGateProps) {
   const [session, setSession] = useState<SessionLike | null>(null);
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<SessionLike["role"]>("guest");
 
@@ -55,6 +56,7 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
           console.log("[AuthGate] supabase.getSession user:", supaUser.email, role);
           setSession({ email: supaUser.email, role });
         }
+        setLoading(false);
       });
       const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
         const email = newSession?.user?.email;
@@ -78,6 +80,7 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
           }
           setSession(null);
         }
+        setLoading(false);
       });
       return () => {
         sub.subscription.unsubscribe();
@@ -112,10 +115,24 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
   };
 
   if (!session || !allowRoles.includes(session.role)) {
-    if (isProd && typeof window !== 'undefined') {
-      // In production, always use the real auth flow
-      window.location.replace('/auth/host');
-      return null;
+    if (isProd) {
+      // In production, avoid redirect loops. Wait for session, then show a simple prompt if unauthenticated.
+      if (loading) {
+        return (
+          <div className="min-h-[50vh] flex items-center justify-center">
+            <div className="text-sm text-gray-600">Checking your session…</div>
+          </div>
+        );
+      }
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Please sign in</h2>
+            <p className="text-sm text-gray-600 mb-6">Go back to the homepage and use the header menu to sign in.</p>
+            <a href="/" className="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white px-4 py-2.5 font-semibold hover:bg-blue-700">Go to homepage</a>
+          </div>
+        </div>
+      );
     }
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
