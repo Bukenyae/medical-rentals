@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 
 interface MediaManagerProps {
   propertyId: string | null;
+  query?: string;
 }
 
 interface ImageRow {
@@ -17,7 +18,7 @@ interface ImageRow {
   created_at: string;
 }
 
-export default function MediaManager({ propertyId }: MediaManagerProps) {
+export default function MediaManager({ propertyId, query }: MediaManagerProps) {
   const supabase = useMemo(() => createClient(), []);
   const [images, setImages] = useState<ImageRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,7 +104,6 @@ export default function MediaManager({ propertyId }: MediaManagerProps) {
             ref={fileInputRef}
             type="file"
             className="hidden"
-            style={{ display: 'none' }}
             multiple
             title="Upload property images"
             aria-label="Upload property images"
@@ -121,8 +121,17 @@ export default function MediaManager({ propertyId }: MediaManagerProps) {
       {propertyId && (
         <>
           {loading && <div className="text-sm text-gray-500">Loading...</div>}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {images.map((img, idx) => (
+          {/** filter images by query (alt or filename substring) */}
+          {(() => {
+            const q = (query ?? "").trim().toLowerCase();
+            const filtered = q
+              ? images.filter((img) =>
+                  (img.alt ?? "").toLowerCase().includes(q) || img.url.toLowerCase().includes(q)
+                )
+              : images;
+            return (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                {filtered.map((img) => (
               <div key={img.id} className="border rounded-md overflow-hidden">
                 <div className="aspect-video bg-gray-100">
                   <img src={img.url} alt={img.alt ?? ""} className="w-full h-full object-cover" />
@@ -142,8 +151,10 @@ export default function MediaManager({ propertyId }: MediaManagerProps) {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+                ))}
+              </div>
+            );
+          })()}
           {!loading && images.length === 0 && (
             <div className="text-sm text-gray-500">No images yet. Upload above.</div>
           )}
