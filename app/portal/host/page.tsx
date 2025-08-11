@@ -237,7 +237,7 @@ export default function HostPortalPage() {
         {/* Create Property modal */}
         {showCreateModal && (
           <div className="fixed inset-0 z-40 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/30" onClick={() => setShowCreateModal(false)} />
+            <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
             <div className="relative z-10 w-full max-w-2xl mx-auto">
               <Card title="Create Property" right={
                 <button onClick={() => setShowCreateModal(false)} className="text-sm text-gray-600 hover:text-gray-900">Close</button>
