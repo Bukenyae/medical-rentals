@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import AuthGate from "@/components/portal/AuthGate";
 import SidebarTabs from "@/components/portal/SidebarTabs";
 import SectionFeedback from "@/components/portal/SectionFeedback";
@@ -21,6 +21,16 @@ export default function HostPortalPage() {
   const [hasMapLink, setHasMapLink] = useState(false);
   const [hasApprovedImage, setHasApprovedImage] = useState(false);
   const [isPublished, setIsPublished] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [activeSection, setActiveSection] = useState<"dashboard" | "media" | "location" | "feedback" | "metrics">("dashboard");
+
+  // section refs for sidebar scroll + active highlight
+  const topRef = useRef<HTMLDivElement | null>(null);
+  const mediaRef = useRef<HTMLElement | null>(null);
+  const locationRef = useRef<HTMLElement | null>(null);
+  const feedbackRef = useRef<HTMLElement | null>(null);
+  const metricsRef = useRef<HTMLElement | null>(null);
   const tabs = [
     { key: "payments", label: "Payments & Collections" },
     { key: "tenants", label: "Tenant History" },
@@ -42,6 +52,31 @@ export default function HostPortalPage() {
       else localStorage.removeItem('host_selected_property');
     }
   }, [selectedPropertyId]);
+
+  // Observe sections to update active sidebar state
+  useEffect(() => {
+    const sections: Array<{ id: typeof activeSection; el: Element | null }> = [
+      { id: "dashboard", el: topRef.current },
+      { id: "media", el: mediaRef.current },
+      { id: "location", el: locationRef.current },
+      { id: "feedback", el: feedbackRef.current },
+      { id: "metrics", el: metricsRef.current },
+    ];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => (a.boundingClientRect.top > b.boundingClientRect.top ? 1 : -1));
+        if (visible[0]) {
+          const found = sections.find((s) => s.el === visible[0].target);
+          if (found) setActiveSection(found.id);
+        }
+      },
+      { rootMargin: "-40% 0px -55% 0px", threshold: [0, 0.25, 0.5, 0.75, 1] }
+    );
+    sections.forEach((s) => s.el && observer.observe(s.el));
+    return () => observer.disconnect();
+  }, []);
 
   // Fetch lightweight publish status for the selected property
   useEffect(() => {
@@ -81,7 +116,12 @@ export default function HostPortalPage() {
               <div className="w-8 h-8 rounded-2xl bg-emerald-600 text-white grid place-items-center font-bold">A</div>
               <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
                 <Icon name="search" className="w-4 h-4 text-gray-500" />
-                <input placeholder="Search" className="bg-transparent outline-none text-sm w-56" />
+                <input
+                  placeholder="Search"
+                  className="bg-transparent outline-none text-sm w-56"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -97,14 +137,14 @@ export default function HostPortalPage() {
           {/* Sidebar */}
           <aside className="col-span-12 md:col-span-3 lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 space-y-1 sticky top-20">
-              <SidebarItem icon="dashboard" label="Dashboard" active />
-              <SidebarItem icon="media" label="Media Manager" />
-              <SidebarItem icon="payments" label="Payments & Collections" />
-              <SidebarItem icon="history" label="Tenant History" />
-              <SidebarItem icon="analytics" label="Analytics" />
-              <SidebarItem icon="messages" label="Messages" />
-              <SidebarItem icon="feedback" label="Feedback & Updates" />
-              <SidebarItem icon="manage" label="Manage & Updates" />
+              <SidebarItem icon="dashboard" label="Dashboard" active={activeSection === "dashboard"} onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="media" label="Media Manager" active={activeSection === "media"} onClick={() => mediaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="payments" label="Payments & Collections" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="history" label="Tenant History" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="analytics" label="Analytics" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="messages" label="Messages" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="feedback" label="Feedback & Updates" active={activeSection === "feedback"} onClick={() => feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="manage" label="Manage & Updates" onClick={() => locationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
             </div>
           </aside>
 
@@ -124,20 +164,22 @@ export default function HostPortalPage() {
             </Card>
 
             {/* Media Manager + Publish status */}
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-6" ref={mediaRef as any}>
               <div className="col-span-12 lg:col-span-8 space-y-6">
                 <Card title="Media Manager" right={
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black">
+                  <button className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black" onClick={() => setShowCreateModal(true)}>
                     <Icon name="plus" />
                     Add new Property
                   </button>
                 }>
-                  <MediaManager propertyId={selectedPropertyId} />
+                  <MediaManager propertyId={selectedPropertyId} query={searchQuery} />
                 </Card>
 
-                <Card title="Location">
-                  <MapLinkForm propertyId={selectedPropertyId} />
-                </Card>
+                <section ref={locationRef as any}>
+                  <Card title="Location">
+                    <MapLinkForm propertyId={selectedPropertyId} />
+                  </Card>
+                </section>
               </div>
 
               <div className="col-span-12 lg:col-span-4 order-last lg:order-none">
@@ -152,14 +194,33 @@ export default function HostPortalPage() {
             </div>
 
             {/* Feedback & Updates */}
-            <Card title="Property feedback & updates">
-              <SectionFeedback sections={sections} />
-            </Card>
+            <section ref={feedbackRef as any}>
+              <Card title="Property feedback & updates">
+                <SectionFeedback sections={sections} />
+              </Card>
+            </section>
 
             {/* Bottom bar metrics */}
-            <BottomBar />
+            <section ref={metricsRef as any}>
+              <BottomBar />
+            </section>
           </section>
         </main>
+
+        {/* Create Property modal */}
+        {showCreateModal && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" onClick={() => setShowCreateModal(false)} />
+            <div className="relative z-10 w-full max-w-2xl mx-auto">
+              <Card title="Create Property" right={
+                <button onClick={() => setShowCreateModal(false)} className="text-sm text-gray-600 hover:text-gray-900">Close</button>
+              }>
+                <div ref={topRef as any} />
+                <PropertyForm onPropertySelected={(id) => { setSelectedPropertyId(id); setShowCreateModal(false); }} />
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
     </AuthGate>
   );
