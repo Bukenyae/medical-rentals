@@ -13,7 +13,6 @@ interface PropertyRow {
   address: string;
   bedrooms: number;
   bathrooms: number;
-  sqft: number | null;
   map_url: string | null;
   is_published: boolean;
   cover_image_url: string | null;
@@ -40,6 +39,10 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   const [bedrooms, setBedrooms] = useState<number>(3);
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [sqft, setSqft] = useState<number | "">(1100);
+  const [weeklyDiscountPct, setWeeklyDiscountPct] = useState<number>(20);
+  const [weeklyPrice, setWeeklyPrice] = useState<number>(40);
+  const [monthlyDiscountPct, setMonthlyDiscountPct] = useState<number>(40);
+  const [monthlyPrice, setMonthlyPrice] = useState<number>(30);
 
   // approved images for preview/cover selection
   const [approvedImages, setApprovedImages] = useState<ApprovedImageRow[]>([]);
@@ -86,7 +89,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     }
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,address,bedrooms,bathrooms,sqft,map_url,is_published,cover_image_url")
+      .select("id,title,address,bedrooms,bathrooms,map_url,is_published,cover_image_url")
       .order("created_at", { ascending: false });
     if (!error && data) setMyProps(data as PropertyRow[]);
     setLoading(false);
@@ -114,7 +117,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           address,
           bedrooms,
           bathrooms,
-          sqft: sqft === "" ? null : Number(sqft),
         })
         .eq("id", selectedId);
       if (error) alert(error.message);
@@ -126,7 +128,6 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           address,
           bedrooms,
           bathrooms,
-          sqft: sqft === "" ? null : Number(sqft),
         })
         .select("id")
         .single();
@@ -156,7 +157,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     setNightlyPrice(150);
     setBedrooms(p.bedrooms);
     setBathrooms(p.bathrooms);
-    setSqft(p.sqft ?? 1100);
+    setSqft(1100);
   }
 
   async function applyCoverImage(url: string) {
@@ -203,6 +204,20 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         <label className="text-sm">Square Feet
           <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={sqft as number} onChange={e => setSqft(e.target.value === "" ? "" : Number(e.target.value))} />
         </label>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label className="text-sm">Weekly discount (%)
+            <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={weeklyDiscountPct} onChange={e => setWeeklyDiscountPct(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">Weekly price ($/night)
+            <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={weeklyPrice} onChange={e => setWeeklyPrice(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">Monthly discount (%)
+            <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={monthlyDiscountPct} onChange={e => setMonthlyDiscountPct(Number(e.target.value))} />
+          </label>
+          <label className="text-sm">Monthly price ($/night)
+            <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={monthlyPrice} onChange={e => setMonthlyPrice(Number(e.target.value))} />
+          </label>
+        </div>
         </div>
 
         {/* Right: live previews & cover selection */}
@@ -245,12 +260,16 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               <div className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="font-semibold text-gray-900 truncate">{title || "Untitled"}</div>
-                  <div className="text-sm text-gray-700">${nightlyPrice}/night</div>
                 </div>
+                <div className="text-xs text-gray-600 mt-1 truncate">{address || "Address TBD"}</div>
                 {description && (
                   <div className="text-xs text-gray-700 mt-1 line-clamp-2">{description}</div>
                 )}
-                <div className="text-xs text-gray-600 mt-1 truncate">{address || "Address TBD"}</div>
+                <div className="text-sm text-gray-900 mt-1">${nightlyPrice}/night</div>
+                <div className="text-xs text-emerald-700 mt-1">
+                  {`7+ nights: ${weeklyDiscountPct}% off - $${weeklyPrice}/night`}
+                </div>
+                <div className="text-xs text-emerald-700">{`Monthly: ${monthlyDiscountPct}% off - $${monthlyPrice}/night`}</div>
                 <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft</div>
               </div>
             </div>
