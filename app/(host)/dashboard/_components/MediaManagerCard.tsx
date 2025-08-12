@@ -45,7 +45,7 @@ export default function MediaManagerCard() {
     const { data, count } = await fetchProperties(supabase, userId, {
       search,
       status: status === "all" ? undefined : status,
-      limit: 16,
+      limit: 2,
       offset: 0,
     });
     setProperties(data);
@@ -56,16 +56,16 @@ export default function MediaManagerCard() {
 
   const loadMore = useCallback(async () => {
     if (!userId) return;
-    const offset = page * 16;
+    const offset = page * 2;
     const { data } = await fetchProperties(supabase, userId, {
       search,
       status: status === "all" ? undefined : status,
-      limit: 16,
+      limit: 2,
       offset,
     });
     setProperties((prev) => [...prev, ...data]);
     setPage(page + 1);
-    if (data.length < 16) setHasMore(false);
+    if (data.length < 2) setHasMore(false);
   }, [userId, supabase, search, status, page]);
 
   useEffect(() => {
@@ -162,8 +162,8 @@ export default function MediaManagerCard() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid gap-4 grid-cols-2">
+          {Array.from({ length: 2 }).map((_, i) => (
             <PropertyCardSkeleton key={i} />
           ))}
         </div>
@@ -172,7 +172,7 @@ export default function MediaManagerCard() {
           No properties yet. Use ‘Add new property’ above.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2">
           {properties.map((p) => (
             <PropertyCard
               key={p.id}
