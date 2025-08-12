@@ -6,7 +6,7 @@ import type {
   RealtimePostgresChangesPayload,
 } from "@supabase/supabase-js";
 
-interface Options<T> {
+interface Options<T extends Record<string, any>> {
   table: string;
   filter?: string;
   onInsert?: (payload: RealtimePostgresChangesPayload<T>) => void;
@@ -14,7 +14,7 @@ interface Options<T> {
   onDelete?: (payload: RealtimePostgresChangesPayload<T>) => void;
 }
 
-export default function useSupabaseRealtime<T>(
+export default function useSupabaseRealtime<T extends Record<string, any>>(
   client: SupabaseClient | null,
   { table, filter, onInsert, onUpdate, onDelete }: Options<T>
 ) {
