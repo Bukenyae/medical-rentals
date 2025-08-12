@@ -202,35 +202,35 @@ export interface PropertyRow {
   owner_id: string
   title: string
   cover_image_url: string | null
-  is_published: boolean
-  created_at: string
+  status: 'draft' | 'published' | 'archived'
   updated_at: string
+  description?: string | null
 }
 
 interface FetchOptions {
   search?: string
-  is_published?: boolean
+  status?: 'published' | 'unpublished'
   limit?: number
   offset?: number
 }
-
 export async function fetchProperties(
   client: SupabaseClient,
   ownerId: string,
-  { search, is_published, limit = 10, offset = 0 }: FetchOptions = {}
+  { search, status, limit = 16, offset = 0 }: FetchOptions = {},
 ): Promise<{ data: PropertyRow[]; count: number }>
 {
   const from = offset
   const to = offset + limit - 1
   let query = client
     .from('properties')
-    .select('id,owner_id,title,cover_image_url,is_published,created_at,updated_at', { count: 'exact' })
+    .select('id,owner_id,title,cover_image_url,status,updated_at,description', { count: 'exact' })
     .eq('owner_id', ownerId)
     .order('updated_at', { ascending: false })
     .range(from, to)
 
   if (search) query = query.ilike('title', `%${search}%`)
-  if (typeof is_published === 'boolean') query = query.eq('is_published', is_published)
+  if (status === 'published') query = query.eq('status', 'published')
+  else if (status === 'unpublished') query = query.neq('status', 'published')
 
   const { data, count, error } = await query
   if (error) throw error
