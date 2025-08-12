@@ -216,7 +216,7 @@ interface FetchOptions {
 export async function fetchProperties(
   client: SupabaseClient,
   ownerId: string,
-  { search, status, limit = 12, offset = 0 }: FetchOptions = {},
+  { search, status, limit = 16, offset = 0 }: FetchOptions = {},
 ): Promise<{ data: PropertyRow[]; count: number }>
 {
   const from = offset
