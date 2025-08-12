@@ -10,28 +10,7 @@ import {
 } from "@/lib/properties";
 import useSupabaseRealtime from "@/hooks/useSupabaseRealtime";
 import ConfirmDialog from "./ConfirmDialog";
-
-function relativeTime(dateStr: string) {
-  const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  const divisions: Array<[number, Intl.RelativeTimeFormatUnit]> = [
-    [60, "second"],
-    [60, "minute"],
-    [24, "hour"],
-    [7, "day"],
-    [4.34524, "week"],
-    [12, "month"],
-    [Infinity, "year"],
-  ];
-  let unit: Intl.RelativeTimeFormatUnit = "second";
-  let duration = diff;
-  for (const [amount, nextUnit] of divisions) {
-    if (Math.abs(duration) < amount) break;
-    duration /= amount;
-    unit = nextUnit;
-  }
-  return rtf.format(-Math.round(duration), unit);
-}
+import PropertyCard, { PropertyCardSkeleton } from "./PropertyCard";
 
 export default function MediaManagerCard() {
   const router = useRouter();
@@ -65,8 +44,8 @@ export default function MediaManagerCard() {
     if (!userId) return;
     const { data, count } = await fetchProperties(supabase, userId, {
       search,
-      is_published: status === "all" ? undefined : status === "published",
-      limit: 10,
+      status: status === "all" ? undefined : status,
+      limit: 16,
       offset: 0,
     });
     setProperties(data);
@@ -77,16 +56,16 @@ export default function MediaManagerCard() {
 
   const loadMore = useCallback(async () => {
     if (!userId) return;
-    const offset = page * 10;
+    const offset = page * 16;
     const { data } = await fetchProperties(supabase, userId, {
       search,
-      is_published: status === "all" ? undefined : status === "published",
-      limit: 10,
+      status: status === "all" ? undefined : status,
+      limit: 16,
       offset,
     });
     setProperties((prev) => [...prev, ...data]);
     setPage(page + 1);
-    if (data.length < 10) setHasMore(false);
+    if (data.length < 16) setHasMore(false);
   }, [userId, supabase, search, status, page]);
 
   useEffect(() => {
@@ -111,9 +90,24 @@ export default function MediaManagerCard() {
     }
   };
 
+  const handlePublish = async (id: string) => {
+    const prev = properties;
+    setProperties(prev.map((p) => (p.id === id ? { ...p, status: "published" } : p)));
+    try {
+      await supabase.from("properties").update({ status: "published" }).eq("id", id);
+      alert("Property published");
+    } catch (err: any) {
+      setProperties(prev);
+      alert(err.message || "Failed to publish property");
+    }
+  };
+
   const matches = useCallback(
     (p: PropertyRow) => {
-      if (status !== "all" && p.is_published !== (status === "published")) return false;
+      if (status !== "all") {
+        if (status === "published" && p.status !== "published") return false;
+        if (status === "unpublished" && p.status === "published") return false;
+      }
       if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     },
@@ -168,72 +162,27 @@ export default function MediaManagerCard() {
       </div>
 
       {loading ? (
-        <ul className="divide-y divide-gray-100">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <li key={i} className="flex items-center gap-4 py-3 animate-pulse">
-              <div className="h-16 w-16 rounded-md bg-gray-200" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 w-1/3 rounded bg-gray-200" />
-                <div className="h-3 w-1/4 rounded bg-gray-200" />
-              </div>
-            </li>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <PropertyCardSkeleton key={i} />
           ))}
-        </ul>
+        </div>
       ) : properties.length === 0 ? (
         <p className="text-sm text-gray-500">
           No properties yet. Use ‘Add new property’ above.
         </p>
       ) : (
-        <ul className="divide-y divide-gray-100">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {properties.map((p) => (
-            <li key={p.id} className="flex items-center gap-4 py-3">
-              <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
-                {p.cover_image_url ? (
-                  <img
-                    src={p.cover_image_url}
-                    alt={p.title}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-xs text-gray-400">
-                    No image
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium">{p.title}</p>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs capitalize ${
-                      p.is_published
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {p.is_published ? "published" : "unpublished"}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  Updated {relativeTime(p.updated_at)}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => router.push(`/host/properties/${p.id}/edit`)}
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => setConfirmId(p.id)}
-                  className="text-sm text-red-600 hover:underline"
-                >
-                  Delete
-                </button>
-              </div>
-            </li>
+            <PropertyCard
+              key={p.id}
+              item={p}
+              onEdit={(id) => router.push(`/host/properties/${id}/edit`)}
+              onDelete={(id) => setConfirmId(id)}
+              onPublish={handlePublish}
+            />
           ))}
-        </ul>
+        </div>
       )}
 
       {hasMore && !loading && (
