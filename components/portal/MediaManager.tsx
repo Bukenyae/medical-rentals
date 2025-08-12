@@ -103,7 +103,7 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
   return (
     <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Media Manager</h3>
+        <h3 className="text-lg font-semibold">Property Assets</h3>
         <div className="flex items-center gap-2">
           {/* Accessible label for hidden file input */}
           <label htmlFor="media-upload" className="sr-only">Upload property images</label>
