@@ -1,10 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export default function UserMenu() {
   const supabase = createClient();
+  const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [firstName, setFirstName] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
@@ -31,7 +34,7 @@ export default function UserMenu() {
     try {
       localStorage.removeItem("mr_session");
     } catch {}
-    window.location.href = "/";
+    router.push("/");
   };
 
   return (
@@ -54,8 +57,14 @@ export default function UserMenu() {
             {firstName || "Account"}
           </div>
           <a
+            href="/portal/host"
+            className={`block px-4 py-2 text-sm hover:bg-gray-50 ${pathname === "/portal/host" ? "bg-blue-50 text-gray-900" : "text-gray-700"}`}
+          >
+            Account
+          </a>
+          <a
             href="/portal/host/account"
-            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+            className={`block px-4 py-2 text-sm hover:bg-gray-50 ${pathname === "/portal/host/account" ? "bg-blue-50 text-gray-900" : "text-gray-700"}`}
           >
             Account settings
           </a>
