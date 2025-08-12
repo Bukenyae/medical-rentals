@@ -297,6 +297,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           setLoading(false);
           return;
         }
+      }
     } finally {
       // In case we did not early-return above, ensure loading is unset
       setLoading(false);
