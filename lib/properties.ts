@@ -1,15 +1,16 @@
 // Utility functions for property operations
 
 import { createClient } from '@/lib/supabase/client'
-import { 
-  Property, 
-  CreatePropertyRequest, 
+import {
+  Property,
+  CreatePropertyRequest,
   UpdatePropertyRequest,
   PropertyListResponse,
   PropertyResponse,
   PropertyImageUploadResponse,
   PropertyErrorResponse
 } from '@/types/property'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Client-side property API functions
 export class PropertyAPI {
@@ -193,4 +194,54 @@ export function calculateHospitalProximity(propertyAddress: Property['address'])
 
 export function formatHospitalDistance(distance: { distance_miles: number; drive_time_minutes: number }): string {
   return `${distance.distance_miles.toFixed(1)} miles (${distance.drive_time_minutes} min drive)`
+}
+
+// Dashboard-specific helpers
+export interface PropertyRow {
+  id: string
+  owner_id: string
+  title: string
+  slug: string | null
+  status: 'draft' | 'published' | 'archived'
+  cover_image_url: string | null
+  created_at: string
+  updated_at: string
+}
+
+interface FetchOptions {
+  search?: string
+  status?: 'draft' | 'published' | 'archived'
+  limit?: number
+  offset?: number
+}
+
+export async function fetchProperties(
+  client: SupabaseClient,
+  ownerId: string,
+  { search, status, limit = 10, offset = 0 }: FetchOptions = {}
+): Promise<{ data: PropertyRow[]; count: number }>
+{
+  const from = offset
+  const to = offset + limit - 1
+  let query = client
+    .from('properties')
+    .select('id,owner_id,title,slug,status,cover_image_url,created_at,updated_at', { count: 'exact' })
+    .eq('owner_id', ownerId)
+    .order('updated_at', { ascending: false })
+    .range(from, to)
+
+  if (search) query = query.ilike('title', `%${search}%`)
+  if (status) query = query.eq('status', status)
+
+  const { data, count, error } = await query
+  if (error) throw error
+  return { data: (data as PropertyRow[]) ?? [], count: count ?? 0 }
+}
+
+export async function deletePropertyRow(
+  client: SupabaseClient,
+  id: string
+): Promise<void> {
+  const { error } = await client.from('properties').delete().eq('id', id)
+  if (error) throw error
 }
