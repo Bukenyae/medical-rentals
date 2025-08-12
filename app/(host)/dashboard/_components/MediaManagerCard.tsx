@@ -40,7 +40,7 @@ export default function MediaManagerCard() {
 
   const [input, setInput] = useState("");
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"all" | "draft" | "published">("all");
+  const [status, setStatus] = useState<"all" | "published" | "unpublished">("all");
   const [properties, setProperties] = useState<PropertyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -65,7 +65,7 @@ export default function MediaManagerCard() {
     if (!userId) return;
     const { data, count } = await fetchProperties(supabase, userId, {
       search,
-      status: status === "all" ? undefined : status,
+      is_published: status === "all" ? undefined : status === "published",
       limit: 10,
       offset: 0,
     });
@@ -80,7 +80,7 @@ export default function MediaManagerCard() {
     const offset = page * 10;
     const { data } = await fetchProperties(supabase, userId, {
       search,
-      status: status === "all" ? undefined : status,
+      is_published: status === "all" ? undefined : status === "published",
       limit: 10,
       offset,
     });
@@ -113,7 +113,7 @@ export default function MediaManagerCard() {
 
   const matches = useCallback(
     (p: PropertyRow) => {
-      if (status !== "all" && p.status !== status) return false;
+      if (status !== "all" && p.is_published !== (status === "published")) return false;
       if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     },
@@ -155,8 +155,8 @@ export default function MediaManagerCard() {
             className="rounded-md border border-gray-300 px-2 py-1 text-sm focus:outline-none"
           >
             <option value="all">All</option>
-            <option value="draft">Draft</option>
             <option value="published">Published</option>
+            <option value="unpublished">Unpublished</option>
           </select>
           <button
             onClick={refresh}
@@ -205,12 +205,12 @@ export default function MediaManagerCard() {
                   <p className="truncate text-sm font-medium">{p.title}</p>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs capitalize ${
-                      p.status === "published"
+                      p.is_published
                         ? "bg-emerald-100 text-emerald-700"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >
-                    {p.status}
+                    {p.is_published ? "published" : "unpublished"}
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
