@@ -229,10 +229,19 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
 
       const trySave = async (body: Record<string, unknown>) => {
         if (selectedId) {
-          const { error } = await supabase.from('properties').update(body).eq('id', selectedId);
+          const { error } = await supabase
+            .from('properties')
+            .update(body)
+            .eq('id', selectedId);
           if (error) throw error;
         } else {
-          const { data, error } = await supabase.from('properties').insert([body]).select('id').single();
+          // ensure owner_id is set for new records
+          const insertBody = { ...body, owner_id: user.id } as Record<string, unknown>;
+          const { data, error } = await supabase
+            .from('properties')
+            .insert([insertBody])
+            .select('id')
+            .single();
           if (error) throw error;
           setSelectedId(data.id);
         }

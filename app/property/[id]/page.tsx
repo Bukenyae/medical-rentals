@@ -66,6 +66,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   interface DbImageRow { id: string; url: string; is_approved: boolean; sort_order: number; }
   const [dbProperty, setDbProperty] = useState<DbPropertyRow | null>(null);
   const [dbImages, setDbImages] = useState<string[]>([]);
+  const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -94,6 +95,21 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true });
       if (imgs && imgs.length > 0) setDbImages(imgs.map(i => i.url));
+
+      // Load unavailable (blocked) dates for booking calendar
+      const { data: blocks } = await supabase
+        .from('property_unavailable_dates')
+        .select('date')
+        .eq('property_id', pid);
+      if (Array.isArray(blocks)) {
+        const isoList = blocks
+          .map((r: any) => r?.date)
+          .filter(Boolean)
+          .map((d: string) => new Date(d))
+          .map((dt: Date) => new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())))
+          .map((dt: Date) => dt.toISOString().slice(0, 10));
+        setUnavailableDates(Array.from(new Set(isoList)));
+      }
     }
     void loadDb();
   }, [params.id, supabase]);
@@ -258,6 +274,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           calendarMode={calendarMode}
           onDateSelect={handleDateSelect}
           selectedCheckIn={selectedCheckIn}
+          unavailableDates={unavailableDates}
           selectedCheckOut={selectedCheckOut}
           onModeChange={setCalendarMode}
         />

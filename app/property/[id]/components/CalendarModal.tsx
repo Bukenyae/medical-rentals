@@ -11,6 +11,7 @@ interface CalendarModalProps {
   selectedCheckIn: Date | null;
   selectedCheckOut: Date | null;
   onModeChange: (mode: 'checkin' | 'checkout') => void;
+  unavailableDates?: string[]; // list of YYYY-MM-DD ISO dates in UTC
 }
 
 export default function CalendarModal({
@@ -20,9 +21,11 @@ export default function CalendarModal({
   onDateSelect,
   selectedCheckIn,
   selectedCheckOut,
-  onModeChange
+  onModeChange,
+  unavailableDates = []
 }: CalendarModalProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const blocked = new Set(unavailableDates);
 
   const generateCalendarDays = (month: Date) => {
     const year = month.getFullYear();
@@ -40,13 +43,20 @@ export default function CalendarModal({
       const date = new Date(startDate);
       date.setDate(startDate.getDate() + i);
       
+      // Normalize to UTC date string YYYY-MM-DD to match DB rows
+      const isoUtc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
+        .toISOString()
+        .slice(0, 10);
+
       days.push({
         date: new Date(date),
         day: date.getDate(),
         isCurrentMonth: date.getMonth() === monthIndex,
         isToday: date.getTime() === today.getTime(),
         isPast: date < today,
-        formatted: `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`
+        formatted: `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`,
+        isoUtc,
+        isBlocked: blocked.has(isoUtc),
       });
     }
     return days;
@@ -123,8 +133,11 @@ export default function CalendarModal({
               const isInRange = selectedCheckIn && selectedCheckOut && 
                 day.date > selectedCheckIn && day.date < selectedCheckOut;
               
-              const isDisabled = Boolean(day.isPast || 
-                (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn));
+              const isDisabled = Boolean(
+                day.isPast ||
+                day.isBlocked ||
+                (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn)
+              );
 
               return (
                 <button
@@ -141,7 +154,7 @@ export default function CalendarModal({
                         : day.isToday
                         ? 'bg-blue-50 text-blue-600 font-medium'
                         : day.isCurrentMonth
-                        ? 'text-gray-900 hover:bg-gray-100'
+                        ? `${day.isBlocked ? 'text-gray-400 bg-gray-50' : 'text-gray-900 hover:bg-gray-100'}`
                         : 'text-gray-300'
                     }
                     ${
@@ -150,6 +163,7 @@ export default function CalendarModal({
                         : 'cursor-pointer'
                     }
                   `}
+                  aria-label={day.isBlocked ? `${day.formatted} unavailable` : day.formatted}
                 >
                   {day.day}
                   {day.isToday && (
