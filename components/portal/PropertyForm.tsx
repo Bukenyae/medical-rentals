@@ -197,7 +197,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     }
     const { data, error } = await supabase
       .from("properties")
-      .select("id,title,address,description,nightly_price,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url")
+      .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url")
       .order("created_at", { ascending: false });
     if (!error && data) setMyProps(data as PropertyRow[]);
     setLoading(false);
@@ -215,20 +215,16 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         return;
       }
 
-      // Primary payload including discount fields
+      // Primary payload with only known-safe columns (avoid schema-missing errors)
       const primary: Record<string, unknown> = {
         title,
         address,
         description,
-        nightly_price: nightlyPrice,
-        weekly_discount_pct: weeklyDiscountPct,
-        weekly_price: weeklyPrice,
-        monthly_discount_pct: monthlyDiscountPct,
-        monthly_price: monthlyPrice,
         proximity_badge_1: proximityBadge1 || null,
         proximity_badge_2: proximityBadge2 || null,
         bedrooms,
         bathrooms,
+        cover_image_url: displayImageUrl || null,
       };
 
       const trySave = async (body: Record<string, unknown>) => {
@@ -248,18 +244,16 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         const msg: string = e?.message || '';
         // If discount columns are missing in the DB, retry with a minimal payload
         if (
-          msg.includes('weekly_discount_pct') ||
-          msg.includes('monthly_discount_pct') ||
-          msg.includes('weekly_price') ||
-          msg.includes('monthly_price') ||
-          msg.includes('schema cache') ||
-          msg.includes('column')
+          typeof e?.message === 'string' &&
+          (e.message as string).toLowerCase().includes('schema cache') &&
+          (e.message as string).toLowerCase().includes('could not find') &&
+          (e.message as string).toLowerCase().includes('column')
         ) {
+          // Fallback with minimal columns
           const fallback: Record<string, unknown> = {
             title,
             address,
             description,
-            nightly_price: nightlyPrice,
             proximity_badge_1: proximityBadge1 || null,
             proximity_badge_2: proximityBadge2 || null,
             bedrooms,
@@ -319,7 +313,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-200/50 p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Create or Edit Property</h3>
         <button
@@ -333,53 +327,53 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         <div className="space-y-3">
           {/* Step header */}
           <div className="flex items-center gap-2 text-xs">
-            <span className={`px-2 py-1 rounded ${step === 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Step 1</span>
-            <span className={`px-2 py-1 rounded ${step === 2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Step 2</span>
+            <span className={`px-2 py-1 rounded ${step === 1 ? 'bg-blue-100 text-blue-700' : 'bg-blue-50 text-blue-600'}`}>Step 1</span>
+            <span className={`px-2 py-1 rounded ${step === 2 ? 'bg-blue-100 text-blue-700' : 'bg-blue-50 text-blue-600'}`}>Step 2</span>
           </div>
 
           {step === 1 ? (
             <>
               <label className="text-sm">Title
-                <input className="mt-1 w-full border rounded-md px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} />
+                <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} />
               </label>
               <label className="text-sm">Description
-                <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
+                <textarea className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
               </label>
               <label className="text-sm">Address
-                <input className="mt-1 w-full border rounded-md px-3 py-2" value={address} onChange={e => setAddress(e.target.value)} />
+                <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={address} onChange={e => setAddress(e.target.value)} />
               </label>
               <label className="text-sm">Nightly Price ($)
-                <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={nightlyPrice} onChange={e => setNightlyPrice(Number(e.target.value))} />
+                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={nightlyPrice} onChange={e => setNightlyPrice(Number(e.target.value))} />
               </label>
               <label className="text-sm">Bedrooms
-                <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={bedrooms} onChange={e => setBedrooms(Number(e.target.value))} />
+                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={bedrooms} onChange={e => setBedrooms(Number(e.target.value))} />
               </label>
               <label className="text-sm">Bathrooms
-                <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={bathrooms} onChange={e => setBathrooms(Number(e.target.value))} />
+                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={bathrooms} onChange={e => setBathrooms(Number(e.target.value))} />
               </label>
               <label className="text-sm">Square Feet
-                <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={sqft as number} onChange={e => setSqft(e.target.value === "" ? "" : Number(e.target.value))} />
+                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={sqft as number} onChange={e => setSqft(e.target.value === "" ? "" : Number(e.target.value))} />
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="text-sm">Weekly discount (%)
-                  <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={weeklyDiscountPct} onChange={e => setWeeklyDiscountPct(Number(e.target.value))} />
+                  <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={weeklyDiscountPct} onChange={e => setWeeklyDiscountPct(Number(e.target.value))} />
                 </label>
                 <label className="text-sm">Weekly price ($/night)
-                  <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={weeklyPrice} onChange={e => setWeeklyPrice(Number(e.target.value))} />
+                  <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={weeklyPrice} onChange={e => setWeeklyPrice(Number(e.target.value))} />
                 </label>
                 <label className="text-sm">Monthly discount (%)
-                  <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={monthlyDiscountPct} onChange={e => setMonthlyDiscountPct(Number(e.target.value))} />
+                  <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={monthlyDiscountPct} onChange={e => setMonthlyDiscountPct(Number(e.target.value))} />
                 </label>
                 <label className="text-sm">Monthly price ($/night)
-                  <input type="number" className="mt-1 w-full border rounded-md px-3 py-2" value={monthlyPrice} onChange={e => setMonthlyPrice(Number(e.target.value))} />
+                  <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={monthlyPrice} onChange={e => setMonthlyPrice(Number(e.target.value))} />
                 </label>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <label className="text-sm">Proximity badge 1
-                  <input className="mt-1 w-full border rounded-md px-3 py-2" placeholder="e.g., 5 min to General Hospital" maxLength={60} value={proximityBadge1} onChange={e => setProximityBadge1(e.target.value)} />
+                  <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" placeholder="e.g., 5 min to General Hospital" maxLength={60} value={proximityBadge1} onChange={e => setProximityBadge1(e.target.value)} />
                 </label>
                 <label className="text-sm">Proximity badge 2
-                  <input className="mt-1 w-full border rounded-md px-3 py-2" placeholder="e.g., 10 min to LSU" maxLength={60} value={proximityBadge2} onChange={e => setProximityBadge2(e.target.value)} />
+                  <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" placeholder="e.g., 10 min to LSU" maxLength={60} value={proximityBadge2} onChange={e => setProximityBadge2(e.target.value)} />
                 </label>
               </div>
 
@@ -393,7 +387,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           ) : (
             <>
               {/* Host derived */}
-              <div className="flex items-center gap-3 p-2 border rounded-md bg-gray-50">
+              <div className="flex items-center gap-3 p-2 border border-gray-200/50 rounded-md bg-gray-50">
                 <img src={hostAvatarDerived || "/images/placeholder/avatar.png"} alt="host avatar" className="w-10 h-10 rounded-full object-cover" />
                 <div className="text-sm">
                   <div className="font-medium">{hostNameDerived || hostName || "Host"}</div>
@@ -402,10 +396,10 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               </div>
 
               <label className="text-sm">About the space
-                <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={aboutSpace} onChange={e => setAboutSpace(e.target.value)} />
+                <textarea className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" rows={3} value={aboutSpace} onChange={e => setAboutSpace(e.target.value)} />
               </label>
               <label className="text-sm">The indoor & outdoor experiences
-                <textarea className="mt-1 w-full border rounded-md px-3 py-2" rows={3} value={professionalsDesc} onChange={e => setProfessionalsDesc(e.target.value)} />
+                <textarea className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" rows={3} value={professionalsDesc} onChange={e => setProfessionalsDesc(e.target.value)} />
               </label>
 
               {/* Amenity badges */}
@@ -437,17 +431,17 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               <div className="mt-2">
                 <label className="text-sm">Cleaning fee (% of subtotal)</label>
                 <div className="mt-1 flex items-center gap-2">
-                  <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(Math.max(0, cleaningFeePct - 1))}>-</button>
+                  <button type="button" className="px-2 py-1 border border-gray-300/50 rounded" onClick={() => setCleaningFeePct(Math.max(0, cleaningFeePct - 1))}>-</button>
                   <input
                     type="number"
-                    className="w-24 border rounded-md px-3 py-2"
+                    className="w-24 border border-gray-300/50 rounded-md px-3 py-2"
                     value={cleaningFeePct}
                     onChange={e => setCleaningFeePct(Math.max(0, Number(e.target.value)))}
                     placeholder="0"
                     title="Cleaning fee percentage"
                     aria-label="Cleaning fee percentage"
                   />
-                  <button type="button" className="px-2 py-1 border rounded" onClick={() => setCleaningFeePct(cleaningFeePct + 1)}>+</button>
+                  <button type="button" className="px-2 py-1 border border-gray-300/50 rounded" onClick={() => setCleaningFeePct(cleaningFeePct + 1)}>+</button>
                 </div>
               </div>
 
@@ -467,7 +461,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
           {step === 1 && (
             <div className="space-y-2">
               <h4 className="font-medium">Homepage card preview</h4>
-              <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
+              <div className="border border-gray-200/50 rounded-xl overflow-hidden bg-white shadow-sm">
                 <div className="aspect-video bg-gray-100">
                   <img src={displayImageUrl} alt="preview" className="w-full h-full object-cover" />
                 </div>
@@ -497,7 +491,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
               {/* Hero Preview */}
               <div className="space-y-2">
                 <h4 className="font-medium">Property details hero preview</h4>
-                <div className="rounded-xl overflow-hidden border bg-white">
+                <div className="rounded-xl overflow-hidden border border-gray-200/50 bg-white">
                   <div className="aspect-[16/9] bg-gray-100">
                     <img src={displayImageUrl} alt="hero preview" className="w-full h-full object-cover" />
                   </div>
@@ -592,7 +586,7 @@ function CalendarBlocker({
       <div className="flex items-center justify-center gap-2">
         <button
           type="button"
-          className="px-2 py-1 border rounded"
+          className="px-2 py-1 border border-gray-300/50 rounded"
           onClick={() => setCursor(new Date(year, month - 1, 1))}
           aria-label="Previous month"
           title="Previous month"
@@ -602,7 +596,7 @@ function CalendarBlocker({
         <div className="text-sm text-gray-700 min-w-[140px] text-center">{monthLabel}</div>
         <button
           type="button"
-          className="px-2 py-1 border rounded"
+          className="px-2 py-1 border border-gray-300/50 rounded"
           onClick={() => setCursor(new Date(year, month + 1, 1))}
           aria-label="Next month"
           title="Next month"
@@ -627,8 +621,8 @@ function CalendarBlocker({
                 key={`${wi}-${di}`}
                 type="button"
                 onClick={() => toggle(d)}
-                className={`h-8 text-sm rounded border ${active ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-white text-gray-800 border-gray-200'}`}
-                aria-pressed={active}
+                className={`h-8 text-sm rounded border ${active ? 'bg-rose-50 text-rose-700 border-rose-200/60' : 'bg-white text-gray-800 border-gray-200/50'}`}
+                aria-pressed={active ? 'true' : 'false'}
                 aria-label={`Toggle ${iso}`}
                 title={active ? `Unavailable: ${iso}` : `Available: ${iso}`}
               >
