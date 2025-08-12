@@ -220,6 +220,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         title,
         address,
         description,
+        base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
         proximity_badge_1: proximityBadge1 || null,
         proximity_badge_2: proximityBadge2 || null,
         bedrooms,
@@ -263,6 +264,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             title,
             address,
             description,
+            base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
             proximity_badge_1: proximityBadge1 || null,
             proximity_badge_2: proximityBadge2 || null,
             bedrooms,
@@ -326,7 +328,7 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Create or Edit Property</h3>
         <button
-          className="text-sm text-blue-600 hover:underline"
+          className="text-xs px-2 py-1 rounded border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-800 transition"
           onClick={() => loadIntoForm(undefined)}
         >New</button>
       </div>
