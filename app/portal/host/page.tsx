@@ -7,7 +7,7 @@ import SidebarTabs from "@/components/portal/SidebarTabs";
 import SectionFeedback from "@/components/portal/SectionFeedback";
 import PropertyForm from "@/components/portal/PropertyForm";
 import MapLinkForm from "@/components/portal/MapLinkForm";
-import MediaManager from "@/components/portal/MediaManager";
+import MediaManagerCard from "@/app/(host)/dashboard/_components/MediaManagerCard";
 import { createClient } from "@/lib/supabase/client";
 import PublishChecklist from "@/components/portal/PublishChecklist";
 import Card from "@/components/portal/Card";
@@ -186,7 +186,7 @@ export default function HostPortalPage() {
                     Add new Property
                   </button>
                 }>
-                  <MediaManager propertyId={selectedPropertyId} query={searchQuery} />
+                  <MediaManagerCard />
                 </Card>
 
                 <section ref={locationRef as any}>
