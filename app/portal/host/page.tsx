@@ -16,6 +16,7 @@ import SidebarItem from "@/components/portal/SidebarItem";
 import BottomBar from "@/components/portal/BottomBar";
 import PaymentsList from "@/components/portal/PaymentsList";
 import TenantsList from "@/components/portal/TenantsList";
+import UserMenu from "@/components/portal/UserMenu";
 
 export default function HostPortalPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
@@ -142,7 +143,7 @@ export default function HostPortalPage() {
               <button className="p-2 rounded-xl hover:bg-gray-100" aria-label="Notifications">
                 <Icon name="bell" />
               </button>
-              <div className="w-8 h-8 rounded-full bg-gray-200" />
+              <UserMenu />
             </div>
           </div>
         </header>
