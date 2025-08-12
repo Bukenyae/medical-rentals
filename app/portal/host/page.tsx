@@ -8,6 +8,7 @@ import SectionFeedback from "@/components/portal/SectionFeedback";
 import PropertyForm from "@/components/portal/PropertyForm";
 import MapLinkForm from "@/components/portal/MapLinkForm";
 import MediaManagerCard from "@/app/(host)/dashboard/_components/MediaManagerCard";
+import MediaManager from "@/components/portal/MediaManager";
 import { createClient } from "@/lib/supabase/client";
 import PublishChecklist from "@/components/portal/PublishChecklist";
 import Card from "@/components/portal/Card";
@@ -27,6 +28,7 @@ export default function HostPortalPage() {
   const [isPublished, setIsPublished] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showImagesModal, setShowImagesModal] = useState(false);
   const [activeSection, setActiveSection] = useState<"dashboard" | "media" | "location" | "feedback" | "metrics">("dashboard");
 
   // section refs for sidebar scroll + active highlight
@@ -153,7 +155,7 @@ export default function HostPortalPage() {
           <aside className="col-span-12 md:col-span-3 lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 space-y-1 sticky top-20">
               <SidebarItem icon="dashboard" label="Dashboard" active={activeSection === "dashboard"} onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="media" label="Media Manager" active={activeSection === "media"} onClick={() => mediaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+              <SidebarItem icon="media" label="Property Assets" active={activeSection === "media"} onClick={() => mediaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
               <SidebarItem icon="payments" label="Payments & Collections" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
               <SidebarItem icon="history" label="Tenant History" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
               <SidebarItem icon="analytics" label="Analytics" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
@@ -178,15 +180,31 @@ export default function HostPortalPage() {
               </div>
             </Card>
 
-            {/* Media Manager + Publish status */}
+            {/* Property Assets + Publish status */}
             <div className="grid grid-cols-12 gap-6" ref={mediaRef as any}>
               <div className="col-span-12 lg:col-span-8 space-y-6">
-                <Card title="Media Manager" right={
-                  <button className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black" onClick={() => setShowCreateModal(true)}>
-                    <Icon name="plus" />
-                    Add new Property
-                  </button>
-                }>
+                <Card
+                  title="Property Assets"
+                  right={
+                    <div className="flex items-center gap-2">
+                      <button
+                        className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black"
+                        onClick={() => setShowCreateModal(true)}
+                      >
+                        <Icon name="plus" />
+                        Add new Property
+                      </button>
+                      <button
+                        className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black disabled:opacity-50"
+                        onClick={() => setShowImagesModal(true)}
+                        disabled={!selectedPropertyId}
+                      >
+                        <Icon name="plus" />
+                        Add images
+                      </button>
+                    </div>
+                  }
+                >
                   <MediaManagerCard />
                 </Card>
 
@@ -245,6 +263,28 @@ export default function HostPortalPage() {
               }>
                 <div ref={topRef as any} />
                 <PropertyForm onPropertySelected={(id) => { setSelectedPropertyId(id); setShowCreateModal(false); }} />
+              </Card>
+            </div>
+          </div>
+        )}
+
+        {/* Add Images modal */}
+        {showImagesModal && (
+          <div className="fixed inset-0 z-40 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
+            <div className="relative z-10 w-full max-w-4xl mx-auto">
+              <Card
+                title="Add Images"
+                right={
+                  <button
+                    onClick={() => setShowImagesModal(false)}
+                    className="text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    Close
+                  </button>
+                }
+              >
+                <MediaManager propertyId={selectedPropertyId} query={searchQuery} />
               </Card>
             </div>
           </div>

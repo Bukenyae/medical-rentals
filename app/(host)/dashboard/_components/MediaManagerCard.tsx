@@ -134,7 +134,7 @@ export default function MediaManagerCard() {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-base font-semibold text-gray-900">Media Manager</h3>
+        <h3 className="text-base font-semibold text-gray-900">Property Assets</h3>
         <div className="flex items-center gap-2">
           <input
             type="text"
