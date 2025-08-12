@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AuthGate from "@/components/portal/AuthGate";
 import UserMenu from "@/components/portal/UserMenu";
 import { createClient } from "@/lib/supabase/client";
 
 export default function HostAccountPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -75,7 +78,12 @@ export default function HostAccountPage() {
     const { error } = await supabase
       .from("user_profiles")
       .upsert({ id: user.id, first_name: firstName, avatar_url: avatarUrl, preferences: prefs });
-    if (error) alert(error.message); else alert("Profile updated");
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Profile updated");
+      router.push("/portal/host");
+    }
   };
 
   return (
@@ -83,7 +91,12 @@ export default function HostAccountPage() {
       <div className="min-h-screen bg-gray-50">
         <header className="sticky top-0 z-30 bg-white border-b border-gray-100">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <h1 className="text-lg font-semibold">Account</h1>
+            <div className="flex items-center gap-4">
+              <Link href="/portal/host" className="text-blue-600 hover:underline flex items-center">
+                <span className="mr-1">&larr;</span> Back
+              </Link>
+              <h1 className="text-lg font-semibold">Account</h1>
+            </div>
             <UserMenu />
           </div>
         </header>
