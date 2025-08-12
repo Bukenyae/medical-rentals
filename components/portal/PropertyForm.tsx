@@ -198,12 +198,14 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
     const { data, error } = await supabase
       .from("properties")
       .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url")
+      .eq('owner_id', session.user.id)
       .order("created_at", { ascending: false });
     if (!error && data) setMyProps(data as PropertyRow[]);
     setLoading(false);
   }
 
   async function handleSave() {
+    let savedId: string | null = null;
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
@@ -229,13 +231,14 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
         cover_image_url: displayImageUrl || null,
       };
 
-      const trySave = async (body: Record<string, unknown>) => {
+      const trySave = async (body: Record<string, unknown>): Promise<string> => {
         if (selectedId) {
           const { error } = await supabase
             .from('properties')
             .update(body)
             .eq('id', selectedId);
           if (error) throw error;
+          return selectedId;
         } else {
           // ensure owner_id is set for new records
           const insertBody = { ...body, owner_id: user.id } as Record<string, unknown>;
@@ -246,11 +249,20 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             .single();
           if (error) throw error;
           setSelectedId(data.id);
+          return data.id;
         }
       };
 
       try {
-        await trySave(primary);
+        savedId = await trySave(primary);
+        if (savedId) {
+          await refresh();
+          onPropertySelected?.(savedId);
+          setStep(1);
+          setLoading(false);
+          alert(selectedId ? 'Property updated' : 'Property created');
+          return;
+        }
       } catch (e: any) {
         const msg: string = e?.message || '';
         // If discount columns are missing in the DB, retry with a minimal payload
@@ -272,17 +284,21 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
             bedrooms,
             bathrooms,
           };
-          await trySave(fallback);
+          const fbId = await trySave(fallback);
+          // notify parent with the created/updated id
+          await refresh();
+          onPropertySelected?.(fbId);
+          setStep(1);
+          setLoading(false);
+          alert(selectedId ? 'Property updated' : 'Property created');
+          return;
         } else {
-          throw e;
+          alert(msg || 'Failed to save property');
+          setLoading(false);
+          return;
         }
-      }
-
-      await refresh();
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      alert((err as any)?.message || 'Failed to save');
+    } finally {
+      // In case we did not early-return above, ensure loading is unset
       setLoading(false);
     }
   }
@@ -296,9 +312,11 @@ export default function PropertyForm({ onPropertySelected }: PropertyFormProps) 
       setBedrooms(3);
       setBathrooms(2);
       setSqft(1100);
+      onPropertySelected?.(null);
       return;
     }
     setSelectedId(p.id);
+    onPropertySelected?.(p.id);
     setTitle(p.title);
     setDescription(p.description ?? "");
     setAddress(p.address);
