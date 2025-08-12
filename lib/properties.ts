@@ -201,16 +201,15 @@ export interface PropertyRow {
   id: string
   owner_id: string
   title: string
-  slug: string | null
-  status: 'draft' | 'published' | 'archived'
   cover_image_url: string | null
+  is_published: boolean
   created_at: string
   updated_at: string
 }
 
 interface FetchOptions {
   search?: string
-  status?: 'draft' | 'published' | 'archived'
+  is_published?: boolean
   limit?: number
   offset?: number
 }
@@ -218,20 +217,20 @@ interface FetchOptions {
 export async function fetchProperties(
   client: SupabaseClient,
   ownerId: string,
-  { search, status, limit = 10, offset = 0 }: FetchOptions = {}
+  { search, is_published, limit = 10, offset = 0 }: FetchOptions = {}
 ): Promise<{ data: PropertyRow[]; count: number }>
 {
   const from = offset
   const to = offset + limit - 1
   let query = client
     .from('properties')
-    .select('id,owner_id,title,slug,status,cover_image_url,created_at,updated_at', { count: 'exact' })
+    .select('id,owner_id,title,cover_image_url,is_published,created_at,updated_at', { count: 'exact' })
     .eq('owner_id', ownerId)
     .order('updated_at', { ascending: false })
     .range(from, to)
 
   if (search) query = query.ilike('title', `%${search}%`)
-  if (status) query = query.eq('status', status)
+  if (typeof is_published === 'boolean') query = query.eq('is_published', is_published)
 
   const { data, count, error } = await query
   if (error) throw error
