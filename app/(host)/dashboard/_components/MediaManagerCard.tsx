@@ -12,7 +12,7 @@ import useSupabaseRealtime from "@/hooks/useSupabaseRealtime";
 import ConfirmDialog from "./ConfirmDialog";
 import PropertyCard, { PropertyCardSkeleton } from "./PropertyCard";
 
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 12;
 
 export default function MediaManagerCard() {
   const router = useRouter();
@@ -164,7 +164,7 @@ export default function MediaManagerCard() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <PropertyCardSkeleton key={i} />
           ))}
@@ -174,7 +174,7 @@ export default function MediaManagerCard() {
           No properties yet. Use ‘Add new property’ above.
         </p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((p) => (
             <PropertyCard
               key={p.id}
