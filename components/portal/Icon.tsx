@@ -12,7 +12,9 @@ export type IconName =
   | "check"
   | "plus"
   | "bell"
-  | "search";
+  | "search"
+  | "arrow-left"
+  | "arrow-right";
 
 export interface IconProps {
   name: IconName;
@@ -98,6 +100,18 @@ export default function Icon({ name, className = "w-5 h-5" }: IconProps) {
         <svg viewBox="0 0 24 24" className={common} aria-hidden>
           <circle cx="11" cy="11" r="7" strokeWidth="1.5" />
           <path strokeWidth="1.5" d="m20 20-3-3" />
+        </svg>
+      );
+    case "arrow-left":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="M15 6l-6 6 6 6" />
+        </svg>
+      );
+    case "arrow-right":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="m9 6 6 6-6 6" />
         </svg>
       );
     default:

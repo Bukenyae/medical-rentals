@@ -3,7 +3,6 @@
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import AuthGate from "@/components/portal/AuthGate";
-import SidebarTabs from "@/components/portal/SidebarTabs";
 import SectionFeedback from "@/components/portal/SectionFeedback";
 import PropertyForm from "@/components/portal/PropertyForm";
 import MapLinkForm from "@/components/portal/MapLinkForm";
@@ -29,21 +28,29 @@ export default function HostPortalPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showImagesModal, setShowImagesModal] = useState(false);
-  const [activeSection, setActiveSection] = useState<"dashboard" | "media" | "location" | "feedback" | "metrics">("dashboard");
+  const [activeSection, setActiveSection] = useState<
+    | "dashboard"
+    | "media"
+    | "location"
+    | "payments"
+    | "tenants"
+    | "checkin"
+    | "feedback"
+    | "analytics"
+    | "messages"
+    | "metrics"
+  >("dashboard");
+  const [collapsed, setCollapsed] = useState(false);
 
   // section refs for sidebar scroll + active highlight
   const topRef = useRef<HTMLDivElement | null>(null);
   const mediaRef = useRef<HTMLElement | null>(null);
   const locationRef = useRef<HTMLElement | null>(null);
+  const paymentsRef = useRef<HTMLElement | null>(null);
+  const tenantsRef = useRef<HTMLElement | null>(null);
+  const checkinRef = useRef<HTMLElement | null>(null);
   const feedbackRef = useRef<HTMLElement | null>(null);
   const metricsRef = useRef<HTMLElement | null>(null);
-  const tabs = [
-    { key: "payments", label: "Payments & Collections" },
-    { key: "tenants", label: "Tenant History" },
-    { key: "analytics", label: "Analytics" },
-    { key: "messages", label: "Messages" },
-  ];
-
   const sections = ["Bedroom A", "Bathroom A", "Kitchen", "Living Room", "Laundry"];
 
   // Persist selected property across reloads
@@ -65,6 +72,9 @@ export default function HostPortalPage() {
       { id: "dashboard", el: topRef.current },
       { id: "media", el: mediaRef.current },
       { id: "location", el: locationRef.current },
+      { id: "payments", el: paymentsRef.current },
+      { id: "tenants", el: tenantsRef.current },
+      { id: "checkin", el: checkinRef.current },
       { id: "feedback", el: feedbackRef.current },
       { id: "metrics", el: metricsRef.current },
     ];
@@ -152,16 +162,105 @@ export default function HostPortalPage() {
 
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-12 gap-6">
           {/* Sidebar */}
-          <aside className="col-span-12 md:col-span-3 lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 space-y-1 sticky top-20">
-              <SidebarItem icon="dashboard" label="Dashboard" active={activeSection === "dashboard"} onClick={() => topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="media" label="Property Assets" active={activeSection === "media"} onClick={() => mediaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="payments" label="Payments & Collections" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="history" label="Tenant History" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="analytics" label="Analytics" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="messages" label="Messages" onClick={() => metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="feedback" label="Feedback & Updates" active={activeSection === "feedback"} onClick={() => feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
-              <SidebarItem icon="manage" label="Manage & Updates" onClick={() => locationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })} />
+          <aside className={`col-span-12 transition-all ${collapsed ? "md:col-span-1 lg:col-span-1" : "md:col-span-3 lg:col-span-2"}`}>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-3 space-y-2 sticky top-20">
+              <button
+                className={`p-2 rounded-xl hover:bg-white/50 ${collapsed ? "mx-auto" : "ml-auto"}`}
+                onClick={() => setCollapsed(!collapsed)}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <Icon name={collapsed ? "arrow-right" : "arrow-left"} />
+              </button>
+              <SidebarItem
+                icon="dashboard"
+                label="Dashboard"
+                active={activeSection === "dashboard"}
+                onClick={() => {
+                  setActiveSection("dashboard");
+                  topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="media"
+                label="Property Assets"
+                active={activeSection === "media"}
+                onClick={() => {
+                  setActiveSection("media");
+                  mediaRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="payments"
+                label="Payments & Collections"
+                active={activeSection === "payments"}
+                onClick={() => {
+                  setActiveSection("payments");
+                  paymentsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="history"
+                label="Tenant History"
+                active={activeSection === "tenants"}
+                onClick={() => {
+                  setActiveSection("tenants");
+                  tenantsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="check"
+                label="Check-in / Check-out"
+                active={activeSection === "checkin"}
+                onClick={() => {
+                  setActiveSection("checkin");
+                  checkinRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="analytics"
+                label="Analytics"
+                active={activeSection === "analytics"}
+                onClick={() => {
+                  setActiveSection("analytics");
+                  metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="messages"
+                label="Messages"
+                active={activeSection === "messages"}
+                onClick={() => {
+                  setActiveSection("messages");
+                  metricsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="feedback"
+                label="Feedback & Updates"
+                active={activeSection === "feedback"}
+                onClick={() => {
+                  setActiveSection("feedback");
+                  feedbackRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
+              <SidebarItem
+                icon="manage"
+                label="Manage & Updates"
+                active={activeSection === "location"}
+                onClick={() => {
+                  setActiveSection("location");
+                  locationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                collapsed={collapsed}
+              />
             </div>
           </aside>
 
@@ -237,13 +336,24 @@ export default function HostPortalPage() {
             {/* Operations: Payments & Tenants (search-aware stubs) */}
             <section>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card title="Payments">
-                  <PaymentsList query={searchQuery} />
-                </Card>
-                <Card title="Tenants">
-                  <TenantsList query={searchQuery} />
-                </Card>
+                <div ref={paymentsRef as any}>
+                  <Card title="Payments">
+                    <PaymentsList query={searchQuery} />
+                  </Card>
+                </div>
+                <div ref={tenantsRef as any}>
+                  <Card title="Tenants">
+                    <TenantsList query={searchQuery} />
+                  </Card>
+                </div>
               </div>
+            </section>
+
+            {/* Check-in / Check-out */}
+            <section ref={checkinRef as any}>
+              <Card title="Check-in / Check-out">
+                <p className="text-sm text-gray-600">Manage guest check-in and check-out schedules here.</p>
+              </Card>
             </section>
 
             {/* Bottom bar metrics */}
