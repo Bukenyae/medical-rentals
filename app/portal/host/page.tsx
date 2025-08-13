@@ -138,24 +138,30 @@ export default function HostPortalPage() {
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Internal sticky header */}
         <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b border-gray-100">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-2xl bg-emerald-600 text-white grid place-items-center font-bold">A</div>
-              <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-                <Icon name="search" className="w-4 h-4 text-gray-500" />
-                <input
-                  placeholder="Search"
-                  className="bg-transparent outline-none text-sm w-56"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-2xl bg-emerald-600 text-white grid place-items-center font-bold">A</div>
+                <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
+                  <Icon name="search" className="w-4 h-4 text-gray-500" />
+                  <input
+                    placeholder="Search"
+                    className="bg-transparent outline-none text-sm w-56"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <button className="p-2 rounded-xl hover:bg-gray-100" aria-label="Notifications">
+                  <Icon name="bell" />
+                </button>
+                <UserMenu />
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <button className="p-2 rounded-xl hover:bg-gray-100" aria-label="Notifications">
-                <Icon name="bell" />
-              </button>
-              <UserMenu />
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Host Dashboard</h1>
+              <p className="text-sm text-gray-600">Finish your listing setup and publish when ready.</p>
             </div>
           </div>
         </header>
@@ -266,18 +272,7 @@ export default function HostPortalPage() {
 
           {/* Content */}
           <section className="col-span-12 md:col-span-9 lg:col-span-10 space-y-6">
-            {/* Top intro card */}
-            <Card>
-              <div className="flex items-center gap-4">
-                <div className="relative w-10 h-10 rounded-md overflow-hidden border border-gray-200">
-                  <Image src="/images/properties/LexingtonNight/WellcomeDrs.png" alt="Property" fill className="object-cover" />
-                </div>
-                <div className="flex-1">
-                  <h1 className="text-xl font-semibold text-gray-900">Host Dashboard</h1>
-                  <p className="text-sm text-gray-600">Finish your listing setup and publish when ready.</p>
-                </div>
-              </div>
-            </Card>
+            <div ref={topRef as any} />
 
             {/* Property Assets + Publish status */}
             <div className="grid grid-cols-12 gap-6" ref={mediaRef as any}>
