@@ -1,12 +1,22 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
+import type { Metadata } from 'next'
 import GoogleOneTap from '@/components/GoogleOneTap'
 
 const inter = Inter({ subsets: ['latin'] })
 
-export const metadata = {
-  title: 'Belle Rouge Properties',
-  description: 'Flexible short-term rentals for medical staff, academics, military members, students, and young professionals',
+export const metadata: Metadata = {
+  title: 'BelleRouges',
+  manifest: '/my-favicon/site.webmanifest',
+  icons: {
+    icon: [
+      { url: '/my-favicon/favicon.ico' },
+      { url: '/my-favicon/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+      { url: '/my-favicon/favicon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [{ url: '/my-favicon/apple-touch-icon.png', sizes: '180x180' }],
+    shortcut: ['/my-favicon/favicon.ico'],
+  },
 }
 
 export default function RootLayout({
@@ -16,11 +26,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        <meta name="msapplication-TileColor" content="#0A0A0A" />
-        <meta name="msapplication-config" content="/my-favicon/browserconfig.xml" />
-        <link rel="mask-icon" href="/my-favicon/safari-pinned-tab.svg" color="#0A0A0A" />
-      </head>
       <body className={inter.className}>
         <GoogleOneTap />
         {children}
