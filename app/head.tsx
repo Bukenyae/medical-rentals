@@ -4,6 +4,8 @@ export default function Head() {
       <meta name="msapplication-TileColor" content="#0A0A0A" />
       <meta name="msapplication-config" content="/my-favicon/browserconfig.xml" />
       <link rel="mask-icon" href="/my-favicon/safari-pinned-tab.svg" color="#0A0A0A" />
+      {/* Optional but nice for Android address bar */}
+      <meta name="theme-color" content="#000000" />
     </>
   )
 }
