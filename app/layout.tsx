@@ -11,15 +11,14 @@ export const metadata: Metadata = {
   // metadataBase: new URL('https://www.bellerouges.com'),
   manifest: '/my-favicon/site.webmanifest',
   icons: {
-    // Put tiny sizes first for best tab legibility
     icon: [
-      { url: '/my-favicon/favicon-16x16.png?v=2', sizes: '16x16', type: 'image/png' },
-      { url: '/my-favicon/favicon-32x32.png?v=2', sizes: '32x32', type: 'image/png' },
+      { url: '/my-favicon/favicon-16x16.png?v=3', sizes: '16x16', type: 'image/png' },
+      { url: '/my-favicon/favicon-32x32.png?v=3', sizes: '32x32', type: 'image/png' },
       { url: '/my-favicon/favicon.svg', type: 'image/svg+xml' },
-      { url: '/my-favicon/favicon.ico' }, // keep one .ico ref only
+      { url: '/my-favicon/favicon.ico' },
     ],
     apple: [{ url: '/my-favicon/apple-touch-icon.png', sizes: '180x180' }],
-    shortcut: ['/my-favicon/favicon.ico'],
+    // shortcut: ['/my-favicon/favicon.ico'], // ← remove this to avoid emitting it first
   },
 }
 
