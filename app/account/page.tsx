@@ -3,9 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AuthGate from "@/components/portal/AuthGate";
+import { useSearchParams } from "next/navigation";
 
 export default function AccountPage() {
   const supabase = useMemo(() => createClient(), []);
+  const searchParams = useSearchParams();
+  const fromHost = (searchParams.get("from") || "") === "host";
+  const backHref = fromHost ? "/portal/host" : "/portal/guest";
+  const backLabel = fromHost ? "Back to Host Portal" : "Back to Guest Portal";
+  const q = fromHost ? "?from=host" : "";
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -52,9 +58,9 @@ export default function AccountPage() {
     <AuthGate allowRoles={["guest", "admin"]} showInlineSignOut={false}>
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-4">
-          <Link href="/portal/guest" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline" aria-label="Back to Guest Portal">
+          <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline" aria-label={backLabel}>
             <span>{"<--"}</span>
-            <span>Back to Guest Portal</span>
+            <span>{backLabel}</span>
           </Link>
         </div>
         <h1 className="text-2xl font-bold text-gray-900">Account Settings</h1>
@@ -96,15 +102,15 @@ export default function AccountPage() {
         </form>
 
         <nav className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Link href="/account/profile" className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+          <Link href={`/account/profile${q}`} className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
             <div className="text-sm font-medium text-gray-900">Profile</div>
             <div className="text-sm text-gray-600">View and edit your personal details</div>
           </Link>
-          <Link href="/account/security" className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+          <Link href={`/account/security${q}`} className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
             <div className="text-sm font-medium text-gray-900">Password & Security</div>
             <div className="text-sm text-gray-600">Update your password and security settings</div>
           </Link>
-          <Link href="/account/deactivate" className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
+          <Link href={`/account/deactivate${q}`} className="block rounded-lg border border-gray-200 p-4 hover:bg-gray-50">
             <div className="text-sm font-medium text-rose-700">Deactivate Account</div>
             <div className="text-sm text-rose-600">Temporarily deactivate or request deletion</div>
           </Link>

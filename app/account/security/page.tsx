@@ -3,9 +3,15 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AuthGate from "@/components/portal/AuthGate";
+import { useSearchParams } from "next/navigation";
 
 export default function AccountSecurityPage() {
   const supabase = useMemo(() => createClient(), []);
+  const searchParams = useSearchParams();
+  const fromHost = (searchParams.get("from") || "") === "host";
+  const backHref = fromHost ? "/portal/host" : "/portal/guest";
+  const backLabel = fromHost ? "Back to Host Portal" : "Back to Guest Portal";
+  const q = fromHost ? "?from=host" : "";
   const [email, setEmail] = useState("");
   const [currentPwd, setCurrentPwd] = useState("");
   const [newPwd, setNewPwd] = useState("");
@@ -68,9 +74,9 @@ export default function AccountSecurityPage() {
     <AuthGate allowRoles={["guest", "admin"]} showInlineSignOut={false}>
     <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div className="mb-4">
-        <Link href="/portal/guest" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline" aria-label="Back to Guest Portal">
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline" aria-label={backLabel}>
           <span>{"<--"}</span>
-          <span>Back to Guest Portal</span>
+          <span>{backLabel}</span>
         </Link>
       </div>
       <h1 className="text-2xl font-bold text-gray-900">Password & Security</h1>
@@ -140,7 +146,7 @@ export default function AccountSecurityPage() {
       </form>
 
       <div className="mt-6">
-        <Link href="/account" className="text-sm text-blue-600 hover:underline">Back to Account</Link>
+        <Link href={`/account${q}`} className="text-sm text-blue-600 hover:underline">Back to Account</Link>
       </div>
     </main>
     </AuthGate>

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import Avatar from "@/components/ui/Avatar";
 import { ArrowRightOnRectangleIcon, Cog6ToothIcon, ShieldCheckIcon, UserCircleIcon, UserMinusIcon } from "@heroicons/react/24/outline";
 import { User } from "@supabase/supabase-js";
+import { usePathname } from "next/navigation";
 
 interface AccountMenuProps {
   user: User;
@@ -19,10 +20,15 @@ export default function AccountMenu({ user, variant = "button", className = "" }
   const menuRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const menuItemsRef = useRef<(HTMLAnchorElement | HTMLButtonElement)[]>([]);
+  const pathname = usePathname();
 
   const avatarUrl = (user?.user_metadata as any)?.avatar_url as string | undefined;
   const displayName = (user?.user_metadata as any)?.name as string | undefined;
   const userEmail = user?.email || "";
+
+  // Determine if we are in Host portal context to propagate navigation intent
+  const isHostContext = typeof pathname === "string" && pathname.startsWith("/portal/host");
+  const q = isHostContext ? "?from=host" : "";
 
   const handleSignOut = async () => {
     try { await supabase.auth.signOut(); } catch {}
@@ -124,19 +130,19 @@ export default function AccountMenu({ user, variant = "button", className = "" }
             <p className="truncate text-sm font-medium text-gray-900" title={userEmail}>{userEmail}</p>
           </div>
           <div className="my-1 h-px bg-gray-100" />
-          <Link href="/account" role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[0] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+          <Link href={`/account${q}`} role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[0] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
             <Cog6ToothIcon className="h-4 w-4 text-gray-500" />
             <span>Account settings</span>
           </Link>
-          <Link href="/account/profile" role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[1] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+          <Link href={`/account/profile${q}`} role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[1] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
             <UserCircleIcon className="h-4 w-4 text-gray-500" />
             <span>Profile</span>
           </Link>
-          <Link href="/account/security" role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[2] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+          <Link href={`/account/security${q}`} role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[2] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
             <ShieldCheckIcon className="h-4 w-4 text-gray-500" />
             <span>Password & security</span>
           </Link>
-          <Link href="/account/deactivate" role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[3] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:bg-rose-50">
+          <Link href={`/account/deactivate${q}`} role="menuitem" tabIndex={0} ref={(el) => { if (el) menuItemsRef.current[3] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:bg-rose-50">
             <UserMinusIcon className="h-4 w-4 text-rose-600" />
             <span>Deactivate account</span>
           </Link>
