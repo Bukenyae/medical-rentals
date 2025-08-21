@@ -7,6 +7,7 @@ import AuthButton from './AuthButton';
 import SearchBar from './SearchBar';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import useAuthUser from '@/hooks/useAuthUser';
 
 interface HeaderProps {
   selectedLocation: string;
@@ -40,15 +41,10 @@ export default function Header({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const { user: authUser } = useAuthUser();
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user }
-      } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, [supabase.auth]);
+    setUser(authUser);
+  }, [authUser]);
 
   return (
     <>

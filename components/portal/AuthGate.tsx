@@ -2,10 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import AuthModal from "@/components/AuthModal";
 
 interface AuthGateProps {
   allowRoles: ("guest" | "host" | "admin")[];
   children: React.ReactNode;
+  /**
+   * When true (default), shows a small inline sign-out button positioned in the top-right.
+   * Set to false on pages that provide their own header/account menu.
+   */
+  showInlineSignOut?: boolean;
 }
 
 interface SessionLike {
@@ -13,16 +19,19 @@ interface SessionLike {
   role: "guest" | "host" | "admin";
 }
 
-export default function AuthGate({ allowRoles, children }: AuthGateProps) {
+export default function AuthGate({ allowRoles, children, showInlineSignOut = true }: AuthGateProps) {
   const [session, setSession] = useState<SessionLike | null>(null);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<SessionLike["role"]>("guest");
+  const [mounted, setMounted] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const isProd = useMemo(() => process.env.NODE_ENV === 'production', []);
   const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
+    setMounted(true);
     // Always try local session first for preview flow
     try {
       // Dev override via query params: ?as=host|admin&email=...
@@ -87,6 +96,16 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
       };
     }
   }, []);
+
+  // When session check finishes and user is unauthenticated for required role, open the modal.
+  useEffect(() => {
+    if (!mounted) return;
+    if (loading) return;
+    const needsAuth = !session || !allowRoles.includes(session.role);
+    if (needsAuth && !showAuthModal) {
+      setShowAuthModal(true);
+    }
+  }, [mounted, loading, session, allowRoles, showAuthModal]);
 
   useEffect(() => {
     if (session && !allowRoles.includes(session.role)) return;
@@ -170,9 +189,11 @@ export default function AuthGate({ allowRoles, children }: AuthGateProps) {
 
   return (
     <div className="relative">
-      <div className="absolute right-4 -top-10 sm:top-0">
-        <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-700 underline">Sign out</button>
-      </div>
+      {showInlineSignOut && (
+        <div className="absolute right-4 -top-10 sm:top-0">
+          <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-700 underline">Sign out</button>
+        </div>
+      )}
       {children}
     </div>
   );

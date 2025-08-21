@@ -1,13 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import AuthGate from "@/components/portal/AuthGate";
 import SectionFeedback from "@/components/portal/SectionFeedback";
-import PropertyForm from "@/components/portal/PropertyForm";
-import MapLinkForm from "@/components/portal/MapLinkForm";
-import MediaManagerCard from "@/app/(host)/dashboard/_components/MediaManagerCard";
-import MediaManager from "@/components/portal/MediaManager";
+import { PropertyListView } from "@/components/portal/PropertyListView";
 import { createClient } from "@/lib/supabase/client";
 import PublishChecklist from "@/components/portal/PublishChecklist";
 import Card from "@/components/portal/Card";
@@ -17,21 +13,21 @@ import BottomBar from "@/components/portal/BottomBar";
 import PaymentsList from "@/components/portal/PaymentsList";
 import TenantsList from "@/components/portal/TenantsList";
 import UserMenu from "@/components/portal/UserMenu";
+import { PropertySwitcher } from "@/components/portal/PropertySwitcher";
+import HostDetailPane from "@/components/portal/HostDetailPane";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function HostPortalPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
-  const [hasMapLink, setHasMapLink] = useState(false);
-  const [hasApprovedImage, setHasApprovedImage] = useState(false);
-  const [hasCoverImage, setHasCoverImage] = useState(false);
-  const [isPublished, setIsPublished] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showImagesModal, setShowImagesModal] = useState(false);
+  const [refreshToken, setRefreshToken] = useState(0);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<
     | "dashboard"
     | "media"
-    | "location"
     | "payments"
     | "tenants"
     | "checkin"
@@ -45,7 +41,6 @@ export default function HostPortalPage() {
   // section refs for sidebar scroll + active highlight
   const topRef = useRef<HTMLDivElement | null>(null);
   const mediaRef = useRef<HTMLElement | null>(null);
-  const locationRef = useRef<HTMLElement | null>(null);
   const paymentsRef = useRef<HTMLElement | null>(null);
   const tenantsRef = useRef<HTMLElement | null>(null);
   const checkinRef = useRef<HTMLElement | null>(null);
@@ -53,25 +48,37 @@ export default function HostPortalPage() {
   const metricsRef = useRef<HTMLElement | null>(null);
   const sections = ["Bedroom A", "Bathroom A", "Kitchen", "Living Room", "Laundry"];
 
-  // Persist selected property across reloads
+  // Initialize selection from URL (?propertyId=...) or fallback to localStorage
   useEffect(() => {
+    const fromUrl = searchParams?.get('propertyId');
+    if (fromUrl) {
+      setSelectedPropertyId(fromUrl);
+      return;
+    }
     const stored = typeof window !== 'undefined' ? localStorage.getItem('host_selected_property') : null;
     if (stored) setSelectedPropertyId(stored);
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (selectedPropertyId) localStorage.setItem('host_selected_property', selectedPropertyId);
       else localStorage.removeItem('host_selected_property');
     }
-  }, [selectedPropertyId]);
+    // Persist selection in the URL for deep links
+    const params = new URLSearchParams(searchParams?.toString());
+    if (selectedPropertyId) params.set('propertyId', selectedPropertyId); else params.delete('propertyId');
+    const newQuery = params.toString();
+    const newUrl = typeof window !== 'undefined'
+      ? (newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname)
+      : '/portal/host';
+    router.replace(newUrl, { scroll: false });
+  }, [selectedPropertyId, searchParams, router]);
 
   // Observe sections to update active sidebar state
   useEffect(() => {
     const sections: Array<{ id: typeof activeSection; el: Element | null }> = [
       { id: "dashboard", el: topRef.current },
       { id: "media", el: mediaRef.current },
-      { id: "location", el: locationRef.current },
       { id: "payments", el: paymentsRef.current },
       { id: "tenants", el: tenantsRef.current },
       { id: "checkin", el: checkinRef.current },
@@ -94,30 +101,7 @@ export default function HostPortalPage() {
     return () => observer.disconnect();
   }, []);
 
-  // Fetch lightweight publish status for the selected property
-  const fetchStatus = useCallback(async (pid: string) => {
-    // properties: map_url and is_published
-    const { data: prop } = await supabase
-      .from('properties')
-      .select('map_url,is_published,cover_image_url')
-      .eq('id', pid)
-      .maybeSingle();
-    setHasMapLink(!!prop?.map_url);
-    setHasCoverImage(!!prop?.cover_image_url);
-    setIsPublished(!!prop?.is_published);
-    // property_images: approved exists?
-    const { count } = await supabase
-      .from('property_images')
-      .select('id', { count: 'exact', head: true })
-      .eq('property_id', pid)
-      .eq('is_approved', true);
-    setHasApprovedImage((count ?? 0) > 0);
-  }, [supabase]);
-
-  useEffect(() => {
-    if (!selectedPropertyId) return;
-    void fetchStatus(selectedPropertyId);
-  }, [selectedPropertyId, fetchStatus]);
+  // No dashboard-level status fetching; handled inside PublishChecklist
 
   async function publishSelected() {
     if (!selectedPropertyId) return;
@@ -129,9 +113,24 @@ export default function HostPortalPage() {
       alert(error.message);
       return;
     }
-    await fetchStatus(selectedPropertyId);
     alert('Property published');
   }
+
+  // Show toast from query param and then remove it from URL
+  useEffect(() => {
+    const toast = searchParams?.get('toast');
+    if (!toast) return;
+    setToastMsg(toast);
+    setTimeout(() => setToastMsg(null), 2500);
+    // Clean the URL without a full reload
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('toast');
+    const newQuery = params.toString();
+    const newUrl = typeof window !== 'undefined'
+      ? (newQuery ? `${window.location.pathname}?${newQuery}` : window.location.pathname)
+      : '/portal/host';
+    router.replace(newUrl, { scroll: false });
+  }, [searchParams, router]);
 
   return (
     <AuthGate allowRoles={["host", "admin"]}>
@@ -141,15 +140,6 @@ export default function HostPortalPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-2xl bg-emerald-600 text-white grid place-items-center font-bold">A</div>
-              <div className="hidden sm:flex items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
-                <Icon name="search" className="w-4 h-4 text-gray-500" />
-                <input
-                  placeholder="Search"
-                  className="bg-transparent outline-none text-sm w-56"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
             </div>
             <p className="flex-1 text-center text-sm text-gray-600 whitespace-nowrap"><span className="font-semibold text-gray-900">Host Dashboard</span> -- Finish your listing setup and publish when ready.</p>
             <div className="flex items-center gap-3">
@@ -255,11 +245,8 @@ export default function HostPortalPage() {
               <SidebarItem
                 icon="manage"
                 label="Manage & Updates"
-                active={activeSection === "location"}
-                onClick={() => {
-                  setActiveSection("location");
-                  locationRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
+                active={false}
+                onClick={() => {}}
                 collapsed={collapsed}
               />
             </div>
@@ -271,48 +258,41 @@ export default function HostPortalPage() {
 
             {/* Property Assets + Publish status */}
             <div className="grid grid-cols-12 gap-6" ref={mediaRef as any}>
-              <div className="col-span-12 lg:col-span-8 space-y-6">
+              <div className="col-span-12 lg:col-span-4 space-y-6">
                 <Card
                   title="Property Assets"
                   right={
-                    <div className="flex items-center gap-2">
-                      <button
-                        className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black"
-                        onClick={() => setShowCreateModal(true)}
-                      >
-                        <Icon name="plus" />
-                        Add new Property
-                      </button>
-                      <button
-                        className="inline-flex items-center gap-2 rounded-xl bg-gray-900 text-white px-3 py-2 text-sm hover:bg-black disabled:opacity-50"
-                        onClick={() => setShowImagesModal(true)}
-                        disabled={!selectedPropertyId}
-                      >
-                        <Icon name="plus" />
-                        Add images
-                      </button>
-                    </div>
+                    <a
+                      href="/portal/host/properties/new"
+                      className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 whitespace-nowrap transition-colors"
+                      aria-label="Add Property"
+                    >
+                      <span className="text-gray-500"><Icon name="plus" /></span>
+                      <span>Property</span>
+                    </a>
                   }
                 >
-                  <MediaManagerCard />
+                  {/* Line 2: Property switcher */}
+                  <div className="mb-3">
+                    <PropertySwitcher
+                      currentPropertyId={selectedPropertyId}
+                      onPropertySelect={(id) => setSelectedPropertyId(id)}
+                      searchQuery={searchQuery}
+                      onSearchChange={setSearchQuery}
+                    />
+                  </div>
+                  {/* Left column now shows list of properties with search/filter */}
+                  <PropertyListView
+                    selectedPropertyId={selectedPropertyId}
+                    onPropertySelect={(id) => setSelectedPropertyId(id)}
+                    refreshToken={refreshToken}
+                    searchQuery={searchQuery}
+                  />
                 </Card>
-
-                <section ref={locationRef as any}>
-                  <Card title="Location">
-                    <MapLinkForm propertyId={selectedPropertyId} />
-                  </Card>
-                </section>
               </div>
 
-              <div className="col-span-12 lg:col-span-4 order-last lg:order-none">
-                <PublishChecklist
-                  selectedPropertyId={selectedPropertyId}
-                  hasMapLink={hasMapLink}
-                  hasApprovedImage={hasApprovedImage}
-                  hasCoverImage={hasCoverImage}
-                  isPublished={isPublished}
-                  onPublish={publishSelected}
-                />
+              <div className="col-span-12 lg:col-span-8 order-last lg:order-none">
+                <HostDetailPane selectedPropertyId={selectedPropertyId} />
               </div>
             </div>
 
@@ -353,39 +333,11 @@ export default function HostPortalPage() {
           </section>
         </main>
 
-        {/* Create Property modal */}
-        {showCreateModal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-2xl mx-auto">
-              <Card title="Create Property" right={
-                <button onClick={() => setShowCreateModal(false)} className="text-sm text-gray-600 hover:text-gray-900">Close</button>
-              }>
-                <div ref={topRef as any} />
-                <PropertyForm onPropertySelected={(id) => { setSelectedPropertyId(id); setShowCreateModal(false); }} />
-              </Card>
-            </div>
-          </div>
-        )}
-
-        {/* Add Images modal */}
-        {showImagesModal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center">
-            <div className="absolute inset-0 bg-black/30" aria-hidden="true" />
-            <div className="relative z-10 w-full max-w-4xl mx-auto">
-              <Card
-                title="Add Images"
-                right={
-                  <button
-                    onClick={() => setShowImagesModal(false)}
-                    className="text-sm text-gray-600 hover:text-gray-900"
-                  >
-                    Close
-                  </button>
-                }
-              >
-                <MediaManager propertyId={selectedPropertyId} query={searchQuery} />
-              </Card>
+        {/* Toast */}
+        {toastMsg && (
+          <div className="fixed bottom-4 right-4 z-[60]">
+            <div className="bg-gray-900 text-white text-sm px-4 py-2 rounded-lg shadow-lg">
+              {toastMsg}
             </div>
           </div>
         )}

@@ -1,26 +1,56 @@
-import React from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Card from "./Card";
 import Badge from "./Badge";
 import Icon from "./Icon";
+import { createClient } from "@/lib/supabase/client";
 
 interface PublishChecklistProps {
   selectedPropertyId: string | null;
-  hasMapLink: boolean;
-  hasApprovedImage: boolean;
-  hasCoverImage: boolean;
-  isPublished: boolean;
   onPublish?: () => void;
 }
 
-export default function PublishChecklist({
-  selectedPropertyId,
-  hasMapLink,
-  hasApprovedImage,
-  hasCoverImage,
-  isPublished,
-  onPublish,
-}: PublishChecklistProps) {
-  // Prerequisites to publish (4 steps)
+export default function PublishChecklist({ selectedPropertyId, onPublish }: PublishChecklistProps) {
+  const supabase = useMemo(() => createClient(), []);
+  const [hasMapLink, setHasMapLink] = useState(false);
+  const [hasApprovedImage, setHasApprovedImage] = useState(false);
+  const [hasCoverImage, setHasCoverImage] = useState(false);
+  const [isPublished, setIsPublished] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    async function fetchStatus(pid: string) {
+      setLoading(true);
+      const { data: prop } = await supabase
+        .from("properties")
+        .select("map_url,is_published,cover_image_url")
+        .eq("id", pid)
+        .maybeSingle();
+      if (!ignore) {
+        setHasMapLink(!!prop?.map_url);
+        setHasCoverImage(!!prop?.cover_image_url);
+        setIsPublished(!!prop?.is_published);
+      }
+      const { count } = await supabase
+        .from("property_images")
+        .select("id", { count: "exact", head: true })
+        .eq("property_id", pid)
+        .eq("is_approved", true);
+      if (!ignore) setHasApprovedImage((count ?? 0) > 0);
+      if (!ignore) setLoading(false);
+    }
+    if (selectedPropertyId) void fetchStatus(selectedPropertyId);
+    else {
+      setHasMapLink(false);
+      setHasApprovedImage(false);
+      setHasCoverImage(false);
+      setIsPublished(false);
+    }
+    return () => {
+      ignore = true;
+    };
+  }, [selectedPropertyId, supabase]);
+
   const prereqs = [
     { label: "Select or create a property", done: !!selectedPropertyId },
     { label: "Save a valid Google Maps link", done: hasMapLink },
@@ -47,7 +77,7 @@ export default function PublishChecklist({
         ))}
       </ul>
       <button
-        disabled={!readyToPublish}
+        disabled={!readyToPublish || loading}
         className={`mt-5 w-full rounded-xl px-4 py-2.5 text-sm font-medium transition ${
           readyToPublish ? "bg-gray-900 text-white hover:bg-black" : "bg-gray-100 text-gray-400 cursor-not-allowed"
         }`}

@@ -8,6 +8,14 @@ export default function GoogleOneTap() {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!clientId) return
 
+    // Pause One Tap on auth and portal routes to avoid overlay conflicts
+    try {
+      const path = window.location.pathname
+      if (path.startsWith('/auth') || path.startsWith('/portal')) {
+        return
+      }
+    } catch {}
+
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true

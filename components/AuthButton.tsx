@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js'
 import { Menu, X } from 'lucide-react'
 import { useState } from 'react'
 import AuthModal from '@/components/AuthModal'
+import Avatar from '@/components/ui/Avatar'
 
 interface AuthButtonProps {
   user: User | null
@@ -16,6 +17,8 @@ export default function AuthButton({ user }: AuthButtonProps) {
   const [showAuthModal, setShowAuthModal] = useState(false)
   const [modalMode, setModalMode] = useState<'signin' | 'signup'>('signin')
   const [forceRole, setForceRole] = useState<'guest' | 'host'>('guest')
+  const avatarUrl = (user?.user_metadata as any)?.avatar_url as string | undefined
+  const displayName = (user?.user_metadata as any)?.name as string | undefined
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -38,10 +41,15 @@ export default function AuthButton({ user }: AuthButtonProps) {
       <div className="relative">
         <button
           onClick={toggleMenu}
-          className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+          className="p-1.5 rounded-full hover:bg-gray-100 transition-colors"
+          aria-haspopup="menu"
+          aria-expanded={isMenuOpen ? 'true' : 'false'}
+          aria-label="User menu"
         >
           {isMenuOpen ? (
             <X className="h-6 w-6 text-gray-700" />
+          ) : avatarUrl ? (
+            <Avatar src={avatarUrl} name={displayName || user.email || ''} email={user.email || undefined} size="md" alt="Your profile" />
           ) : (
             <Menu className="h-6 w-6 text-gray-700" />
           )}

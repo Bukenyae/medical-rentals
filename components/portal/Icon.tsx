@@ -14,7 +14,13 @@ export type IconName =
   | "bell"
   | "search"
   | "arrow-left"
-  | "arrow-right";
+  | "arrow-right"
+  | "home"
+  | "pencil"
+  | "calendar"
+  | "chevron-down"
+  | "chevron-up"
+  | "refresh-cw";
 
 export interface IconProps {
   name: IconName;
@@ -112,6 +118,44 @@ export default function Icon({ name, className = "w-5 h-5" }: IconProps) {
       return (
         <svg viewBox="0 0 24 24" className={common} aria-hidden>
           <path strokeWidth="1.5" d="m9 6 6 6-6 6" />
+        </svg>
+      );
+    case "home":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="M3 11.5 12 4l9 7.5" />
+          <path strokeWidth="1.5" d="M6 10.5V20h12v-9.5" />
+        </svg>
+      );
+    case "pencil":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="M12 6l6 6M4 16l6-2 8-8a2.828 2.828 0 1 0-4-4L6 10l-2 6Z" />
+        </svg>
+      );
+    case "calendar":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <rect x="3" y="5" width="18" height="16" rx="2" ry="2" strokeWidth="1.5" />
+          <path strokeWidth="1.5" d="M16 3v4M8 3v4M3 11h18" />
+        </svg>
+      );
+    case "chevron-down":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="m6 9 6 6 6-6" />
+        </svg>
+      );
+    case "chevron-up":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="m6 15 6-6 6 6" />
+        </svg>
+      );
+    case "refresh-cw":
+      return (
+        <svg viewBox="0 0 24 24" className={common} aria-hidden>
+          <path strokeWidth="1.5" d="M21 12a9 9 0 1 1-3-6.708M21 3v6h-6" />
         </svg>
       );
     default:

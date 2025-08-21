@@ -1,10 +1,13 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import AuthGate from "@/components/portal/AuthGate";
 import SectionFeedback from "@/components/portal/SectionFeedback";
 import { toCurrency } from "@/lib/pricing";
-import { EnvelopeIcon, PuzzlePieceIcon, WrenchIcon, MapPinIcon } from "@heroicons/react/24/outline";
+import { EnvelopeIcon, PuzzlePieceIcon, WrenchIcon, MapPinIcon, UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, UserMinusIcon } from "@heroicons/react/24/outline";
+import { createClient } from "@/lib/supabase/client";
+import Avatar from "@/components/ui/Avatar";
 
 type RoomKey =
   | "living-room"
@@ -50,6 +53,60 @@ export default function GuestPortalPage() {
     const q = encodeURIComponent(propertyAddress);
     return `https://www.google.com/maps/search/?api=1&query=${q}`;
   }, [propertyAddress]);
+
+  // Account menu state and Supabase user
+  const [menuOpen, setMenuOpen] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [displayName, setDisplayName] = useState<string>("");
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuItemsRef = useRef<HTMLAnchorElement[] | HTMLButtonElement[] | any[]>([]);
+  const supabase = useMemo(() => createClient(), []);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getUser();
+        if (mounted) {
+          setUserEmail(data.user?.email ?? "");
+          const meta = (data.user?.user_metadata as any) || {};
+          setAvatarUrl(typeof meta.avatar_url === "string" ? meta.avatar_url : "");
+          setDisplayName(typeof meta.name === "string" ? meta.name : "");
+        }
+      } catch {}
+    })();
+    // subscribe to auth changes so avatar/email update immediately
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user;
+      setUserEmail(u?.email ?? "");
+      const meta = (u?.user_metadata as any) || {};
+      setAvatarUrl(typeof meta.avatar_url === "string" ? meta.avatar_url : "");
+      setDisplayName(typeof meta.name === "string" ? meta.name : "");
+    });
+
+    const onDocClick = (e: MouseEvent) => {
+      if (!menuRef.current) return;
+      if (!menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    document.addEventListener("click", onDocClick);
+    return () => {
+      mounted = false;
+      document.removeEventListener("click", onDocClick);
+      sub?.subscription?.unsubscribe?.();
+    };
+  }, [supabase]);
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+    } catch {}
+    try {
+      localStorage.removeItem("mr_session");
+    } catch {}
+    if (typeof window !== "undefined") window.location.href = "/";
+  };
 
   // Mirror property details visual style with real assets once wired; placeholder uses existing image for now
   const rooms: RoomDef[] = useMemo(
@@ -434,7 +491,124 @@ export default function GuestPortalPage() {
 
 
   return (
-    <AuthGate allowRoles={["guest", "admin"]}>
+    <AuthGate allowRoles={["guest", "admin"]} showInlineSignOut={false}>
+      {/* Page header with account menu */}
+      <div className="sticky top-0 z-30 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-gray-900">Guest Portal</span>
+            <span className="hidden sm:inline text-xs text-gray-500">Manage your stay</span>
+          </div>
+          <div ref={menuRef} className="relative">
+            <button
+              type="button"
+              id="account-menu-button"
+              aria-haspopup="menu"
+              aria-expanded={menuOpen ? 'true' : 'false'}
+              aria-controls="account-menu"
+              onClick={() => setMenuOpen((v) => !v)}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowDown") {
+                  e.preventDefault();
+                  setMenuOpen(true);
+                  // focus first item after open
+                  setTimeout(() => menuItemsRef.current[0]?.focus(), 0);
+                } else if (e.key === "ArrowUp") {
+                  e.preventDefault();
+                  setMenuOpen(true);
+                  setTimeout(() => {
+                    const items = menuItemsRef.current;
+                    items[items.length - 1]?.focus();
+                  }, 0);
+                } else if (e.key === "Escape") {
+                  setMenuOpen(false);
+                }
+              }}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1.5 shadow-sm hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              ref={triggerRef}
+            >
+              {avatarUrl ? (
+                <Avatar src={avatarUrl} name={displayName || userEmail} email={userEmail} size="md" alt="Account" />
+              ) : (
+                <>
+                  <UserCircleIcon className="h-5 w-5 text-gray-700" />
+                  <span className="hidden sm:inline text-sm text-gray-800">Account</span>
+                </>
+              )}
+            </button>
+            {menuOpen && (
+              <div
+                role="menu"
+                aria-labelledby="account-menu-button"
+                id="account-menu"
+                className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 bg-white shadow-lg p-1"
+                tabIndex={-1}
+                onKeyDown={(e) => {
+                  const items = menuItemsRef.current;
+                  const currentIndex = items.findIndex((el: HTMLElement) => el === document.activeElement);
+                  if (e.key === "Escape") {
+                    e.stopPropagation();
+                    setMenuOpen(false);
+                    setTimeout(() => triggerRef.current?.focus(), 0);
+                  } else if (e.key === "Tab") {
+                    // Trap focus
+                    if (items.length === 0) return;
+                    if (!e.shiftKey && document.activeElement === items[items.length - 1]) {
+                      e.preventDefault();
+                      items[0].focus();
+                    } else if (e.shiftKey && document.activeElement === items[0]) {
+                      e.preventDefault();
+                      items[items.length - 1].focus();
+                    }
+                  } else if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
+                    items[next]?.focus();
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const prev = currentIndex > 0 ? currentIndex - 1 : items.length - 1;
+                    items[prev]?.focus();
+                  }
+                }}
+              >
+                <div className="px-3 py-2">
+                  <p className="text-xs text-gray-500">Signed in</p>
+                  <p className="truncate text-sm font-medium text-gray-900" title={userEmail || "Guest"}>{userEmail || "Guest"}</p>
+                </div>
+                <div className="my-1 h-px bg-gray-100" />
+                <Link href="/account" role="menuitem" tabIndex={0} ref={(el) => { menuItemsRef.current[0] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+                  <Cog6ToothIcon className="h-4 w-4 text-gray-500" />
+                  <span>Account settings</span>
+                </Link>
+                <Link href="/account/profile" role="menuitem" tabIndex={0} ref={(el) => { menuItemsRef.current[1] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+                  <UserCircleIcon className="h-4 w-4 text-gray-500" />
+                  <span>Profile</span>
+                </Link>
+                <Link href="/account/security" role="menuitem" tabIndex={0} ref={(el) => { menuItemsRef.current[2] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
+                  <ShieldCheckIcon className="h-4 w-4 text-gray-500" />
+                  <span>Password & security</span>
+                </Link>
+                <Link href="/account/deactivate" role="menuitem" tabIndex={0} ref={(el) => { menuItemsRef.current[3] = el; }} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm text-rose-700 hover:bg-rose-50 focus:outline-none focus:bg-rose-50">
+                  <UserMinusIcon className="h-4 w-4 text-rose-600" />
+                  <span>Deactivate account</span>
+                </Link>
+                <div className="my-1 h-px bg-gray-100" />
+                <button
+                  role="menuitem"
+                  tabIndex={0}
+                  ref={(el) => { menuItemsRef.current[4] = el as any; }}
+                  onClick={handleSignOut}
+                  className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:bg-gray-50"
+                >
+                  <ArrowRightOnRectangleIcon className="h-4 w-4 text-gray-500" />
+                  <span>Sign out</span>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Title moved inside right main column to align with hero width */}
 
@@ -529,7 +703,6 @@ export default function GuestPortalPage() {
           <div className="lg:col-span-2">
             {/* Title and context */}
             <div className="mb-4">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Guest Portal</h1>
               <p className="text-gray-600 text-sm md:text-base">Explore spaces, leave feedback, and manage your stay.</p>
             </div>
             {/* Hero + secondary images wrapped for height observation (excludes title) */}
