@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import Icon from "@/components/portal/Icon";
 // removed router usage for minimal UI
@@ -137,10 +138,13 @@ export function PropertySwitcher({
             <>
               <div className="flex-shrink-0 w-6 h-6 overflow-hidden rounded-full bg-gray-100">
                 {currentProperty.image_url ? (
-                  <img 
-                    src={currentProperty.image_url} 
-                    alt="" 
+                  <Image
+                    src={currentProperty.image_url}
+                    alt={currentProperty.name || ""}
+                    width={24}
+                    height={24}
                     className="object-cover w-full h-full"
+                    unoptimized
                   />
                 ) : (
                   <div className="w-full h-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
@@ -199,10 +203,13 @@ export function PropertySwitcher({
                 >
                   <div className="flex-shrink-0 w-6 h-6 overflow-hidden rounded-full bg-gray-100">
                     {property.image_url ? (
-                      <img 
-                        src={property.image_url} 
-                        alt="" 
+                      <Image
+                        src={property.image_url}
+                        alt={property.name || ""}
+                        width={24}
+                        height={24}
                         className="object-cover w-full h-full"
+                        unoptimized
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-100 text-gray-400 flex items-center justify-center">

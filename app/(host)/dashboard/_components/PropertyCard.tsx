@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { Pencil, Trash2, Upload } from "lucide-react";
 import { PropertyRow } from "@/lib/properties";
 
@@ -44,12 +45,16 @@ export default function PropertyCard({ item, onEdit, onDelete, onPublish }: Prop
       tabIndex={0}
       className="rounded-2xl border bg-white shadow-sm p-4 hover:shadow-md transition focus:outline-none focus:ring-2 focus:ring-black/10"
     >
-      <div className="mb-4 h-36 w-full overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center">
+      <div className="mb-4 h-36 w-full overflow-hidden rounded-xl bg-gray-100 flex items-center justify-center relative">
         {item.cover_image_url ? (
-          <img
+          <Image
             src={item.cover_image_url}
             alt={item.title}
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, 33vw"
+            className="object-cover"
+            unoptimized
+            priority={false}
           />
         ) : (
           <svg

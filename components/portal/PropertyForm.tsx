@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface PropertyFormProps {
@@ -127,9 +128,34 @@ export default function PropertyForm({
   const [isDirty, setIsDirty] = useState(false);
   const hasMarkedDirty = useRef(false);
 
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    const { data: session } = await supabase.auth.getUser();
+    if (!session.user) {
+      setLoading(false);
+      return;
+    }
+    // Try to fetch metadata columns; fallback if not present
+    let { data, error } = await supabase
+      .from("properties")
+      .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url,created_at,updated_at,published_at")
+      .eq('owner_id', session.user.id)
+      .order("created_at", { ascending: false });
+    if (error) {
+      const fb = await supabase
+        .from("properties")
+        .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url")
+        .eq('owner_id', session.user.id)
+        .order("created_at", { ascending: false });
+      data = fb.data as any;
+    }
+    if (data) setMyProps(data as PropertyRow[]);
+    setLoading(false);
+  }, [supabase]);
+
   useEffect(() => {
     void refresh();
-  }, []);
+  }, [refresh]);
 
   // derive host info from profile
   useEffect(() => {
@@ -270,31 +296,6 @@ export default function PropertyForm({
       }
     }
   };
-
-  async function refresh() {
-    setLoading(true);
-    const { data: session } = await supabase.auth.getUser();
-    if (!session.user) {
-      setLoading(false);
-      return;
-    }
-    // Try to fetch metadata columns; fallback if not present
-    let { data, error } = await supabase
-      .from("properties")
-      .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url,created_at,updated_at,published_at")
-      .eq('owner_id', session.user.id)
-      .order("created_at", { ascending: false });
-    if (error) {
-      const fb = await supabase
-        .from("properties")
-        .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url")
-        .eq('owner_id', session.user.id)
-        .order("created_at", { ascending: false });
-      data = fb.data as any;
-    }
-    if (data) setMyProps(data as PropertyRow[]);
-    setLoading(false);
-  }
 
   // When opening in edit mode, set selectedId immediately so UI reflects edit state,
   // then load full fields once the list is available
@@ -794,7 +795,7 @@ export default function PropertyForm({
             <>
               {/* Host derived */}
               <div className="flex items-center gap-3 p-2 border border-gray-200/50 rounded-md bg-gray-50">
-                <img src={hostAvatarDerived || "/images/placeholder/avatar.png"} alt="host avatar" className="w-10 h-10 rounded-full object-cover" />
+                <Image src={hostAvatarDerived || "/images/placeholder/avatar.png"} alt="host avatar" width={40} height={40} className="w-10 h-10 rounded-full object-cover" unoptimized />
                 <div className="text-sm">
                   <div className="font-medium">{hostNameDerived || hostName || "Host"}</div>
                   {hostJoinedYear && <div className="text-xs text-gray-600">Host since {hostJoinedYear}</div>}
@@ -914,7 +915,7 @@ export default function PropertyForm({
               <h4 className="font-medium">Homepage card preview</h4>
               <div className="border border-gray-200/50 rounded-xl overflow-hidden bg-white shadow-sm">
                 <div className="aspect-video bg-gray-100">
-                  <img src={displayImageUrl} alt="preview" className="w-full h-full object-cover" />
+                  <Image src={displayImageUrl} alt="preview" fill className="w-full h-full object-cover" unoptimized />
                 </div>
                 <div className="p-3">
                   <div className="flex items-center justify-between">
@@ -1009,7 +1010,7 @@ export default function PropertyForm({
                             title={displayImageUrl === img.url ? 'Current cover' : 'Click to set as cover'}
                             aria-label={displayImageUrl === img.url ? 'Current cover image' : 'Set as cover image'}
                           >
-                            <img src={img.url} alt={`album ${idx + 1}`} className="w-full h-full object-cover" />
+                            <Image src={img.url} alt={`album ${idx + 1}`} fill className="w-full h-full object-cover" unoptimized />
                             {displayImageUrl === img.url && (
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
                             )}
@@ -1075,7 +1076,7 @@ export default function PropertyForm({
                                 title={displayImageUrl === img.url ? 'Current cover' : 'Click to set as cover'}
                                 aria-label={displayImageUrl === img.url ? 'Current cover image' : 'Set as cover image'}
                               >
-                                <img src={img.url} alt={`album all ${idx + 1}`} className="w-full h-full object-cover" />
+                                <Image src={img.url} alt={`album all ${idx + 1}`} fill className="w-full h-full object-cover" unoptimized />
                                 {displayImageUrl === img.url && (
                                   <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
                                 )}
@@ -1159,7 +1160,7 @@ export default function PropertyForm({
                 <h4 className="font-medium">Property details hero preview</h4>
                 <div className="rounded-xl overflow-hidden border border-gray-200/50 bg-white">
                   <div className="aspect-[16/9] bg-gray-100">
-                    <img src={displayImageUrl} alt="hero preview" className="w-full h-full object-cover" />
+                    <Image src={displayImageUrl} alt="hero preview" fill className="w-full h-full object-cover" unoptimized />
                   </div>
                   <div className="p-4">
                     <div className="text-lg font-semibold text-gray-900">{title || 'Untitled Property'}</div>
@@ -1192,7 +1193,7 @@ export default function PropertyForm({
                         onClick={() => applyCoverImage(img.url)}
                         className={`relative flex-shrink-0 w-28 h-20 rounded-md overflow-hidden border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
                       >
-                        <img src={img.url} alt="thumb" className="w-full h-full object-cover" />
+                        <Image src={img.url} alt="thumb" fill className="w-full h-full object-cover" unoptimized />
                         {displayImageUrl === img.url && (
                           <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
                         )}

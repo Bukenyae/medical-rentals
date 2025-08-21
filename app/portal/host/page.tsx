@@ -12,16 +12,18 @@ import SidebarItem from "@/components/portal/SidebarItem";
 import BottomBar from "@/components/portal/BottomBar";
 import PaymentsList from "@/components/portal/PaymentsList";
 import TenantsList from "@/components/portal/TenantsList";
-import UserMenu from "@/components/portal/UserMenu";
+import AccountMenu from "@/components/AccountMenu";
 import { PropertySwitcher } from "@/components/portal/PropertySwitcher";
 import HostDetailPane from "@/components/portal/HostDetailPane";
 import { useRouter, useSearchParams } from "next/navigation";
+import useAuthUser from "@/hooks/useAuthUser";
 
 export default function HostPortalPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const supabase = useMemo(() => createClient(), []);
+  const { user } = useAuthUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export default function HostPortalPage() {
               <button className="p-2 rounded-xl hover:bg-gray-100" aria-label="Notifications">
                 <Icon name="bell" />
               </button>
-              <UserMenu />
+              {user && <AccountMenu user={user} variant="icon" />}
             </div>
           </div>
         </header>

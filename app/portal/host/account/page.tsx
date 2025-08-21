@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AuthGate from "@/components/portal/AuthGate";
-import UserMenu from "@/components/portal/UserMenu";
+import AccountMenu from "@/components/AccountMenu";
+import useAuthUser from "@/hooks/useAuthUser";
 import { createClient } from "@/lib/supabase/client";
 
 export default function HostAccountPage() {
   const supabase = createClient();
   const router = useRouter();
+  const { user } = useAuthUser();
   const [loading, setLoading] = useState(true);
   const [firstName, setFirstName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
@@ -97,7 +99,7 @@ export default function HostAccountPage() {
               </Link>
               <h1 className="text-lg font-semibold">Account</h1>
             </div>
-            <UserMenu />
+            {user && <AccountMenu user={user} variant="icon" />}
           </div>
         </header>
         <main className="mx-auto max-w-3xl px-4 py-6">

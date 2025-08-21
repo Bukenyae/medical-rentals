@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface MapLinkFormProps {
@@ -33,12 +33,7 @@ export default function MapLinkForm({ propertyId }: MapLinkFormProps) {
   const [published, setPublished] = useState(false);
   const [title, setTitle] = useState("");
 
-  useEffect(() => {
-    if (!propertyId) return;
-    void fetchProperty();
-  }, [propertyId]);
-
-  async function fetchProperty() {
+  const fetchProperty = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("properties")
@@ -52,7 +47,12 @@ export default function MapLinkForm({ propertyId }: MapLinkFormProps) {
       setTitle(p.title);
     }
     setLoading(false);
-  }
+  }, [propertyId, supabase]);
+
+  useEffect(() => {
+    if (!propertyId) return;
+    void fetchProperty();
+  }, [propertyId, fetchProperty]);
 
   async function saveMapUrl() {
     if (!propertyId) return;

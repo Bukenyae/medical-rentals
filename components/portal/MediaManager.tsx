@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 
 interface MediaManagerProps {
@@ -25,12 +26,7 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    if (!propertyId) return;
-    void refresh();
-  }, [propertyId]);
-
-  async function refresh() {
+  const refresh = useCallback(async () => {
     if (!propertyId) return;
     setLoading(true);
     // get property cover first
@@ -48,7 +44,12 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
       .order("created_at", { ascending: true });
     if (!error && data) setImages(data as ImageRow[]);
     setLoading(false);
-  }
+  }, [propertyId, supabase]);
+
+  useEffect(() => {
+    if (!propertyId) return;
+    void refresh();
+  }, [propertyId, refresh]);
 
   async function uploadFiles(files: FileList) {
     if (!propertyId) return;
@@ -141,8 +142,8 @@ export default function MediaManager({ propertyId, query }: MediaManagerProps) {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {filtered.map((img) => (
               <div key={img.id} className="border rounded-md overflow-hidden">
-                <div className="aspect-video bg-gray-100">
-                  <img src={img.url} alt={img.alt ?? ""} className="w-full h-full object-cover" />
+                <div className="relative aspect-video bg-gray-100">
+                  <Image src={img.url} alt={img.alt ?? ""} fill className="w-full h-full object-cover" unoptimized />
                 </div>
                 <div className="p-2 space-y-1">
                   <div className="flex items-center justify-between gap-2">

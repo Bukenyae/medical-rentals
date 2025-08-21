@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import Icon from "@/components/portal/Icon";
 import { useRouter } from "next/navigation";
@@ -146,11 +147,15 @@ export function PropertyCard({
       <div className="aspect-video bg-gray-100 relative">
         {imageUrl ? (
           <>
-            <img
+            <Image
               src={imageUrl}
               alt={name}
-              className={`w-full h-full object-cover transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+              fill
+              sizes="(max-width: 640px) 100vw, 50vw"
+              className={`object-cover transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
               onLoad={() => setImageLoaded(true)}
+              unoptimized
+              priority={false}
             />
             {!imageLoaded && (
               <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">

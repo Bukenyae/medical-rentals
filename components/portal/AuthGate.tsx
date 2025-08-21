@@ -95,7 +95,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
         sub.subscription.unsubscribe();
       };
     }
-  }, []);
+  }, [isProd, supabase]);
 
   // When session check finishes and user is unauthenticated for required role, open the modal.
   useEffect(() => {
