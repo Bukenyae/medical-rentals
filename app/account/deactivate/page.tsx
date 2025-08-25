@@ -88,7 +88,13 @@ export default function AccountDeactivatePage() {
           >
             {loading ? "Deactivating..." : "Deactivate account"}
           </button>
-          {message && <span className="text-sm text-gray-700">{message}</span>}
+          <span
+            className="text-sm text-gray-700"
+            role="status"
+            aria-live="polite"
+          >
+            {message}
+          </span>
         </div>
       </form>
 

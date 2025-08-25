@@ -16,6 +16,7 @@ import { User } from '@supabase/supabase-js';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 // Import components
 import BookingCard from './components/BookingCard';
@@ -41,6 +42,7 @@ interface PropertyDetailsProps {
 }
 
 export default function PropertyDetails({ params }: PropertyDetailsProps) {
+  const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
@@ -67,6 +69,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const [dbProperty, setDbProperty] = useState<DbPropertyRow | null>(null);
   const [dbImages, setDbImages] = useState<string[]>([]);
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
+  const [dbTried, setDbTried] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
@@ -79,36 +82,40 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   useEffect(() => {
     async function loadDb() {
       const pid = params.id;
-      const { data: prop, error } = await supabase
-        .from('properties')
-        .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
-        .eq('id', pid)
-        .limit(1)
-        .maybeSingle();
-      if (!error && prop) setDbProperty(prop as unknown as DbPropertyRow);
+      try {
+        const { data: prop, error } = await supabase
+          .from('properties')
+          .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
+          .eq('id', pid)
+          .limit(1)
+          .maybeSingle();
+        if (!error && prop) setDbProperty(prop as unknown as DbPropertyRow);
 
-      const { data: imgs } = await supabase
-        .from('property_images')
-        .select('id,url,is_approved,sort_order')
-        .eq('property_id', pid)
-        .eq('is_approved', true)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true });
-      if (imgs && imgs.length > 0) setDbImages(imgs.map(i => i.url));
+        const { data: imgs } = await supabase
+          .from('property_images')
+          .select('id,url,is_approved,sort_order')
+          .eq('property_id', pid)
+          .eq('is_approved', true)
+          .order('sort_order', { ascending: true })
+          .order('created_at', { ascending: true });
+        if (imgs && imgs.length > 0) setDbImages(imgs.map(i => i.url));
 
-      // Load unavailable (blocked) dates for booking calendar
-      const { data: blocks } = await supabase
-        .from('property_unavailable_dates')
-        .select('date')
-        .eq('property_id', pid);
-      if (Array.isArray(blocks)) {
-        const isoList = blocks
-          .map((r: any) => r?.date)
-          .filter(Boolean)
-          .map((d: string) => new Date(d))
-          .map((dt: Date) => new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())))
-          .map((dt: Date) => dt.toISOString().slice(0, 10));
-        setUnavailableDates(Array.from(new Set(isoList)));
+        // Load unavailable (blocked) dates for booking calendar
+        const { data: blocks } = await supabase
+          .from('property_unavailable_dates')
+          .select('date')
+          .eq('property_id', pid);
+        if (Array.isArray(blocks)) {
+          const isoList = blocks
+            .map((r: any) => r?.date)
+            .filter(Boolean)
+            .map((d: string) => new Date(d))
+            .map((dt: Date) => new Date(Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())))
+            .map((dt: Date) => dt.toISOString().slice(0, 10));
+          setUnavailableDates(Array.from(new Set(isoList)));
+        }
+      } finally {
+        setDbTried(true);
       }
     }
     void loadDb();
@@ -163,22 +170,55 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
 
   // Property data matching the property cards
   const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA];
-  if (!property) {
+  // Defer notFound() until after DB load to support DB-only IDs
+  if (!property && dbTried && !dbProperty) {
     notFound();
   }
 
   const host =
     'host' in property && property.host ? property.host : DEFAULT_HOST;
 
+  const baseFromDb = dbProperty
+    ? {
+        id: dbProperty.id,
+        title: dbProperty.title,
+        location: dbProperty.address,
+        rating: 4.8,
+        reviewCount: 0,
+        price: dbProperty.nightly_price ?? 150,
+        bedrooms: dbProperty.bedrooms,
+        bathrooms: dbProperty.bathrooms,
+        sqft: dbProperty.sqft,
+        proximityBadges: [] as Array<{ text: string; bgColor: string; textColor: string }>,
+        host,
+        description: 'Comfortable, furnished rental for professionals.',
+      }
+    : null;
+
+  const base = property ?? baseFromDb ?? {
+    id: params.id,
+    title: 'Property',
+    location: '',
+    rating: 4.8,
+    reviewCount: 0,
+    price: 150,
+    bedrooms: 0,
+    bathrooms: 0,
+    sqft: null as unknown as number,
+    proximityBadges: [] as Array<{ text: string; bgColor: string; textColor: string }>,
+    host,
+    description: 'Comfortable, furnished rental for professionals.',
+  };
+
   const propertyWithDefaults = {
-    ...property,
+    ...base,
     // Override with Supabase data when available
-    title: dbProperty?.title ?? property.title,
-    location: dbProperty?.address ?? property.location,
-    price: dbProperty?.nightly_price ?? property.price,
-    bedrooms: dbProperty?.bedrooms ?? property.bedrooms,
-    bathrooms: dbProperty?.bathrooms ?? property.bathrooms,
-    sqft: dbProperty?.sqft ?? property.sqft,
+    title: dbProperty?.title ?? base.title,
+    location: dbProperty?.address ?? base.location,
+    price: dbProperty?.nightly_price ?? base.price,
+    bedrooms: dbProperty?.bedrooms ?? base.bedrooms,
+    bathrooms: dbProperty?.bathrooms ?? base.bathrooms,
+    sqft: dbProperty?.sqft ?? base.sqft,
     host,
     images: (dbImages.length > 0
       ? dbImages
@@ -227,12 +267,20 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <div className="mb-6">
-          <Link 
-            href="/" 
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined' && window.history.length > 1) {
+                router.back();
+              } else {
+                router.push('/');
+              }
+            }}
             className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            aria-label="Go back to property listings"
           >
             ← Back to properties
-          </Link>
+          </button>
         </div>
 
         {/* Property Gallery */}

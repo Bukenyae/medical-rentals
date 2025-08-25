@@ -24,10 +24,7 @@ export default function AccountProfilePage() {
   const [interests, setInterests] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [facebookUrl, setFacebookUrl] = useState("");
-  const [linkedinUrl, setLinkedinUrl] = useState("");
-  const [instagramUrl, setInstagramUrl] = useState("");
-  const [tiktokUrl, setTiktokUrl] = useState("");
+  
 
   useEffect(() => {
     let mounted = true;
@@ -43,10 +40,7 @@ export default function AccountProfilePage() {
       setLanguages(Array.isArray(meta.languages) ? (meta.languages as string[]).join(", ") : (meta.languages as string) || "");
       setInterests(Array.isArray(meta.interests) ? (meta.interests as string[]).join(", ") : (meta.interests as string) || "");
       setAvatarUrl((meta.avatar_url as string) || "");
-      setFacebookUrl((meta.facebook_url as string) || "");
-      setLinkedinUrl((meta.linkedin_url as string) || "");
-      setInstagramUrl((meta.instagram_url as string) || "");
-      setTiktokUrl((meta.tiktok_url as string) || "");
+      
 
       // One-time normalization from provider identities into our metadata fields
       // Only run if not previously normalized; do not overwrite non-empty values
@@ -97,16 +91,7 @@ export default function AccountProfilePage() {
     };
   }, [supabase]);
 
-  // Basic URL validation (http/https) helper
-  const isValidUrl = (value: string) => {
-    if (!value) return true;
-    try {
-      const u = new URL(value);
-      return u.protocol === "http:" || u.protocol === "https:";
-    } catch {
-      return false;
-    }
-  };
+  
 
   // Auto center square crop using canvas
   const cropToSquare = async (file: File): Promise<Blob> => {
@@ -126,31 +111,13 @@ export default function AccountProfilePage() {
     });
   };
 
-  const startOAuthImport = async (provider: "facebook" | "linkedin") => {
-    try {
-      setLoading(true);
-      const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/account/profile` : undefined;
-      const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
-      if (error) throw error;
-      // Redirect will happen; after return, metadata from provider will be in user profile
-    } catch (err: any) {
-      setMessage(err?.message || "Failed to start social import.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
     try {
-      // Validate URLs
-      const urls = [facebookUrl, linkedinUrl, instagramUrl, tiktokUrl];
-      if (!urls.every(isValidUrl)) {
-        throw new Error("Please enter valid social URLs (http/https). ");
-      }
-
       const langs = languages
         .split(",")
         .map((s) => s.trim())
@@ -194,10 +161,6 @@ export default function AccountProfilePage() {
           languages: langs,
           interests: ints,
           avatar_url: newAvatarUrl || null,
-          facebook_url: facebookUrl || null,
-          linkedin_url: linkedinUrl || null,
-          instagram_url: instagramUrl || null,
-          tiktok_url: tiktokUrl || null,
         },
       });
       if (error) throw error;
@@ -236,15 +199,6 @@ export default function AccountProfilePage() {
                 <span className="text-gray-400 text-sm">No photo</span>
               )}
             </div>
-        {/* Social import actions */}
-        <div>
-          <p className="text-sm text-gray-700 mb-2">Import profile information from social accounts</p>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => startOAuthImport("facebook")} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">Import from Facebook</button>
-            <button type="button" onClick={() => startOAuthImport("linkedin")} className="px-3 py-1.5 text-sm rounded-md border border-gray-300 bg-white hover:bg-gray-50">Import from LinkedIn</button>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">Requires provider configuration in Supabase Auth. After signing in, name and avatar may auto-populate from the provider.</p>
-        </div>
             <div className="flex items-center gap-3">
               <label className="inline-flex items-center px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 cursor-pointer">
                 <input
@@ -325,25 +279,6 @@ export default function AccountProfilePage() {
             placeholder="Hiking, Reading"
           />
         </div>
-        {/* Social links */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Facebook URL</label>
-            <input type="url" value={facebookUrl} onChange={(e) => setFacebookUrl(e.target.value)} placeholder="https://facebook.com/username" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">LinkedIn URL</label>
-            <input type="url" value={linkedinUrl} onChange={(e) => setLinkedinUrl(e.target.value)} placeholder="https://www.linkedin.com/in/username" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Instagram URL</label>
-            <input type="url" value={instagramUrl} onChange={(e) => setInstagramUrl(e.target.value)} placeholder="https://instagram.com/username" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">TikTok URL</label>
-            <input type="url" value={tiktokUrl} onChange={(e) => setTiktokUrl(e.target.value)} placeholder="https://www.tiktok.com/@username" className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-        </div>
         <div className="flex items-center gap-3">
           <button
             type="submit"
@@ -352,7 +287,13 @@ export default function AccountProfilePage() {
           >
             {loading ? "Saving..." : "Save profile"}
           </button>
-          {message && <span className="text-sm text-gray-700">{message}</span>}
+          <span
+            className="text-sm text-gray-700"
+            role="status"
+            aria-live="polite"
+          >
+            {message}
+          </span>
         </div>
       </form>
 
