@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AuthModal from "@/components/AuthModal";
+import { useRouter } from "next/navigation";
 
 interface AuthGateProps {
   allowRoles: ("guest" | "host" | "admin")[];
@@ -26,6 +27,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
   const [role, setRole] = useState<SessionLike["role"]>("guest");
   const [mounted, setMounted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const router = useRouter();
 
   const isProd = useMemo(() => process.env.NODE_ENV === 'production', []);
   const supabase = useMemo(() => createClient(), []);
@@ -97,61 +99,35 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     }
   }, [isProd, supabase]);
 
-  // When session check finishes and user is unauthenticated for required role, open the modal.
+  // Open auth modal for dev preview when unauthenticated
   useEffect(() => {
     if (!mounted) return;
     if (loading) return;
     const needsAuth = !session || !allowRoles.includes(session.role);
-    if (needsAuth && !showAuthModal) {
+    if (needsAuth && !showAuthModal && !isProd) {
       setShowAuthModal(true);
     }
-  }, [mounted, loading, session, allowRoles, showAuthModal]);
+  }, [mounted, loading, session, allowRoles, showAuthModal, isProd]);
+
+  // Auto-redirect unauthenticated users in production (no CTA)
+  useEffect(() => {
+    if (!isProd) return;
+    if (loading) return;
+    const needsAuth = !session || !allowRoles.includes(session.role);
+    if (needsAuth) {
+      router.replace("/");
+    }
+  }, [isProd, loading, session, allowRoles, router]);
 
   useEffect(() => {
     if (session && !allowRoles.includes(session.role)) return;
   }, [session, allowRoles]);
 
-  const signIn = () => {
-    const resolvedRole: SessionLike["role"] = email === "bkanuel@gmail.com" ? "admin" : role;
-    const next: SessionLike = { email, role: resolvedRole };
-    try {
-      localStorage.setItem("mr_session", JSON.stringify(next));
-      console.log("[AuthGate] signIn stored mr_session:", next);
-    } catch (e) {
-      console.log("[AuthGate] signIn localStorage error:", e);
-    }
-    setSession(next);
-  };
-
-  const signOut = () => {
-    try {
-      localStorage.removeItem("mr_session");
-    } catch {}
-    console.log("[AuthGate] signOut cleared session");
-    setSession(null);
-    setEmail("");
-    setRole("guest");
-  };
-
   if (!session || !allowRoles.includes(session.role)) {
     if (isProd) {
-      // In production, avoid redirect loops. Wait for session, then show a simple prompt if unauthenticated.
-      if (loading) {
-        return (
-          <div className="min-h-[50vh] flex items-center justify-center">
-            <div className="text-sm text-gray-600">Checking your session…</div>
-          </div>
-        );
-      }
-      return (
-        <div className="min-h-[60vh] flex items-center justify-center px-4">
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-6 text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Please sign in</h2>
-            <p className="text-sm text-gray-600 mb-6">Go back to the homepage and use the header menu to sign in.</p>
-            <a href="/" className="inline-flex items-center justify-center rounded-lg bg-blue-600 text-white px-4 py-2.5 font-semibold hover:bg-blue-700">Go to homepage</a>
-          </div>
-        </div>
-      );
+      // In production, avoid showing an intermediate CTA; perform a silent redirect handled by the effect above.
+      // Render nothing to minimize flicker while redirecting.
+      return null;
     }
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
@@ -179,7 +155,17 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
             <option value="host">Host/Renter</option>
           </select>
 
-          <button onClick={signIn} className="w-full bg-blue-600 text-white rounded-lg py-2.5 font-semibold hover:bg-blue-700 active:bg-blue-800 transition">Continue</button>
+          <button onClick={() => {
+            const resolvedRole: SessionLike["role"] = email === "bkanuel@gmail.com" ? "admin" : role;
+            const next: SessionLike = { email, role: resolvedRole };
+            try {
+              localStorage.setItem("mr_session", JSON.stringify(next));
+              console.log("[AuthGate] signIn stored mr_session:", next);
+            } catch (e) {
+              console.log("[AuthGate] signIn localStorage error:", e);
+            }
+            setSession(next);
+          }} className="w-full bg-blue-600 text-white rounded-lg py-2.5 font-semibold hover:bg-blue-700 active:bg-blue-800 transition">Continue</button>
 
           <p className="text-xs text-gray-500 mt-4">Admin email: <span className="font-mono">bkanuel@gmail.com</span></p>
         </div>
@@ -191,7 +177,15 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     <div className="relative">
       {showInlineSignOut && (
         <div className="absolute right-4 -top-10 sm:top-0">
-          <button onClick={signOut} className="text-xs text-gray-500 hover:text-gray-700 underline">Sign out</button>
+          <button onClick={() => {
+            try {
+              localStorage.removeItem("mr_session");
+            } catch {}
+            console.log("[AuthGate] signOut cleared session");
+            setSession(null);
+            setEmail("");
+            setRole("guest");
+          }} className="text-xs text-gray-500 hover:text-gray-700 underline">Sign out</button>
         </div>
       )}
       {children}

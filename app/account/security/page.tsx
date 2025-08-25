@@ -4,6 +4,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import AuthGate from "@/components/portal/AuthGate";
 import { useSearchParams } from "next/navigation";
+import { EyeIcon, EyeSlashIcon } from "@heroicons/react/24/outline";
 
 export default function AccountSecurityPage() {
   const supabase = useMemo(() => createClient(), []);
@@ -19,6 +20,9 @@ export default function AccountSecurityPage() {
   const [twoFactor, setTwoFactor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -87,34 +91,76 @@ export default function AccountSecurityPage() {
           <legend className="text-sm font-semibold text-gray-900">Change password</legend>
           <div>
             <label className="block text-sm font-medium text-gray-700">Current password</label>
-            <input
-              type="password"
-              value={currentPwd}
-              onChange={(e) => setCurrentPwd(e.target.value)}
-              className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="••••••••"
-            />
+            <div className="relative">
+              <input
+                type={showCurrent ? "text" : "password"}
+                value={currentPwd}
+                onChange={(e) => setCurrentPwd(e.target.value)}
+                className="mt-1 w-full rounded-md border border-gray-300 px-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="••••••••"
+              />
+              <button
+                type="button"
+                aria-label={showCurrent ? "Hide current password" : "Show current password"}
+                onClick={() => setShowCurrent((v) => !v)}
+                className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+              >
+                {showCurrent ? (
+                  <EyeSlashIcon className="h-5 w-5" aria-hidden="true" />
+                ) : (
+                  <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">New password</label>
-              <input
-                type="password"
-                value={newPwd}
-                onChange={(e) => setNewPwd(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="At least 6 characters"
-              />
+              <div className="relative">
+                <input
+                  type={showNew ? "text" : "password"}
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="At least 6 characters"
+                />
+                <button
+                  type="button"
+                  aria-label={showNew ? "Hide new password" : "Show new password"}
+                  onClick={() => setShowNew((v) => !v)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  {showNew ? (
+                    <EyeSlashIcon className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Confirm new password</label>
-              <input
-                type="password"
-                value={confirmPwd}
-                onChange={(e) => setConfirmPwd(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Re-enter new password"
-              />
+              <div className="relative">
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPwd}
+                  onChange={(e) => setConfirmPwd(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 px-3 pr-10 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Re-enter new password"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirm ? "Hide confirm password" : "Show confirm password"}
+                  onClick={() => setShowConfirm((v) => !v)}
+                  className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirm ? (
+                    <EyeSlashIcon className="h-5 w-5" aria-hidden="true" />
+                  ) : (
+                    <EyeIcon className="h-5 w-5" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </fieldset>
@@ -141,7 +187,13 @@ export default function AccountSecurityPage() {
           >
             {loading ? "Saving..." : "Save security settings"}
           </button>
-          {message && <span className="text-sm text-gray-700">{message}</span>}
+          <span
+            className="text-sm text-gray-700"
+            role="status"
+            aria-live="polite"
+          >
+            {message}
+          </span>
         </div>
       </form>
 
