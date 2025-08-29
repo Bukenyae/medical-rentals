@@ -30,7 +30,7 @@ export default function HeroSection({
         {/* Social Proof: Constrained to match SearchBar width */}
         <div className="max-w-4xl mx-auto w-full">
           <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
-            <div className="hidden sm:flex -space-x-3 flex-shrink-0">
+            <div className="hidden lg:flex -space-x-3 flex-shrink-0">
               {[
                 { src: "/images/Reviewers/Dr. Angelica Celestine.jpg", alt: "Dr. Angelica Celestine" },
                 { src: "/images/Reviewers/Dr. Nia Jenkins.jpg", alt: "Dr. Nia Jenkins" },
