@@ -1,20 +1,15 @@
 'use client';
 
 import Image from 'next/image';
-import { Shield, Clock, Award, HeadphonesIcon, Users, Star, Heart } from 'lucide-react';
+import { Clock, Award, Users, Star, Heart } from 'lucide-react';
 
 export default function PropertyManagementSection() {
   const features = [
-    // Order per request: 24/7 Support (top), Verified Properties (middle), Quality Guarantee (bottom)
+    // 24/7 Support (top), Quality Guarantee (bottom) — "Trusted Homes" removed per request
     {
       icon: Clock,
       title: "Around-the-Clock Care",
       description: "We are dedicated to providing attentive support whenever you need it, ensuring your comfort and peace of mind throughout your stay."
-    },
-    {
-      icon: Shield,
-      title: "Trusted and Verified Homes",
-      description: "Every property we offer reflects our commitment to quality and safety, carefully inspected to uphold the high standards you deserve."
     },
     {
       icon: Award,
@@ -26,7 +21,6 @@ export default function PropertyManagementSection() {
   // Concise titles for bottom row
   const conciseTitles = [
     '24/7 Support',
-    'Trusted Homes',
     'Quality Promise',
   ];
 
@@ -141,7 +135,7 @@ export default function PropertyManagementSection() {
           {/* Large screens: bottom-centered horizontal row */}
           <div className="absolute inset-x-0 bottom-8 sm:bottom-10 md:bottom-12 lg:bottom-14 pointer-events-auto hidden lg:block">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 items-stretch">
                 {features.map((feature, i) => (
                   <div key={i} className="group">
                     <div className="bg-black/30 rounded-3xl p-8 text-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
