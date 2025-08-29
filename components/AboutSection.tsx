@@ -8,19 +8,19 @@ export default function AboutSection() {
       name: "Agnes Andrews",
       role: "CEO",
       description: "Agnes founded Belle Rouge Properties to provide exceptional housing for professionals from all walks of life. With 40+ years in insurance services, she understands the unique importance of reliability, facility management, and customer satisfaction.",
-      image: "/images/team/agnes-andrews.jpg"
+      image: "/images/team/Agnes-Smith.jpeg"
     },
     {
       name: "Kinda Andrews",
       role: "CMO",
       description: "Kinda leads our marketing efforts with a focus on building authentic relationships with hospitals, universities, and community organizations. Her strategic approach ensures our properties reach medical staff, academics, military members, and young professionals at the right time.",
-      image: "/images/team/kinda-andrews.jpg"
+      image: "/images/team/Andrews-Sanders.jpeg"
     },
     {
       name: "Nayo Andrews",
       role: "COO",
       description: "Nayo oversees operations to ensure every guest experience exceeds expectations. Her attention to detail and commitment to excellence maintains the highest standards across all Belle Rouge Properties locations.",
-      image: "/images/team/nayo-andrews.jpg"
+      image: "/images/team/Nayo-Zakiya.jpg"
     }
   ];
 
@@ -41,13 +41,18 @@ export default function AboutSection() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {teamMembers.map((member, index) => (
-            <div key={index} className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="h-80 relative">
+            <div
+              key={index}
+              className="bg-white rounded-2xl shadow-lg overflow-hidden"
+              {...(index === 0 ? { 'data-agnes-card': true } : {})}
+            >
+              <div className="h-80 relative overflow-hidden">
                 <Image
                   src={member.image}
                   alt={member.name}
                   fill
-                  className="object-cover object-top"
+                  className="object-cover"
+                  style={{ objectPosition: getObjectPosition(member.name), transform: `scale(${getScale(member.name)})` }}
                 />
               </div>
               <div className="p-6">
@@ -61,4 +66,30 @@ export default function AboutSection() {
       </div>
     </section>
   );
+}
+
+function getObjectPosition(name: string): string {
+  switch (name) {
+    case 'Agnes Andrews':
+      // Slightly higher crop
+      return '50% 20%';
+    case 'Kinda Andrews':
+      // Center with a small upward bias
+      return '50% 35%';
+    case 'Nayo Andrews':
+      // Keep head visible while zooming in: slight downward shift from very top-biased crop
+      return '50% 24%';
+    default:
+      return '50% 50%';
+  }
+}
+
+function getScale(name: string): number {
+  switch (name) {
+    case 'Nayo Andrews':
+      // Slightly reduced zoom per request to preserve top of head
+      return 1.12;
+    default:
+      return 1.0;
+  }
 }
