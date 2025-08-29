@@ -11,7 +11,7 @@ interface ReviewsSectionProps {
 export default function ReviewsSection({ rating, reviewCount }: ReviewsSectionProps) {
   const reviews = [
     {
-      name: "Dr. Angelica Celestine",
+      name: "Dr. Angelica Celestin Brumfield",
       image: "/images/Reviewers/Dr. Angelica Celestine.jpg",
       date: "March 2025",
       content: "Perfect location for my assignment at OLOL. Clean, quiet, and exactly what I needed as a traveling physician."
