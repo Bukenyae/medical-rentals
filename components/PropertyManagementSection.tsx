@@ -14,7 +14,7 @@ export default function PropertyManagementSection() {
     {
       icon: Award,
       title: "Our Promise of Quality",
-      description: "We stand behind the cleanliness, comfort, and thoughtful amenities of each home—because your well-being is at the heart of everything we do."
+      description: "We stand behind the cleanliness, comfort, and thoughtful amenities of each home; your well-being is at the heart of our service."
     },
   ];
 
@@ -65,7 +65,7 @@ export default function PropertyManagementSection() {
           src="/images/properties/Lexington/Front-Profile.png"
           alt="Lexington - Front Profile"
           fill
-          className="object-contain object-center transform scale-[1.5125] origin-center"
+          className="object-cover sm:object-contain object-center transform scale-[1.5] sm:scale-[1.5125] origin-center"
         />
       </div>
 
@@ -119,13 +119,13 @@ export default function PropertyManagementSection() {
             </div>
           </div>
           {/* Small-screen: right-side vertical stack to preserve ~70% background visibility */}
-          <div className="absolute right-2 sm:right-4 bottom-20 sm:bottom-24 pointer-events-auto block lg:hidden">
-            <div className="flex flex-col items-stretch gap-3 sm:gap-4 max-w-[220px] sm:max-w-[260px]">
+          <div className="absolute right-2 sm:right-4 bottom-24 sm:bottom-24 pointer-events-auto block lg:hidden">
+            <div className="flex flex-col items-stretch gap-3 sm:gap-4 max-w-[200px] sm:max-w-[260px]">
               {features.map((feature, i) => (
                 <div key={i} className="group">
-                  <div className="bg-black/30 rounded-2xl p-4 sm:p-5 text-center transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
-                    <div className="text-base sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">{conciseTitles[i] ?? feature.title}</div>
-                    <p className="text-xs sm:text-sm text-gray-200 leading-snug">{feature.description}</p>
+                  <div className="bg-black/30 rounded-2xl p-3 sm:p-5 text-center transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+                    <div className="text-sm sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">{conciseTitles[i] ?? feature.title}</div>
+                    <p className="text-[11px] sm:text-sm text-gray-200 leading-snug">{feature.description}</p>
                   </div>
                 </div>
               ))}
