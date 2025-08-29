@@ -128,12 +128,14 @@ export default function PropertyManagementSection() {
           <div className="absolute right-2 sm:right-4 bottom-20 sm:bottom-24 pointer-events-auto block lg:hidden">
             <div className="flex flex-col items-stretch gap-3 sm:gap-4 max-w-[220px] sm:max-w-[260px]">
               {features.map((feature, i) => (
-                <div key={i} className="group">
-                  <div className="bg-black/30 rounded-2xl p-4 sm:p-5 text-center transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
-                    <div className="text-base sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">{conciseTitles[i] ?? feature.title}</div>
-                    <p className="text-xs sm:text-sm text-gray-200 leading-snug">{feature.description}</p>
+                i === 1 ? null : (
+                  <div key={i} className="group">
+                    <div className="bg-black/30 rounded-2xl p-4 sm:p-5 text-center transform transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
+                      <div className="text-base sm:text-lg font-semibold text-white mb-1.5 sm:mb-2">{conciseTitles[i] ?? feature.title}</div>
+                      <p className="text-xs sm:text-sm text-gray-200 leading-snug">{feature.description}</p>
+                    </div>
                   </div>
-                </div>
+                )
               ))}
             </div>
           </div>
