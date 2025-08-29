@@ -68,7 +68,7 @@ export default function PropertyManagementSection() {
       {/* Background Image (pushed down to make room for subtitle) */}
       <div className="absolute inset-x-0 bottom-0 top-52 sm:top-64 md:top-72 lg:top-80 overflow-hidden">
         <Image
-          src="/images/properties/Lexington/Front Profile.png"
+          src="/images/properties/Lexington/Front-Profile.png"
           alt="Lexington - Front Profile"
           fill
           className="object-contain object-center transform scale-[1.5125] origin-center"
