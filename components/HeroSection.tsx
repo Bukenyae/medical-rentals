@@ -23,7 +23,7 @@ export default function HeroSection({
   onGuestsChange
 }: HeroSectionProps) {
   return (
-    <section className="relative min-h-[40vh] sm:h-[40vh] flex items-end justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6 sm:pb-8 bg-white">
+    <section className="relative min-h-[40vh] sm:h-[40vh] flex items-end justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6 sm:pb-8 bg-white mt-24 sm:mt-28">
       {/* Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto w-full">
 
