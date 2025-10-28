@@ -3,7 +3,12 @@
 import Image from 'next/image';
 import { Clock, Award, Users, Star, Heart } from 'lucide-react';
 
-export default function PropertyManagementSection() {
+interface PropertyManagementSectionProps {
+  showHeading?: boolean;
+  className?: string;
+}
+
+export default function PropertyManagementSection({ showHeading = true, className = '' }: PropertyManagementSectionProps = {}) {
   const features = [
     // 24/7 Support (top), Quality Guarantee (bottom) — "Trusted Homes" removed per request
     {
@@ -46,21 +51,29 @@ export default function PropertyManagementSection() {
     },
   ];
 
+  const imageTopClasses = showHeading
+    ? 'top-52 sm:top-64 md:top-72 lg:top-80'
+    : 'top-8 sm:top-10 md:top-12 lg:top-14';
+
   return (
-    <section className="pt-4 md:pt-6 lg:pt-8 pb-16 md:pb-32 lg:pb-72 relative overflow-hidden min-h-[840px] sm:min-h-[960px] md:min-h-[1120px] lg:min-h-[1280px]">
+    <section
+      className={`pt-4 md:pt-6 lg:pt-8 pb-16 md:pb-32 lg:pb-72 relative overflow-hidden min-h-[840px] sm:min-h-[960px] md:min-h-[1120px] lg:min-h-[1280px] ${className}`.trim()}
+    >
       {/* Top subtitle (moved off the image, black text) */}
-      <div className="relative z-50 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 pb-4 sm:pb-6">
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center mb-4">
-            Ethos
-          </h2>
-          <p className="w-full text-center text-gray-600 text-xl leading-snug font-medium mx-auto max-w-3xl sm:max-w-4xl lg:max-w-5xl">
-            As owners and operators, we embrace a philosophy of meticulous care and attention to every detail, so you can confidently focus on what truly matters—your work, studies, service, and the moments that make life meaningful.
-          </p>
+      {showHeading && (
+        <div className="relative z-50 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 sm:py-3 pb-4 sm:pb-6">
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 text-center mb-4">
+              Ethos
+            </h2>
+            <p className="w-full text-center text-gray-600 text-xl leading-snug font-medium mx-auto max-w-3xl sm:max-w-4xl lg:max-w-5xl">
+              As owners and operators, we embrace a philosophy of meticulous care and attention to every detail, so you can confidently focus on what truly matters—your work, studies, service, and the moments that make life meaningful.
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       {/* Background Image (pushed down to make room for subtitle) */}
-      <div className="absolute inset-x-0 bottom-0 top-52 sm:top-64 md:top-72 lg:top-80 overflow-hidden">
+      <div className={`absolute inset-x-0 bottom-0 ${imageTopClasses} overflow-hidden`}>
         <Image
           src="/images/properties/Lexington/Front-Profile.png"
           alt="Lexington - Front Profile"
@@ -77,7 +90,7 @@ export default function PropertyManagementSection() {
       </div>
 
       {/* Overlay content container (features removed; bottom row retained) */}
-      <div className="absolute inset-x-0 bottom-0 top-52 sm:top-64 md:top-72 lg:top-80 z-30 pointer-events-none">
+      <div className={`absolute inset-x-0 bottom-0 ${imageTopClasses} z-30 pointer-events-none`}>
         <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Contact + social bar anchored to bottom INSIDE overlay */}
           <div className="absolute inset-x-0 bottom-2 sm:bottom-3 md:bottom-0 z-40 pointer-events-auto">

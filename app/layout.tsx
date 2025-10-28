@@ -1,9 +1,7 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
 import type { Metadata } from 'next'
 import GoogleOneTap from '@/components/GoogleOneTap'
-
-const inter = Inter({ subsets: ['latin'] })
+import { inter } from './fonts'
 
 export const metadata: Metadata = {
   title: 'BelleRouges',
@@ -29,7 +27,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <head />
+      <body className={`${inter.className} bg-[var(--oyster)]`}>
         <GoogleOneTap />
         {children}
       </body>

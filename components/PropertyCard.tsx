@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Star, Check } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 interface ProximityBadge {
   text: string;
@@ -17,14 +17,9 @@ interface PropertyCardProps {
   rating: number;
   reviewCount: number;
   price: number;
-  weeklyDiscountPct?: number;
-  weeklyPrice?: number;
-  monthlyDiscountPct?: number;
-  monthlyPrice?: number;
   bedrooms: number;
   bathrooms: number;
   sqft: number;
-  proximityBadges: ProximityBadge[];
   imageUrl: string;
   imageAlt: string;
 }
@@ -36,22 +31,12 @@ export default function PropertyCard({
   rating,
   reviewCount,
   price,
-  weeklyDiscountPct,
-  weeklyPrice,
-  monthlyDiscountPct,
-  monthlyPrice,
   bedrooms,
   bathrooms,
   sqft,
-  proximityBadges,
   imageUrl,
   imageAlt
 }: PropertyCardProps) {
-  const weeklyPct = typeof weeklyDiscountPct === 'number' ? weeklyDiscountPct : 20;
-  const monthlyPct = typeof monthlyDiscountPct === 'number' ? monthlyDiscountPct : 40;
-  const weeklyRate = typeof weeklyPrice === 'number' ? weeklyPrice : Math.round(price * (1 - weeklyPct / 100));
-  const monthlyRate = typeof monthlyPrice === 'number' ? monthlyPrice : Math.round(price * (1 - monthlyPct / 100));
-
   return (
     <Link
       href={`/property/${id}`}
@@ -79,18 +64,6 @@ export default function PropertyCard({
         <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
         <p className="text-gray-600 mb-4">{description}</p>
         
-        {/* Proximity Badges */}
-        <div className="flex items-center space-x-2 mb-4">
-          {proximityBadges.map((badge, index) => (
-            <span 
-              key={index}
-              className={`inline-flex items-center px-2 py-1 rounded-full text-[10px] font-medium ${badge.bgColor} ${badge.textColor}`}
-            >
-              {badge.text}
-            </span>
-          ))}
-        </div>
-        
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4 text-sm text-gray-600">
             <div className="flex items-center">
@@ -107,28 +80,10 @@ export default function PropertyCard({
             </div>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-extrabold text-gray-900">
-              From ${price} <span className="text-base font-medium text-gray-500">/ night</span>
-            </div>
-            <div className="mt-2 flex flex-col space-y-1 text-xs text-gray-600">
-              <div className="flex items-center justify-end space-x-2">
-                <span className="inline-flex items-center rounded-full border border-gray-300 px-2 py-0.5">
-                  <Check className="w-3 h-3 mr-1 text-gray-600" />
-                  <span className="font-medium">Weekly Discount</span>
-                </span>
-                <span>
-                  7+ nights: 20% off — ${weeklyRate} / night
-                </span>
-              </div>
-              <div className="flex items-center justify-end space-x-2">
-                <span className="inline-flex items-center rounded-full border border-gray-300 px-2 py-0.5">
-                  <Check className="w-3 h-3 mr-1 text-gray-600" />
-                  <span className="font-medium">Monthly Discount</span>
-                </span>
-                <span>
-                  21+ nights: 40% off — ${monthlyRate} / night
-                </span>
-              </div>
+            <div className="flex items-baseline justify-end gap-1">
+              <span className="text-base font-medium text-gray-500">From</span>
+              <span className="text-3xl font-extrabold text-gray-900">${price}</span>
+              <span className="text-base font-medium text-gray-500">/ night</span>
             </div>
           </div>
         </div>

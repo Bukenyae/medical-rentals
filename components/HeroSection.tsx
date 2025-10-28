@@ -11,6 +11,7 @@ interface HeroSectionProps {
   onLocationChange: (location: string, propertyId: string) => void;
   onDatesChange: (dates: string) => void;
   onGuestsChange: (guests: number) => void;
+  isScrolled: boolean;
 }
 
 export default function HeroSection({
@@ -20,10 +21,11 @@ export default function HeroSection({
   selectedPropertyId,
   onLocationChange,
   onDatesChange,
-  onGuestsChange
+  onGuestsChange,
+  isScrolled,
 }: HeroSectionProps) {
   return (
-    <section className="relative min-h-[40vh] sm:h-[40vh] flex items-end justify-center px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6 sm:pb-8 bg-white mt-24 sm:mt-28">
+    <section className="relative flex justify-center px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8 bg-white mt-12 sm:mt-16">
       {/* Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto w-full">
 
@@ -57,16 +59,18 @@ export default function HeroSection({
         </div>
 
         {/* Search Bar */}
-        <SearchBar
-          selectedLocation={selectedLocation}
-          selectedDates={selectedDates}
-          selectedGuests={selectedGuests}
-          selectedPropertyId={selectedPropertyId}
-          onLocationChange={onLocationChange}
-          onDatesChange={onDatesChange}
-          onGuestsChange={onGuestsChange}
-          variant="hero"
-        />
+        <div className={`transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <SearchBar
+            selectedLocation={selectedLocation}
+            selectedDates={selectedDates}
+            selectedGuests={selectedGuests}
+            selectedPropertyId={selectedPropertyId}
+            onLocationChange={onLocationChange}
+            onDatesChange={onDatesChange}
+            onGuestsChange={onGuestsChange}
+            variant="hero"
+          />
+        </div>
       </div>
     </section>
   );

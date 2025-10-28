@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { PropertyCard } from "./PropertyCard";
 import Icon from "./Icon";
+import {
+  fetchHostProperties,
+  PROPERTIES_REFRESH_EVENT,
+  HostPropertyRecord,
+  dispatchPropertiesRefresh,
+} from "@/lib/queries/properties";
 
 interface PropertyListViewProps {
   onPropertySelect: (id: string) => void;
@@ -11,16 +17,8 @@ interface PropertyListViewProps {
   className?: string;
   refreshToken?: number;
   searchQuery?: string;
-}
-
-interface Property {
-  id: string;
-  name: string;
-  address: string;
-  status: 'draft' | 'published' | 'archived';
-  image_url: string | null;
-  unit_count: number;
-  created_at: string;
+  userId?: string | null;
+  authLoading?: boolean;
 }
 
 export function PropertyListView({
@@ -29,69 +27,134 @@ export function PropertyListView({
   className = '',
   refreshToken,
   searchQuery = '',
+  userId,
+  authLoading = false,
 }: PropertyListViewProps) {
-  const [properties, setProperties] = useState<Property[]>([]);
+  const [properties, setProperties] = useState<HostPropertyRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
+  const [imageCounts, setImageCounts] = useState<Record<string, number>>({});
 
   // Fetch properties from Supabase
   const fetchProperties = useCallback(async () => {
+    if (authLoading) {
+      setIsLoading(true);
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('[PropertyListView] authLoading guard active');
+      }
+      return;
+    }
+
     try {
       setIsLoading(true);
-      let query = supabase
-        .from('properties')
-        .select('*');
 
-      // Apply search
-      if (searchQuery.trim()) {
-        query = query.ilike('name', `%${searchQuery}%`);
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        const { data } = await supabase.auth.getUser();
+        effectiveUserId = data.user?.id ?? null;
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[PropertyListView] supabase.auth.getUser() resolved', data.user?.id);
+        }
       }
 
-      // Default ordering
-      query = query.order('created_at', { ascending: false });
+      if (!effectiveUserId) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[PropertyListView] No user id available, skipping fetch');
+        }
+        setProperties([]);
+        setSelectedIds(new Set());
+        setImageCounts({});
+        return;
+      }
 
-      const { data, error } = await query;
+      const allRows = await fetchHostProperties(supabase, effectiveUserId);
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('[PropertyListView] fetched host properties', {
+          effectiveUserId,
+          count: allRows.length,
+        });
+      }
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+      let rows = normalizedQuery
+        ? allRows.filter((row) => {
+            const haystack = `${row.title ?? ''} ${row.address ?? ''}`.toLowerCase();
+            return haystack.includes(normalizedQuery);
+          })
+        : allRows;
 
-      if (error) throw error;
-      setProperties(data || []);
-      // Prune selections that no longer exist
+      if (selectedPropertyId) {
+        const selectedMatch = allRows.find((row) => row.id === selectedPropertyId);
+        if (selectedMatch && !rows.some((row) => row.id === selectedMatch.id)) {
+          rows = [selectedMatch, ...rows];
+        }
+      }
+
+      setProperties(rows);
       setSelectedIds((prev) => {
         const next = new Set<string>();
-        (data || []).forEach((p) => { if (prev.has(p.id)) next.add(p.id); });
+        rows.forEach((p) => { if (prev.has(p.id)) next.add(p.id); });
         return next;
       });
+
+      // Ensure the selected property is present even if owner filter excludes it (useful during reconciliation)
+      const ids = rows.map(p => p.id);
+      if (ids.length > 0) {
+        const { data: imgs } = await supabase
+          .from('property_images')
+          .select('property_id')
+          .in('property_id', ids)
+          .eq('is_approved', true);
+        const counts: Record<string, number> = {};
+        (imgs || []).forEach((r: any) => {
+          counts[r.property_id] = (counts[r.property_id] || 0) + 1;
+        });
+        setImageCounts(counts);
+      } else {
+        setImageCounts({});
+      }
     } catch (error) {
       console.error('Error fetching properties:', error);
     } finally {
       setIsLoading(false);
-      // no-op
     }
-  }, [searchQuery, supabase]);
+  }, [supabase, searchQuery, selectedPropertyId, userId, authLoading]);
 
   // Initial fetch and external refresh triggers
   useEffect(() => {
     fetchProperties();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchProperties, refreshToken]);
+  }, [fetchProperties, refreshToken, userId, authLoading]);
 
-  // (Removed manual refresh UI) Fetch is triggered by search/refreshToken
+  useEffect(() => {
+    const handler = () => {
+      void fetchProperties();
+    };
+    window.addEventListener(PROPERTIES_REFRESH_EVENT, handler);
+    return () => window.removeEventListener(PROPERTIES_REFRESH_EVENT, handler);
+  }, [fetchProperties]);
+
+  // Auto-select the first property after load when none is chosen
+  useEffect(() => {
+    if (!selectedPropertyId && !isLoading && properties.length > 0) {
+      onPropertySelect(properties[0].id);
+    }
+  }, [properties, selectedPropertyId, onPropertySelect, isLoading]);
 
   // Bulk actions (publish/archive/restore)
   const handleBulkAction = async (action: 'publish' | 'archive' | 'restore') => {
-    if (selectedIds.size === 0) return;
     try {
       const ids = Array.from(selectedIds);
       let update: Record<string, any> = {};
-      if (action === 'publish') update = { status: 'published' };
-      if (action === 'archive') update = { status: 'archived' };
-      if (action === 'restore') update = { status: 'draft' };
+      if (action === 'publish') update = { is_published: true, published_at: new Date().toISOString() };
+      if (action === 'archive') update = { is_published: false };
+      if (action === 'restore') update = { is_published: false };
 
       const { error } = await supabase.from('properties').update(update).in('id', ids);
       if (error) throw error;
 
       setSelectedIds(new Set());
-      fetchProperties();
+      await fetchProperties();
+      dispatchPropertiesRefresh();
     } catch (err) {
       console.error('Bulk action error:', err);
     }
@@ -117,31 +180,26 @@ export function PropertyListView({
   };
 
   // Handle property actions
-  const handlePropertyAction = async (action: string, propertyId: string) => {
+  const handlePublish = async (property: HostPropertyRecord) => {
     try {
-      if (action === 'publish') {
-        await supabase
-          .from('properties')
-          .update({ status: 'published' })
-          .eq('id', propertyId);
-      } else if (action === 'archive') {
-        await supabase
-          .from('properties')
-          .update({ status: 'archived' })
-          .eq('id', propertyId);
-      } else if (action === 'restore') {
-        await supabase
-          .from('properties')
-          .update({ status: 'draft' })
-          .eq('id', propertyId);
+      const okToPublish = Boolean(property.map_url) && (imageCounts[property.id] || 0) > 0;
+      if (!okToPublish) {
+        alert('Add a valid Google Maps URL and at least one approved photo before publishing.');
+        return;
       }
-      
-      // Refresh the list
-      fetchProperties();
+      const { error } = await supabase
+        .from('properties')
+        .update({ is_published: true, published_at: new Date().toISOString() })
+        .eq('id', property.id);
+      if (error) throw error;
+      await fetchProperties();
+      dispatchPropertiesRefresh();
     } catch (error) {
-      console.error(`Error ${action} property:`, error);
+      console.error('Error publishing property:', error);
     }
   };
+
+  const showSkeleton = isLoading && properties.length === 0;
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -186,7 +244,7 @@ export function PropertyListView({
       )}
 
       {/* Property Grid */}
-      {isLoading ? (
+      {showSkeleton ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
@@ -205,7 +263,7 @@ export function PropertyListView({
         </div>
       ) : properties.length > 0 ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-6">
-          {properties.map((property) => (
+          {properties.map((property, index) => (
             <div key={property.id} className="relative min-w-[260px]">
               {/* Selection checkbox */}
               <label className="absolute top-2 left-2 z-10 inline-flex items-center bg-white/90 backdrop-blur rounded-md px-1.5 py-1 shadow-sm">
@@ -214,18 +272,21 @@ export function PropertyListView({
                   className="h-4 w-4 rounded border-gray-300 text-emerald-600 focus:ring-emerald-500"
                   checked={selectedIds.has(property.id)}
                   onChange={() => toggleSelect(property.id)}
-                  aria-label={`Select ${property.name}`}
+                  aria-label={`Select ${property.title}`}
                 />
               </label>
               <PropertyCard
                 id={property.id}
-                name={property.name}
-                address={property.address}
-                status={property.status}
-                imageUrl={property.image_url}
-                unitCount={property.unit_count}
+                name={property.title ?? "Untitled listing"}
+                address={property.address ?? "Address pending"}
+                status={property.is_published ? 'published' : 'draft'}
+                imageUrl={property.cover_image_url}
+                imagePriority={index < 2}
+                unitCount={0}
                 isSelected={selectedPropertyId === property.id}
                 onSelect={onPropertySelect}
+                onPublish={() => handlePublish(property)}
+                publishEnabled={Boolean(property.map_url) && (imageCounts[property.id] || 0) > 0}
               />
             </div>
           ))}
@@ -234,17 +295,7 @@ export function PropertyListView({
         <div className="text-center py-12 bg-white rounded-xl border border-gray-200">
           <Icon name="home" className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">No properties found</h3>
-          <p className="mt-1 text-sm text-gray-500">Get started by adding a new property.</p>
-          <div className="mt-6">
-            <button
-              type="button"
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500"
-              onClick={() => {}}
-            >
-              <Icon name="plus" className="-ml-1 mr-2 h-5 w-5" />
-              New Property
-            </button>
-          </div>
+          <p className="mt-1 text-sm text-gray-500">Use the “+ Property” button above to create your first property.</p>
         </div>
       )}
     </div>

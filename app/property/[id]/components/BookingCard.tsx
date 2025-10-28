@@ -1,18 +1,29 @@
  'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Star, Calendar, Minus, Plus, Info } from 'lucide-react';
+import { Calendar, Minus, Plus, Info } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 import AuthModal from '@/components/AuthModal';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { calculatePricing, toCurrency } from '@/lib/pricing';
+import CheckoutDialog from '@/components/payments/CheckoutDialog';
 
 interface BookingCardProps {
   property: {
     price: number;
     rating: number;
     reviewCount: number;
+    weeklyDiscountPct?: number | null;
+    weeklyDiscountRate?: number | null;
+    weeklyPrice?: number | null;
+    monthlyDiscountPct?: number | null;
+    monthlyDiscountRate?: number | null;
+    monthlyPrice?: number | null;
+    cleaningFeeRate?: number | null;
+    cleaningFeePctDisplay?: number | null;
+    cleaningFeePct?: number | null;
   };
+  propertyTitle?: string;
   onOpenCalendar: (mode: 'checkin' | 'checkout') => void;
   checkInDate: string;
   checkOutDate: string;
@@ -20,36 +31,64 @@ interface BookingCardProps {
   onGuestChange: (increment: boolean) => void;
   nights: number;
   user: User | null;
+  // Optional resolved property UUID from parent page (preferred over route param)
+  resolvedPropertyId?: string;
 }
 
 export default function BookingCard({
   property,
+  propertyTitle,
   onOpenCalendar,
   checkInDate,
   checkOutDate,
   guests,
   onGuestChange,
   nights,
-  user
+  user,
+  resolvedPropertyId,
 }: BookingCardProps) {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const propertyId = resolvedPropertyId || params?.id || '';
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showPricingPopover, setShowPricingPopover] = useState(false);
   const pricingRef = useRef<HTMLDivElement | null>(null);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const pricingExpanded = showPricingPopover ? 'true' : 'false';
 
-  const pricing = calculatePricing({ pricePerNight: property.price, nights, guests });
-  const weeklyRate = Math.round(property.price * 0.8);
-  const monthlyRate = Math.round(property.price * 0.6);
+  const weeklyDiscountRate = property.weeklyDiscountRate ?? (typeof property.weeklyDiscountPct === 'number' ? property.weeklyDiscountPct / 100 : 0.2);
+  const monthlyDiscountRate = property.monthlyDiscountRate ?? (typeof property.monthlyDiscountPct === 'number' ? property.monthlyDiscountPct / 100 : 0.4);
+  const pricing = calculatePricing({
+    pricePerNight: property.price,
+    nights,
+    guests,
+    discountWeekly: weeklyDiscountRate,
+    discountMonthly: monthlyDiscountRate,
+  });
+  const subtotalBeforeFees = pricing.subtotalBeforeFees;
+  const baseCleaningRate = typeof property.cleaningFeeRate === 'number'
+    ? property.cleaningFeeRate
+    : typeof property.cleaningFeePct === 'number'
+      ? property.cleaningFeePct / 100
+      : pricing.cleaningRate;
+  const cleaningRate = Math.max(0, baseCleaningRate);
+  const cleaningFee = Math.round(subtotalBeforeFees * cleaningRate);
+  const serviceFee = pricing.serviceFee;
+  const taxFee = pricing.tax;
+  const subtotalWithFees = subtotalBeforeFees + cleaningFee + serviceFee;
+  const totalPrice = subtotalWithFees + taxFee;
+  const weeklyRate = property.weeklyPrice ?? Math.round(property.price * (1 - weeklyDiscountRate));
+  const monthlyRate = property.monthlyPrice ?? Math.round(property.price * (1 - monthlyDiscountRate));
   const discountRate = pricing.discountRate;
   const standardSubtotal = pricing.base;
   const discountAmount = pricing.discountAmount;
-  const subtotal = pricing.subtotalBeforeFees;
-  const cleaningRate = pricing.cleaningRate;
-  const cleaningFee = pricing.cleaningFee;
-  const serviceFee = pricing.serviceFee;
-  const taxFee = pricing.tax;
-  const totalPrice = pricing.total;
   const effectiveNightly = pricing.effectiveNightly;
+  const cleaningDisplayPct = Math.round(cleaningRate * 100);
+  const discountDisplayLabel = nights >= 21
+    ? `Monthly discount (${Math.round(monthlyDiscountRate * 100)}%)`
+    : nights >= 7
+      ? `Weekly discount (${Math.round(weeklyDiscountRate * 100)}%)`
+      : null;
 
   // Persist booking draft to localStorage for Guest Portal price summary
   useEffect(() => {
@@ -60,8 +99,11 @@ export default function BookingCard({
         nights,
         guests,
         pricePerNight: property.price,
-        subtotal: pricing.subtotal,
-        total: pricing.total,
+        subtotal: subtotalBeforeFees,
+        total: totalPrice,
+        propertyId,
+        currency: 'usd',
+        propertyTitle: propertyTitle || undefined,
       };
       if (typeof window !== 'undefined') {
         window.localStorage.setItem('booking:draft', JSON.stringify(draft));
@@ -69,7 +111,7 @@ export default function BookingCard({
     } catch {
       // ignore
     }
-  }, [checkInDate, checkOutDate, nights, guests, property.price, pricing.subtotal, pricing.total]);
+  }, [checkInDate, checkOutDate, nights, guests, property.price, subtotalBeforeFees, totalPrice, propertyId, propertyTitle]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -88,10 +130,8 @@ export default function BookingCard({
       // Open in-page auth modal for a seamless guest flow
       setShowAuthModal(true);
     } else {
-      // TODO: Implement reservation flow for authenticated users
-      // This could redirect to a checkout page or open a payment modal
-      console.log('Processing reservation for authenticated user:', user.email);
-      alert(`Reservation processing for ${user.email}. Payment integration coming soon!`);
+      // Open Stripe checkout dialog
+      setShowCheckout(true);
     }
   };
 
@@ -108,23 +148,31 @@ export default function BookingCard({
                 </div>
               )}
             </div>
-            <div className="flex items-center text-sm">
-              <Star className="w-4 h-4 text-yellow-400 fill-current mr-1" />
-              <span className="font-medium">{property.rating}</span>
-              <span className="text-gray-500 ml-1">({property.reviewCount})</span>
-            </div>
           </div>
           <div className="mb-6 relative" ref={pricingRef}>
-            <button
-              type="button"
-              aria-haspopup="dialog"
-              aria-expanded={showPricingPopover}
-              onClick={() => setShowPricingPopover((v) => !v)}
-              className="flex items-center text-xs text-gray-600 hover:text-gray-900 underline"
-            >
-              <Info className="w-4 h-4 mr-1" />
-              How pricing works
-            </button>
+            {showPricingPopover ? (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded="true"
+                onClick={() => setShowPricingPopover(false)}
+                className="flex items-center text-xs text-gray-600 hover:text-gray-900 underline"
+              >
+                <Info className="w-4 h-4 mr-1" />
+                How pricing works
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-haspopup="dialog"
+                aria-expanded="false"
+                onClick={() => setShowPricingPopover(true)}
+                className="flex items-center text-xs text-gray-600 hover:text-gray-900 underline"
+              >
+                <Info className="w-4 h-4 mr-1" />
+                How pricing works
+              </button>
+            )}
             <div
               role="dialog"
               aria-label="Pricing details"
@@ -133,8 +181,8 @@ export default function BookingCard({
               <div className="font-semibold text-gray-900 mb-2">Tiered discounts</div>
               <ul className="space-y-1 text-gray-700">
                 <li>Base: ${property.price} / night</li>
-                <li>7+ nights: 20% off — ${weeklyRate} / night</li>
-                <li>21+ nights: 40% off — ${monthlyRate} / night</li>
+                <li>7+ nights: {Math.round(weeklyDiscountRate * 100)}% off — ${weeklyRate} / night</li>
+                <li>21+ nights: {Math.round(monthlyDiscountRate * 100)}% off — ${monthlyRate} / night</li>
               </ul>
               <div className="mt-3 text-gray-600">
                 {nights > 0 ? (
@@ -215,18 +263,18 @@ export default function BookingCard({
               </span>
               <span className="text-gray-900">{toCurrency(standardSubtotal)}</span>
             </div>
-            {discountRate > 0 && (
+            {discountRate > 0 && discountDisplayLabel && (
               <div className="flex justify-between text-green-700">
-                <span>{nights >= 21 ? 'Monthly discount (40%)' : 'Weekly discount (20%)'}</span>
+                <span>{discountDisplayLabel}</span>
                 <span>- ${discountAmount}</span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-gray-700">Subtotal</span>
-              <span className="text-gray-900">{toCurrency(subtotal)}</span>
+              <span className="text-gray-900">{toCurrency(subtotalBeforeFees)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-700">Cleaning fee ({Math.round(cleaningRate * 100)}%)</span>
+              <span className="text-gray-700">Cleaning fee ({cleaningDisplayPct}%)</span>
               <span className="text-gray-900">{toCurrency(cleaningFee)}</span>
             </div>
             <div className="flex justify-between">
@@ -248,7 +296,7 @@ export default function BookingCard({
           {/* Reserve Button */}
           <button 
             onClick={handleReserve}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold text-lg transition-all mb-4"
+            className="w-full bg-[#F8F5F2] hover:bg-[#ede9e3] text-[#8B1A1A] border border-[#8B1A1A] py-3 rounded-lg font-semibold text-lg transition-all mb-4"
           >
             {user ? 'Reserve' : 'Sign in to Reserve'}
           </button>
@@ -272,6 +320,33 @@ export default function BookingCard({
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         initialMode="signin"
+        forceRole="guest"
+      />
+
+      {/* Checkout Dialog */}
+      <CheckoutDialog
+        isOpen={showCheckout}
+        onClose={() => setShowCheckout(false)}
+        amount={Math.max(0, Math.round(totalPrice * 100))}
+        currency="usd"
+        metadata={{
+          check_in: checkInDate || '',
+          check_out: checkOutDate || '',
+          guests: String(guests),
+          nights: String(nights),
+        }}
+        propertyId={propertyId}
+        propertyTitle={propertyTitle}
+        checkIn={checkInDate || ''}
+        checkOut={checkOutDate || ''}
+        guests={guests}
+        onSuccess={({ bookingId, paymentIntentId }) => {
+          console.log('Payment successful:', paymentIntentId);
+          setShowCheckout(false);
+          setTimeout(() => {
+            router.push(`/portal/guest/confirmation?booking=${encodeURIComponent(bookingId)}`);
+          }, 400);
+        }}
       />
     </div>
   );

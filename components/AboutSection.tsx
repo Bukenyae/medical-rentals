@@ -2,24 +2,28 @@
 
 import Image from 'next/image';
 
-export default function AboutSection() {
+interface AboutSectionProps {
+  showHeading?: boolean;
+}
+
+export default function AboutSection({ showHeading = true }: AboutSectionProps = {}) {
   const teamMembers = [
     {
       name: "Agnes Andrews",
       role: "CEO",
-      description: "Agnes founded Belle Rouge Properties to provide exceptional housing for professionals from all walks of life. With 40+ years in insurance services, she understands the unique importance of reliability, facility management, and customer satisfaction.",
+      description: "With over 40 years in insurance services, Agnes brings strategic leadership and a customer-first mindset that inspires reliability, integrity, and care — values that continue to guide Belle Rouge’s growth, culture, and commitment to exceptional hospitality.",
       image: "/images/team/Agnes-Smith.jpeg"
     },
     {
       name: "Kinda Andrews",
       role: "CMO",
-      description: "Kinda leads our marketing efforts with a focus on building authentic relationships with hospitals, universities, and community organizations. Her strategic approach ensures our properties reach medical staff, academics, military members, and young professionals at the right time.",
+      description: "Kinda leads Belle Rouge’s marketing with a focus on authentic partnerships across hospitals, universities, and local organizations — ensuring our properties connect seamlessly with medical staff, academics, military members, and young professionals when and where they need housing most.",
       image: "/images/team/Andrews-Sanders.jpeg"
     },
     {
       name: "Nayo Andrews",
       role: "COO",
-      description: "Nayo oversees operations to ensure every guest experience exceeds expectations. Her attention to detail and commitment to excellence maintains the highest standards across all Belle Rouge Properties locations.",
+      description: "Nayo oversees daily operations with a focus on excellence and guest satisfaction. Her meticulous attention to detail and passion for quality uphold the highest standards across all Belle Rouge Properties, ensuring every stay feels effortless and memorable.",
       image: "/images/team/Nayo-Zakiya.jpg"
     }
   ];
@@ -27,17 +31,19 @@ export default function AboutSection() {
   return (
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
-            About Us
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            We're a family-owned business dedicated to providing exceptional accommodations
-            for medical staff, academics, military personnel, college students, graduates,
-            and young professionals. Our mission is to ensure you have a comfortable,
-            safe, and convenient home away from home.
-          </p>
-        </div>
+        {showHeading && (
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              About Us
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              We're a family-owned business dedicated to providing exceptional accommodations
+              for medical staff, academics, military personnel, college students, graduates,
+              and young professionals. Our mission is to ensure you have a comfortable,
+              safe, and convenient home away from home.
+            </p>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {teamMembers.map((member, index) => (
@@ -57,7 +63,7 @@ export default function AboutSection() {
               </div>
               <div className="p-6">
                 <h3 className="text-xl font-bold text-gray-900 mb-1">{member.name}</h3>
-                <p className="text-blue-600 font-semibold mb-3">{member.role}</p>
+                <p className="text-gray-600 font-semibold mb-3">{member.role}</p>
                 <p className="text-gray-600 leading-relaxed">{member.description}</p>
               </div>
             </div>
