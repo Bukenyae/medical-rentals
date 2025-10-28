@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import { useRouter } from "next/navigation";
+import useAuthUser from "@/hooks/useAuthUser";
 
 interface AuthGateProps {
   allowRoles: ("guest" | "host" | "admin")[];
@@ -31,6 +32,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
 
   const isProd = useMemo(() => process.env.NODE_ENV === 'production', []);
   const supabase = useMemo(() => createClient(), []);
+  const { user: supaUser, loading: authLoading } = useAuthUser();
 
   const normalizeRole = useCallback((value: string | null | undefined, email?: string | null): SessionLike['role'] => {
     const lowered = value?.toLowerCase();
@@ -45,10 +47,11 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
 
   useEffect(() => {
     setMounted(true);
-    // Always try local session first for preview flow
+    if (isProd) {
+      return;
+    }
     try {
-      // Dev override via query params: ?as=host|admin&email=...
-      if (!isProd && typeof window !== 'undefined') {
+      if (typeof window !== 'undefined') {
         const params = new URLSearchParams(window.location.search);
         const asRole = params.get('as');
         const em = params.get('email');
@@ -58,101 +61,78 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
           console.log('[AuthGate] applied query override mr_session:', next);
           setSession(next);
         }
-      }
-      if (!isProd) {
-        const raw = localStorage.getItem("mr_session");
+        const raw = localStorage.getItem('mr_session');
         if (raw) {
           const parsed = JSON.parse(raw) as SessionLike;
-          console.log("[AuthGate] loaded local mr_session:", parsed);
+          console.log('[AuthGate] loaded local mr_session:', parsed);
           setSession(parsed);
         }
       }
     } catch {}
+    setLoading(false);
+  }, [isProd]);
 
-    if (supabase && isProd) {
-      const resolveRole = async (uid: string, email: string): Promise<SessionLike['role']> => {
-        try {
-          // 1) Try user_roles first (authoritative)
-          const { data: roles } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', uid);
-          const roleSet = new Set<string>((roles ?? []).map(r => String((r as any).role).toLowerCase()));
-          if (roleSet.has('admin')) return 'admin';
-          if (roleSet.has('host')) return 'host';
-          if (roleSet.has('guest')) return 'guest';
-
-          // 2) Fallback to profiles table if it has a role column
-          const { data: prof } = await supabase
-            .from('user_profiles')
-            .select('role')
-            .eq('id', uid)
-            .maybeSingle();
-          const profRole = normalizeRole(prof?.role as string | undefined, email);
-          if (profRole) {
-            return profRole;
-          }
-        } catch {
-          // ignore and fallback below
-        }
-        // 3) Last resort: metadata or admin email, else guest
-        return normalizeRole(null, email);
-      };
-
-      supabase.auth
-        .getSession()
-        .then(async ({ data, error }) => {
-          if (error) {
-            console.warn('[AuthGate] getSession error', error);
-          }
-          const supaUser = data.session?.user;
-          if (supaUser?.email && supaUser?.id) {
-            const metaRole = normalizeRole(supaUser.user_metadata?.role as string | undefined, supaUser.email);
-            const dbRole = await resolveRole(supaUser.id, supaUser.email);
-            const role: SessionLike['role'] = metaRole ?? dbRole;
-            console.log('[AuthGate] supabase.getSession user:', supaUser.email, role);
-            setSession({ email: supaUser.email, role });
-          }
-        })
-        .catch((err) => {
-          console.warn('[AuthGate] getSession threw', err);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-
-      const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, newSession) => {
-        const email = newSession?.user?.email;
-        const uid = newSession?.user?.id;
-        if (email && uid) {
-          const metaRole = normalizeRole(newSession?.user?.user_metadata?.role as string | undefined, email);
-          const dbRole = await resolveRole(uid, email);
-          const role: SessionLike['role'] = metaRole ?? dbRole;
-          console.log('[AuthGate] onAuthStateChange user:', email, role);
-          setSession({ email, role });
-        } else {
-          // If no Supabase session, prefer existing local preview session if present
-          if (!isProd) {
-            try {
-              const raw = localStorage.getItem('mr_session');
-              if (raw) {
-                const parsed = JSON.parse(raw) as SessionLike;
-                console.log('[AuthGate] onAuthStateChange no user, restoring local:', parsed);
-                setSession(parsed);
-                setLoading(false);
-                return;
-              }
-            } catch {}
-          }
-          setSession(null);
-        }
-        setLoading(false);
-      });
-      return () => {
-        sub.subscription.unsubscribe();
-      };
+  const resolveRole = useCallback(async (uid: string, email: string): Promise<SessionLike['role']> => {
+    if (!supabase) {
+      return normalizeRole(null, email);
     }
-  }, [isProd, supabase]);
+    try {
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', uid);
+      const roleSet = new Set<string>((roles ?? []).map(r => String((r as any).role).toLowerCase()));
+      if (roleSet.has('admin')) return 'admin';
+      if (roleSet.has('host')) return 'host';
+      if (roleSet.has('guest')) return 'guest';
+
+      const { data: prof } = await supabase
+        .from('user_profiles')
+        .select('role')
+        .eq('id', uid)
+        .maybeSingle();
+      const profRole = normalizeRole(prof?.role as string | undefined, email);
+      if (profRole) {
+        return profRole;
+      }
+    } catch (error) {
+      console.warn('[AuthGate] resolveRole fallback due to error', error);
+    }
+    return normalizeRole(null, email);
+  }, [supabase, normalizeRole]);
+
+  useEffect(() => {
+    if (!isProd) {
+      return;
+    }
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
+    if (!supaUser || !supaUser.email || !supaUser.id) {
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
+    let active = true;
+    const email = supaUser.email;
+    const uid = supaUser.id;
+    const metadata = supaUser.user_metadata;
+    setLoading(true);
+    (async () => {
+      const metaRole = normalizeRole(metadata?.role as string | undefined, email);
+      const dbRole = await resolveRole(uid, email);
+      const role: SessionLike['role'] = metaRole ?? dbRole;
+      if (!active) return;
+      setSession({ email, role });
+      setLoading(false);
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [isProd, authLoading, supaUser, normalizeRole, resolveRole]);
 
   // Open auth modal for dev preview when unauthenticated
   useEffect(() => {
@@ -180,6 +160,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
 
   useEffect(() => {
     if (!loading) return;
+    if (isProd) return;
     const timer = setTimeout(() => {
       if (loading) {
         console.warn('[AuthGate] Supabase session timeout, falling back to preview flow');
@@ -187,7 +168,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
       }
     }, 4000);
     return () => clearTimeout(timer);
-  }, [loading]);
+  }, [loading, isProd]);
 
   if (!isProd) {
     return <>{children}</>;
