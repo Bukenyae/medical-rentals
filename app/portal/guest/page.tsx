@@ -439,7 +439,7 @@ useEffect(() => {
 }, [leftStickyRef]);
 
 return (
-  <AuthGate allowRoles={["guest", "admin"]} showInlineSignOut={false}>
+  <AuthGate allowRoles={["guest", "host", "admin"]} showInlineSignOut={false}>
     <div className="min-h-screen bg-white">
       {/* Page header with account menu */}
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 supports-[backdrop-filter]:backdrop-blur">
