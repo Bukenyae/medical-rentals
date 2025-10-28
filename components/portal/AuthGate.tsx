@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import AuthModal from "@/components/AuthModal";
 import { useRouter } from "next/navigation";
@@ -31,6 +31,17 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
 
   const isProd = useMemo(() => process.env.NODE_ENV === 'production', []);
   const supabase = useMemo(() => createClient(), []);
+
+  const normalizeRole = useCallback((value: string | null | undefined, email?: string | null): SessionLike['role'] => {
+    const lowered = value?.toLowerCase();
+    if (lowered === 'admin' || lowered === 'host' || lowered === 'guest') {
+      return lowered;
+    }
+    if (email === 'bkanuel@gmail.com') {
+      return 'admin';
+    }
+    return 'guest';
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -66,7 +77,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
             .from('user_roles')
             .select('role')
             .eq('user_id', uid);
-          const roleSet = new Set<string>((roles ?? []).map(r => String((r as any).role)));
+          const roleSet = new Set<string>((roles ?? []).map(r => String((r as any).role).toLowerCase()));
           if (roleSet.has('admin')) return 'admin';
           if (roleSet.has('host')) return 'host';
           if (roleSet.has('guest')) return 'guest';
@@ -77,15 +88,15 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
             .select('role')
             .eq('id', uid)
             .maybeSingle();
-          const profRole = (prof?.role as string | undefined)?.toLowerCase();
-          if (profRole === 'admin' || profRole === 'host' || profRole === 'guest') {
-            return profRole as SessionLike['role'];
+          const profRole = normalizeRole(prof?.role as string | undefined, email);
+          if (profRole) {
+            return profRole;
           }
         } catch {
           // ignore and fallback below
         }
         // 3) Last resort: metadata or admin email, else guest
-        return email === 'bkanuel@gmail.com' ? 'admin' : 'guest';
+        return normalizeRole(null, email);
       };
 
       supabase.auth
@@ -96,7 +107,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
           }
           const supaUser = data.session?.user;
           if (supaUser?.email && supaUser?.id) {
-            const metaRole = (supaUser.user_metadata?.role as SessionLike['role'] | undefined);
+            const metaRole = normalizeRole(supaUser.user_metadata?.role as string | undefined, supaUser.email);
             const dbRole = await resolveRole(supaUser.id, supaUser.email);
             const role: SessionLike['role'] = metaRole ?? dbRole;
             console.log('[AuthGate] supabase.getSession user:', supaUser.email, role);
@@ -114,7 +125,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
         const email = newSession?.user?.email;
         const uid = newSession?.user?.id;
         if (email && uid) {
-          const metaRole = (newSession?.user?.user_metadata?.role as SessionLike['role'] | undefined);
+          const metaRole = normalizeRole(newSession?.user?.user_metadata?.role as string | undefined, email);
           const dbRole = await resolveRole(uid, email);
           const role: SessionLike['role'] = metaRole ?? dbRole;
           console.log('[AuthGate] onAuthStateChange user:', email, role);
