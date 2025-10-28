@@ -24,7 +24,18 @@ export default function AccountProfilePage() {
   const [interests, setInterests] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  
+
+  const splitFullName = (value: string): { first: string | null; last: string | null } => {
+    const trimmed = (value || "").trim().replace(/\s+/g, " ");
+    if (!trimmed) return { first: null, last: null };
+    const parts = trimmed.split(" ");
+    const first = parts.shift() || "";
+    const last = parts.join(" ") || "";
+    return {
+      first: first || null,
+      last: last || null,
+    };
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -40,7 +51,23 @@ export default function AccountProfilePage() {
       setLanguages(Array.isArray(meta.languages) ? (meta.languages as string[]).join(", ") : (meta.languages as string) || "");
       setInterests(Array.isArray(meta.interests) ? (meta.interests as string[]).join(", ") : (meta.interests as string) || "");
       setAvatarUrl((meta.avatar_url as string) || "");
-      
+
+      if (user?.id) {
+        const { data: profile } = await supabase
+          .from("user_profiles")
+          .select("first_name,last_name,avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (mounted && profile) {
+          const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ").trim();
+          if (fullName) {
+            setName((prev) => (prev && prev.trim().length > 0 ? prev : fullName));
+          }
+          if (profile.avatar_url) {
+            setAvatarUrl((prev) => prev || profile.avatar_url || "");
+          }
+        }
+      }
 
       // One-time normalization from provider identities into our metadata fields
       // Only run if not previously normalized; do not overwrite non-empty values
@@ -166,6 +193,23 @@ export default function AccountProfilePage() {
       if (error) throw error;
       // Ensure local preview also reflects the cache-busted URL
       setAvatarUrl(newAvatarUrl);
+
+      if (userId) {
+        const { first, last } = splitFullName(name);
+        const profilePayload: Record<string, any> = {
+          id: userId,
+          first_name: first,
+          last_name: last,
+          avatar_url: newAvatarUrl || null,
+          updated_at: new Date().toISOString(),
+        };
+        if (fromHost) profilePayload.role = "owner";
+        const { error: profileError } = await supabase
+          .from("user_profiles")
+          .upsert(profilePayload, { onConflict: "id" });
+        if (profileError) throw profileError;
+      }
+
       setMessage("Profile saved.");
     } catch (err: any) {
       setMessage(err?.message || "Failed to save profile.");

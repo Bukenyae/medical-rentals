@@ -24,16 +24,19 @@ import CalendarModal from './components/CalendarModal';
 import PropertyGallery from './components/PropertyGallery';
 import PropertyInfo from './components/PropertyInfo';
 import ReviewsSection from './components/ReviewsSection';
-import { PROPERTY_DATA, PROPERTY_DETAIL_IMAGES } from '@/lib/data/properties';
-import { notFound } from 'next/navigation';
+import PropertyLocationMap from './components/PropertyLocationMap';
+import Footer from '@/components/Footer';
+import PropertyDetailsSkeleton from './components/PropertyDetailsSkeleton';
 
-const DEFAULT_HOST = {
-  name: 'Sarah',
-  avatar: '/images/host-avatar.jpg',
-  joinedYear: '2019',
-  reviewCount: 89,
-  rating: 4.8,
-};
+const FALLBACK_DETAIL_IMAGES = [
+  '/images/properties/Leighton/living-room.jpg',
+  '/images/properties/Leighton/bedroom-one.jpg',
+  '/images/properties/Leighton/kitchen.jpg',
+  '/images/properties/Leighton/bathroom.jpg',
+  '/images/properties/Leighton/bedroom-two.jpg',
+  '/images/properties/Leighton/dining-one.jpg',
+  '/images/properties/Leighton/dining-two.jpg',
+];
 
 interface PropertyDetailsProps {
   params: {
@@ -58,18 +61,44 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     id: string;
     title: string;
     address: string;
+    map_url: string | null;
+    proximity_badge_1: string | null;
+    proximity_badge_2: string | null;
     nightly_price: number;
     bedrooms: number;
     bathrooms: number;
     sqft: number | null;
     cover_image_url: string | null;
     is_published: boolean;
+    created_by?: string | null;
+    owner_id?: string | null;
+    about_space?: string | null;
+    indoor_outdoor_experiences?: string | null;
+    amenities_list?: string[] | null;
+    cleaning_fee_pct?: number | null;
+    weekly_discount_pct?: number | null;
+    weekly_price?: number | null;
+    monthly_discount_pct?: number | null;
+    monthly_price?: number | null;
+    host_bio?: string | null;
+    host_avatar_url?: string | null;
   }
-  interface DbImageRow { id: string; url: string; is_approved: boolean; sort_order: number; }
+  interface HostProfileRow {
+    id: string;
+    full_name?: string | null;
+    name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url: string | null;
+    created_at: string | null;
+  }
   const [dbProperty, setDbProperty] = useState<DbPropertyRow | null>(null);
   const [dbImages, setDbImages] = useState<string[]>([]);
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
   const [dbTried, setDbTried] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [hostProfile, setHostProfile] = useState<HostProfileRow | null>(null);
+  const [hostProfileError, setHostProfileError] = useState<string | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -83,28 +112,42 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     async function loadDb() {
       const pid = params.id;
       try {
-        const { data: prop, error } = await supabase
-          .from('properties')
-          .select('id,title,address,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published')
-          .eq('id', pid)
-          .limit(1)
-          .maybeSingle();
-        if (!error && prop) setDbProperty(prop as unknown as DbPropertyRow);
+        setDbError(null);
+        const [propResult, imgsResult, blocksResult] = await Promise.all([
+          supabase
+            .from('properties')
+            .select('id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url')
+            .eq('id', pid)
+            .limit(1)
+            .maybeSingle(),
+          supabase
+            .from('property_images')
+            .select('id,url,is_approved,sort_order')
+            .eq('property_id', pid)
+            .eq('is_approved', true)
+            .order('sort_order', { ascending: true })
+            .order('created_at', { ascending: true }),
+          supabase
+            .from('property_unavailable_dates')
+            .select('date')
+            .eq('property_id', pid),
+        ]);
 
-        const { data: imgs } = await supabase
-          .from('property_images')
-          .select('id,url,is_approved,sort_order')
-          .eq('property_id', pid)
-          .eq('is_approved', true)
-          .order('sort_order', { ascending: true })
-          .order('created_at', { ascending: true });
-        if (imgs && imgs.length > 0) setDbImages(imgs.map(i => i.url));
+        const { data: prop, error, status } = propResult;
+        if (error) {
+          setDbError(error.message ?? 'Unable to load property');
+        } else if (prop) {
+          setDbProperty(prop as unknown as DbPropertyRow);
+        } else if (status !== null) {
+          setDbError('not_found');
+        }
 
-        // Load unavailable (blocked) dates for booking calendar
-        const { data: blocks } = await supabase
-          .from('property_unavailable_dates')
-          .select('date')
-          .eq('property_id', pid);
+        const { data: imgs, error: imgsError } = imgsResult;
+        if (!imgsError && Array.isArray(imgs) && imgs.length > 0) {
+          setDbImages(imgs.map((i) => i.url));
+        }
+
+        const { data: blocks } = blocksResult;
         if (Array.isArray(blocks)) {
           const isoList = blocks
             .map((r: any) => r?.date)
@@ -114,12 +157,89 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
             .map((dt: Date) => dt.toISOString().slice(0, 10));
           setUnavailableDates(Array.from(new Set(isoList)));
         }
+      } catch (error) {
+        setDbError(error instanceof Error ? error.message : String(error));
       } finally {
         setDbTried(true);
       }
     }
     void loadDb();
   }, [params.id, supabase]);
+
+  useEffect(() => {
+    const hostId = dbProperty?.owner_id ?? dbProperty?.created_by;
+    if (!hostId) return;
+    if (hostProfile && hostProfile.id === hostId) return;
+
+    let isActive = true;
+    (async () => {
+      try {
+        const { data: userProfile, error: userProfileError } = await supabase
+          .from('user_profiles')
+          .select('id,first_name,last_name,avatar_url,created_at')
+          .eq('id', hostId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!isActive) return;
+
+        if (userProfile) {
+          setHostProfile({
+            id: userProfile.id,
+            first_name: userProfile.first_name,
+            last_name: userProfile.last_name,
+            full_name: [userProfile.first_name, userProfile.last_name].filter(Boolean).join(' ') || null,
+            avatar_url: userProfile.avatar_url ?? null,
+            created_at: userProfile.created_at ?? null,
+          });
+          setHostProfileError(null);
+          return;
+        }
+
+        if (userProfileError && userProfileError.code !== 'PGRST116') {
+          const msg = `[property-details] user_profiles lookup failed: ${userProfileError.message}`;
+          console.warn(msg, userProfileError);
+          setHostProfileError(msg);
+        }
+
+        const { data: profileFallback, error: legacyError } = await supabase
+          .from('profiles')
+          .select('id,full_name,name,avatar_url,created_at')
+          .eq('id', hostId)
+          .limit(1)
+          .maybeSingle();
+
+        if (!isActive) return;
+
+        if (profileFallback) {
+          setHostProfile(profileFallback as HostProfileRow);
+          setHostProfileError(null);
+          return;
+        }
+
+        if (legacyError && legacyError.code !== 'PGRST116') {
+          const msg = `[property-details] profiles fallback lookup failed: ${legacyError.message}`;
+          console.warn(msg, legacyError);
+          setHostProfileError((prev) => prev ?? msg);
+        }
+
+        if (!userProfile && !profileFallback) {
+          const msg = '[property-details] no host profile rows returned for host id ' + hostId;
+          console.warn(msg);
+          setHostProfileError((prev) => prev ?? msg);
+        }
+      } catch (err) {
+        if (!isActive) return;
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        console.error('[property-details] unexpected host profile fetch error', err);
+        setHostProfileError(errorMessage);
+      }
+    })();
+
+    return () => {
+      isActive = false;
+    };
+  }, [dbProperty?.owner_id, dbProperty?.created_by, hostProfile, supabase]);
 
   // Handler functions
   const handleGuestChange = (increment: boolean) => {
@@ -168,76 +288,175 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
 
   const nights = calculateNights();
 
-  // Property data matching the property cards
-  const property = PROPERTY_DATA[params.id as keyof typeof PROPERTY_DATA];
-  // Defer notFound() until after DB load to support DB-only IDs
-  if (!property && dbTried && !dbProperty) {
-    notFound();
-  }
-
-  const host =
-    'host' in property && property.host ? property.host : DEFAULT_HOST;
-
-  const baseFromDb = dbProperty
-    ? {
-        id: dbProperty.id,
-        title: dbProperty.title,
-        location: dbProperty.address,
-        rating: 4.8,
-        reviewCount: 0,
-        price: dbProperty.nightly_price ?? 150,
-        bedrooms: dbProperty.bedrooms,
-        bathrooms: dbProperty.bathrooms,
-        sqft: dbProperty.sqft,
-        proximityBadges: [] as Array<{ text: string; bgColor: string; textColor: string }>,
-        host,
-        description: 'Comfortable, furnished rental for professionals.',
-      }
-    : null;
-
-  const base = property ?? baseFromDb ?? {
-    id: params.id,
-    title: 'Property',
-    location: '',
-    rating: 4.8,
-    reviewCount: 0,
-    price: 150,
-    bedrooms: 0,
-    bathrooms: 0,
-    sqft: null as unknown as number,
-    proximityBadges: [] as Array<{ text: string; bgColor: string; textColor: string }>,
-    host,
-    description: 'Comfortable, furnished rental for professionals.',
+  const parseNumeric = (value: unknown): number | null => {
+    if (value === null || value === undefined) return null;
+    if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+    if (typeof value === 'string') {
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+    return null;
   };
 
+  const propertyMissing = dbTried && !dbProperty && (!dbError || dbError === 'not_found');
+
+  const amenityOptions = [
+    { label: 'Free WiFi', icon: Wifi },
+    { label: 'Free parking', icon: Car },
+    { label: "55\" HDTV", icon: Tv },
+    { label: 'Full kitchen', icon: Utensils },
+    { label: 'Fully furnished house', icon: Sofa },
+    { label: 'In-unit washer and dryer', icon: WashingMachine },
+    { label: 'Flexible lease terms (days/weeks/months)', icon: CalendarClock },
+    { label: 'Self check-in', icon: Shield },
+  ];
+
+  const derivedAmenities = (() => {
+    if (dbProperty?.amenities_list?.length) {
+      const lookup = new Map(amenityOptions.map((opt) => [opt.label, opt.icon]));
+      return dbProperty.amenities_list
+        .map((label) => ({ label, icon: lookup.get(label) ?? Wifi }))
+        .map((item) => ({ label: item.label, icon: item.icon }));
+    }
+    return amenityOptions;
+  })();
+
+  if (propertyMissing) {
+    return (
+      <div className="min-h-screen bg-white">
+        <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center py-4">
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/images/logo/BR%20Logo.png"
+                  alt="Belle Rouge Properties logo"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 mr-2"
+                />
+                <h1 className="text-2xl font-bold text-gray-900">Belle Rouge Properties</h1>
+              </Link>
+              <nav className="flex items-center space-x-4">
+                <AuthButton user={user} />
+              </nav>
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <h2 className="text-3xl font-semibold text-gray-900">Listing unavailable</h2>
+          <p className="mt-4 text-gray-600">
+            This property may have been unpublished or removed. Please return to the homepage to explore other stays.
+          </p>
+          <div className="mt-8">
+            <Link
+              href="/"
+              className="inline-flex items-center px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-700"
+            >
+              Browse properties
+            </Link>
+          </div>
+        </main>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!dbProperty) {
+    if (!dbTried) {
+      return (
+        <div className="min-h-screen bg-white">
+          <PropertyDetailsSkeleton />
+          <Footer />
+        </div>
+      );
+    }
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
+        <div className="max-w-md text-center text-sm text-gray-600">
+          {dbError && dbError !== 'not_found'
+            ? dbError
+            : 'We could not load this listing. Please try again later.'}
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  const propertyRow = dbProperty;
+
+  const resolvedHost = (() => {
+    const profileNameRaw = hostProfile?.full_name ??
+      [hostProfile?.first_name, hostProfile?.last_name]
+        .filter((part): part is string => Boolean(part && part.trim()))
+        .join(' ');
+    const profileName = (profileNameRaw ?? '').trim();
+    const name = profileName.length ? profileName : 'Host';
+
+    return {
+      name,
+      avatar: hostProfile?.avatar_url || propertyRow.host_avatar_url || '/images/host-avatar.jpg',
+      joinedYear: hostProfile?.created_at
+        ? new Date(hostProfile.created_at).getFullYear().toString()
+        : undefined,
+      rating: 4.8,
+      reviewCount: 0,
+    };
+  })();
+
+  const hostAlert = hostProfileError && process.env.NODE_ENV !== 'production'
+    ? hostProfileError
+    : null;
+
+  const nightlyPrice = parseNumeric(propertyRow.nightly_price) ?? 150;
+  const bedrooms = parseNumeric(propertyRow.bedrooms) ?? 0;
+  const bathrooms = parseNumeric(propertyRow.bathrooms) ?? 0;
+  const sqft = parseNumeric(propertyRow.sqft) ?? 0;
+
+  const cleaningFeePct = parseNumeric(propertyRow.cleaning_fee_pct);
+  const weeklyDiscountPct = parseNumeric(propertyRow.weekly_discount_pct);
+  const monthlyDiscountPct = parseNumeric(propertyRow.monthly_discount_pct);
+
   const propertyWithDefaults = {
-    ...base,
-    // Override with Supabase data when available
-    title: dbProperty?.title ?? base.title,
-    location: dbProperty?.address ?? base.location,
-    price: dbProperty?.nightly_price ?? base.price,
-    bedrooms: dbProperty?.bedrooms ?? base.bedrooms,
-    bathrooms: dbProperty?.bathrooms ?? base.bathrooms,
-    sqft: dbProperty?.sqft ?? base.sqft,
-    host,
-    images: (dbImages.length > 0
-      ? dbImages
-      : dbProperty?.cover_image_url
-        ? [dbProperty.cover_image_url, ...PROPERTY_DETAIL_IMAGES]
-        : PROPERTY_DETAIL_IMAGES),
-    amenities: [
-      { icon: Wifi, label: 'Free WiFi' },
-      { icon: Car, label: 'Free parking' },
-      { icon: Tv, label: "55\" HDTV" },
-      { icon: Utensils, label: 'Full kitchen' },
-      { icon: Sofa, label: 'Fully furnished house' },
-      { icon: WashingMachine, label: 'In-unit washer and dryer' },
-      {
-        icon: CalendarClock,
-        label: 'Flexible lease terms (days/weeks/months)',
-      },
-      { icon: Shield, label: 'Self check-in' },
+    id: propertyRow.id,
+    title: propertyRow.title ?? 'Property',
+    location: propertyRow.address ?? '',
+    mapUrl: propertyRow.map_url ?? null,
+    rating: 4.8,
+    reviewCount: 0,
+    price: nightlyPrice,
+    bedrooms,
+    bathrooms,
+    sqft,
+    host: resolvedHost,
+    proximityBadges: [
+      ...(propertyRow.proximity_badge_1
+        ? [{ text: propertyRow.proximity_badge_1, bgColor: 'bg-blue-50', textColor: 'text-blue-700' }]
+        : []),
+      ...(propertyRow.proximity_badge_2
+        ? [{ text: propertyRow.proximity_badge_2, bgColor: 'bg-blue-50', textColor: 'text-blue-700' }]
+        : []),
     ],
+    images: dbImages.length > 0
+      ? dbImages
+      : propertyRow.cover_image_url
+        ? [propertyRow.cover_image_url, ...FALLBACK_DETAIL_IMAGES]
+        : FALLBACK_DETAIL_IMAGES,
+    description: propertyRow.about_space ?? 'Comfortable, furnished rental for professionals.',
+    professionalsDesc: propertyRow.indoor_outdoor_experiences ?? 'Specially designed for traveling nurses, visiting scholars, military personnel, and young professionals. Quiet neighborhood with easy access to hospitals, campuses, and bases plus a dedicated workspace.',
+    amenities: derivedAmenities,
+    cleaningFeePct,
+    cleaningFeeRate: cleaningFeePct === null ? null : cleaningFeePct / 100,
+    weeklyDiscountPct,
+    weeklyDiscountRate: weeklyDiscountPct === null ? null : weeklyDiscountPct / 100,
+    weeklyPrice: parseNumeric(propertyRow.weekly_price),
+    monthlyDiscountPct,
+    monthlyDiscountRate: monthlyDiscountPct === null ? null : monthlyDiscountPct / 100,
+    monthlyPrice: parseNumeric(propertyRow.monthly_price),
+    hostBio: propertyRow.host_bio ?? null,
+    hostAvatarUrl: propertyRow.host_avatar_url ?? null,
   };
 
   return (
@@ -247,14 +466,16 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center">
+              <span className="sr-only">Belle Rouge Properties</span>
               <Image
-                src="/images/logo/BR%20Logo.png"
+                src="/images/logo/BelleRougeLogo.png"
                 alt="Belle Rouge Properties logo"
-                width={32}
-                height={32}
-                className="h-8 w-8 mr-2"
+                width={200}
+                height={48}
+                className="h-8 w-auto"
+                priority
+                quality={100}
               />
-              <h1 className="text-2xl font-bold text-gray-900">Belle Rouge Properties</h1>
             </Link>
             <nav className="flex items-center space-x-4">
               <AuthButton user={user} />
@@ -283,6 +504,26 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           </button>
         </div>
 
+        {(dbError || hostAlert) && (
+          <div
+            className="mb-6 space-y-3"
+          >
+            {dbError && process.env.NODE_ENV !== 'production' && (
+              <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800" role="alert">
+                {dbError}
+              </div>
+            )}
+            {hostAlert && (
+              <div
+                className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                role="alert"
+              >
+                {hostAlert}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Property Gallery */}
         <PropertyGallery 
           images={propertyWithDefaults.images} 
@@ -297,6 +538,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           {/* Booking Card */}
           <BookingCard
             property={propertyWithDefaults}
+            propertyTitle={propertyWithDefaults.title}
             onOpenCalendar={openCalendar}
             checkInDate={checkInDate}
             checkOutDate={checkOutDate}
@@ -304,6 +546,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
             onGuestChange={handleGuestChange}
             nights={nights}
             user={user}
+            resolvedPropertyId={dbProperty?.id}
           />
         </div>
 
@@ -314,6 +557,16 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
             reviewCount={propertyWithDefaults.reviewCount} 
           />
         </div>
+
+        {propertyWithDefaults.mapUrl || propertyWithDefaults.location ? (
+          <div className="mt-8 lg:mt-12">
+            <PropertyLocationMap
+              address={propertyWithDefaults.location}
+              mapUrl={propertyWithDefaults.mapUrl}
+              title={propertyWithDefaults.title}
+            />
+          </div>
+        ) : null}
 
         {/* Calendar Modal */}
         <CalendarModal
@@ -327,6 +580,8 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           onModeChange={setCalendarMode}
         />
       </div>
+
+      <Footer />
     </div>
   );
 }

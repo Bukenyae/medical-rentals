@@ -2,6 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --rouge: #8b1a1a;
+  --oyster: #f8f5f2;
+}
+
+.br-logo {
+  font-family: 'Lobster Two', cursive;
+  font-weight: 700;
+  font-size: clamp(28px, 3.2vw, 44px);
+  line-height: 1;
+  letter-spacing: 0.02em;
+  word-spacing: 0.15em;
+  color: var(--rouge);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  white-space: nowrap;
+  display: inline-block;
+  padding: 0.75rem 1rem;
+}
+
+.br-logo.font-sans,
+.br-logo.font-serif,
+.br-logo.font-mono {
+  font-family: 'Lobster Two', cursive !important;
+  font-weight: 700 !important;
+}
+
 /* Custom utilities for mobile optimization */
 @layer utilities {
   .scrollbar-hide {

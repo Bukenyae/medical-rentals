@@ -21,6 +21,8 @@ interface PropertySwitcherProps {
   className?: string;
   searchQuery?: string; // optional controlled search value
   onSearchChange?: (q: string) => void; // optional controlled change handler
+  userId?: string | null;
+  authLoading?: boolean;
 }
 
 export function PropertySwitcher({ 
@@ -29,6 +31,8 @@ export function PropertySwitcher({
   className = '',
   searchQuery,
   onSearchChange,
+  userId,
+  authLoading = false,
 }: PropertySwitcherProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [localSearch, setLocalSearch] = useState('');
@@ -42,16 +46,49 @@ export function PropertySwitcher({
 
   // Fetch properties from Supabase
   useEffect(() => {
+    if (authLoading) {
+      setIsLoading(true);
+      if (process.env.NODE_ENV !== 'production') {
+        console.debug('[PropertySwitcher] authLoading guard active');
+      }
+      return;
+    }
+
     async function fetchProperties() {
+      let effectiveUserId = userId;
+      if (!effectiveUserId) {
+        const { data } = await supabase.auth.getUser();
+        effectiveUserId = data.user?.id ?? null;
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[PropertySwitcher] supabase.auth.getUser() resolved', data.user?.id);
+        }
+      }
+
+      if (!effectiveUserId) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[PropertySwitcher] No user id available; showing empty list');
+        }
+        setIsLoading(false);
+        setProperties([]);
+        return;
+      }
+
       try {
         setIsLoading(true);
         const { data, error } = await supabase
           .from('properties')
           .select('*')
+          .or(`owner_id.eq.${effectiveUserId},created_by.eq.${effectiveUserId}`)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setProperties(data || []);
+        if (process.env.NODE_ENV !== 'production') {
+          console.debug('[PropertySwitcher] fetched properties', {
+            effectiveUserId,
+            count: data?.length ?? 0,
+          });
+        }
+        setProperties(((data ?? []) as Property[]));
       } catch (error) {
         console.error('Error fetching properties:', error);
       } finally {
@@ -60,7 +97,7 @@ export function PropertySwitcher({
     }
 
     fetchProperties();
-  }, [supabase]);
+  }, [supabase, userId, authLoading]);
 
   // Close dropdown on click outside or Escape key
   useEffect(() => {

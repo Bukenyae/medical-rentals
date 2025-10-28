@@ -169,6 +169,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('prev')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Previous month"
+                      title="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -178,6 +180,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('next')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Next month"
+                      title="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -289,11 +293,7 @@ export default function SearchBar({
             <div className="flex items-center justify-center">
               <button
                 onClick={handleBookNow}
-                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 w-full h-full ${
-                  isComplete
-                    ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
-                    : 'bg-blue-300 hover:bg-blue-400 cursor-pointer'
-                }`}
+                className="px-6 py-3 rounded-xl font-semibold text-[#8B1A1A] bg-[#F8F5F2] border border-[#8B1A1A] hover:bg-[#ede9e3] transition-all duration-300 w-full h-full cursor-pointer"
               >
                 Book Now
               </button>
@@ -356,6 +356,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('prev')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Previous month"
+                      title="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -365,6 +367,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('next')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Next month"
+                      title="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -474,7 +478,7 @@ export default function SearchBar({
           {showBookButton && (
             <button
               onClick={handleBookNow}
-              className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-300 flex items-center justify-center touch-manipulation flex-shrink-0 ml-1"
+              className="w-10 h-10 bg-[#8B1A1A] hover:bg-[#761717] text-[#F8F5F2] rounded-full transition-all duration-300 flex items-center justify-center touch-manipulation flex-shrink-0 ml-1"
               title="Search Properties"
             >
               <ChevronRight className="w-5 h-5" />

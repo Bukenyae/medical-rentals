@@ -58,33 +58,77 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
       }
     } catch {}
 
-    if (supabase) {
-      supabase.auth.getSession().then(({ data }) => {
-        const supaUser = data.session?.user;
-        if (supaUser?.email) {
-          const metaRole = (supaUser.user_metadata?.role as SessionLike['role'] | undefined);
-          const role: SessionLike["role"] = metaRole ?? (supaUser.email === "bkanuel@gmail.com" ? "admin" : "guest");
-          console.log("[AuthGate] supabase.getSession user:", supaUser.email, role);
-          setSession({ email: supaUser.email, role });
+    if (supabase && isProd) {
+      const resolveRole = async (uid: string, email: string): Promise<SessionLike['role']> => {
+        try {
+          // 1) Try user_roles first (authoritative)
+          const { data: roles } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', uid);
+          const roleSet = new Set<string>((roles ?? []).map(r => String((r as any).role)));
+          if (roleSet.has('admin')) return 'admin';
+          if (roleSet.has('host')) return 'host';
+          if (roleSet.has('guest')) return 'guest';
+
+          // 2) Fallback to profiles table if it has a role column
+          const { data: prof } = await supabase
+            .from('user_profiles')
+            .select('role')
+            .eq('id', uid)
+            .maybeSingle();
+          const profRole = (prof?.role as string | undefined)?.toLowerCase();
+          if (profRole === 'admin' || profRole === 'host' || profRole === 'guest') {
+            return profRole as SessionLike['role'];
+          }
+        } catch {
+          // ignore and fallback below
         }
-        setLoading(false);
-      });
-      const { data: sub } = supabase.auth.onAuthStateChange((_evt, newSession) => {
+        // 3) Last resort: metadata or admin email, else guest
+        return email === 'bkanuel@gmail.com' ? 'admin' : 'guest';
+      };
+
+      supabase.auth
+        .getSession()
+        .then(async ({ data, error }) => {
+          if (error) {
+            console.warn('[AuthGate] getSession error', error);
+          }
+          const supaUser = data.session?.user;
+          if (supaUser?.email && supaUser?.id) {
+            const metaRole = (supaUser.user_metadata?.role as SessionLike['role'] | undefined);
+            const dbRole = await resolveRole(supaUser.id, supaUser.email);
+            const role: SessionLike['role'] = metaRole ?? dbRole;
+            console.log('[AuthGate] supabase.getSession user:', supaUser.email, role);
+            setSession({ email: supaUser.email, role });
+          }
+        })
+        .catch((err) => {
+          console.warn('[AuthGate] getSession threw', err);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+
+      const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, newSession) => {
         const email = newSession?.user?.email;
-        if (email) {
+        const uid = newSession?.user?.id;
+        if (email && uid) {
           const metaRole = (newSession?.user?.user_metadata?.role as SessionLike['role'] | undefined);
-          const role: SessionLike["role"] = metaRole ?? (email === "bkanuel@gmail.com" ? "admin" : "guest");
-          console.log("[AuthGate] onAuthStateChange user:", email, role);
+          const dbRole = await resolveRole(uid, email);
+          const role: SessionLike['role'] = metaRole ?? dbRole;
+          console.log('[AuthGate] onAuthStateChange user:', email, role);
           setSession({ email, role });
         } else {
           // If no Supabase session, prefer existing local preview session if present
           if (!isProd) {
             try {
-              const raw = localStorage.getItem("mr_session");
+              const raw = localStorage.getItem('mr_session');
               if (raw) {
                 const parsed = JSON.parse(raw) as SessionLike;
-                console.log("[AuthGate] onAuthStateChange no user, restoring local:", parsed);
+                console.log('[AuthGate] onAuthStateChange no user, restoring local:', parsed);
                 setSession(parsed);
+                setLoading(false);
                 return;
               }
             } catch {}
@@ -104,7 +148,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     if (!mounted) return;
     if (loading) return;
     const needsAuth = !session || !allowRoles.includes(session.role);
-    if (needsAuth && !showAuthModal && !isProd) {
+    if (!isProd && needsAuth && !showAuthModal) {
       setShowAuthModal(true);
     }
   }, [mounted, loading, session, allowRoles, showAuthModal, isProd]);
@@ -123,12 +167,38 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     if (session && !allowRoles.includes(session.role)) return;
   }, [session, allowRoles]);
 
-  if (!session || !allowRoles.includes(session.role)) {
+  useEffect(() => {
+    if (!loading) return;
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.warn('[AuthGate] Supabase session timeout, falling back to preview flow');
+        setLoading(false);
+      }
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [loading]);
+
+  if (!isProd) {
+    return <>{children}</>;
+  }
+
+  const isAllowed = session ? allowRoles.includes(session.role) : false;
+
+  if (!isAllowed) {
+    if (loading) {
+      return (
+        <div className="min-h-[60vh] flex items-center justify-center px-4">
+          <div className="text-sm text-gray-500">Checking your session…</div>
+        </div>
+      );
+    }
     if (isProd) {
       // In production, avoid showing an intermediate CTA; perform a silent redirect handled by the effect above.
       // Render nothing to minimize flicker while redirecting.
       return null;
     }
+    // In development, only show the preview sign-in UI when there is truly no Supabase session.
+    if (session) return null;
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
