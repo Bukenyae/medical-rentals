@@ -34,15 +34,17 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
   const supabase = useMemo(() => createClient(), []);
   const { user: supaUser, loading: authLoading } = useAuthUser();
 
-  const normalizeRole = useCallback((value: string | null | undefined, email?: string | null): SessionLike['role'] => {
-    const lowered = value?.toLowerCase();
-    if (lowered === 'admin' || lowered === 'host' || lowered === 'guest') {
-      return lowered;
-    }
+  const normalizeRole = useCallback((value: string | null | undefined, email?: string | null): SessionLike['role'] | undefined => {
     if (email === 'bkanuel@gmail.com') {
       return 'admin';
     }
-    return 'guest';
+    const lowered = value?.trim().toLowerCase();
+    if (!lowered) return undefined;
+    if (lowered === 'owner') return 'host';
+    if (lowered === 'admin' || lowered === 'host' || lowered === 'guest') {
+      return lowered;
+    }
+    return undefined;
   }, []);
 
   useEffect(() => {
@@ -74,7 +76,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
 
   const resolveRole = useCallback(async (uid: string, email: string): Promise<SessionLike['role']> => {
     if (!supabase) {
-      return normalizeRole(null, email);
+      return normalizeRole(null, email) ?? 'guest';
     }
     try {
       const { data: roles } = await supabase
@@ -98,7 +100,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     } catch (error) {
       console.warn('[AuthGate] resolveRole fallback due to error', error);
     }
-    return normalizeRole(null, email);
+    return normalizeRole(null, email) ?? 'guest';
   }, [supabase, normalizeRole]);
 
   useEffect(() => {
@@ -123,7 +125,7 @@ export default function AuthGate({ allowRoles, children, showInlineSignOut = tru
     (async () => {
       const metaRole = normalizeRole(metadata?.role as string | undefined, email);
       const dbRole = await resolveRole(uid, email);
-      const role: SessionLike['role'] = metaRole ?? dbRole;
+      const role: SessionLike['role'] = dbRole ?? metaRole ?? 'guest';
       if (!active) return;
       setSession({ email, role });
       setLoading(false);
