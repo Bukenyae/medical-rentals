@@ -145,7 +145,7 @@ export default function Home() {
                 </p>
               </div>
             )}
-            {dbProperties.length > 0 && dbProperties.map((p) => (
+            {dbProperties.length > 0 && dbProperties.map((p, index) => (
                 <PropertyCard
                   key={p.id}
                   id={p.id}
@@ -159,6 +159,7 @@ export default function Home() {
                   sqft={p.sqft ?? 0}
                   imageUrl={p.cover_image_url ?? '/images/placeholder/house.jpg'}
                   imageAlt={p.title ?? 'Rental property'}
+                  hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
                 />
               ))}
           </div>
