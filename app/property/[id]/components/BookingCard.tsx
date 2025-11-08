@@ -11,6 +11,7 @@ import CheckoutDialog from '@/components/payments/CheckoutDialog';
 interface BookingCardProps {
   property: {
     price: number;
+    minimumNights?: number | null;
     rating: number;
     reviewCount: number;
     weeklyDiscountPct?: number | null;
@@ -30,6 +31,7 @@ interface BookingCardProps {
   guests: number;
   onGuestChange: (increment: boolean) => void;
   nights: number;
+  minimumNights?: number | null;
   user: User | null;
   // Optional resolved property UUID from parent page (preferred over route param)
   resolvedPropertyId?: string;
@@ -44,6 +46,7 @@ export default function BookingCard({
   guests,
   onGuestChange,
   nights,
+  minimumNights,
   user,
   resolvedPropertyId,
 }: BookingCardProps) {
@@ -56,12 +59,20 @@ export default function BookingCard({
   const [showCheckout, setShowCheckout] = useState(false);
   const pricingExpanded = showPricingPopover ? 'true' : 'false';
 
+  const minimumStayNights = Math.max(1, typeof minimumNights === 'number' ? minimumNights : property.minimumNights ?? 1);
+  const includedGuests = 3;
+  const maxGuests = 5;
+  const extraGuestFeePerGuest = 100;
+  const extraGuestCount = Math.max(0, guests - includedGuests);
+  const guestSurchargePerNight = extraGuestCount * extraGuestFeePerGuest;
+  const adjustedNightlyRate = property.price + guestSurchargePerNight;
+
   const weeklyDiscountRate = property.weeklyDiscountRate ?? (typeof property.weeklyDiscountPct === 'number' ? property.weeklyDiscountPct / 100 : 0.2);
   const monthlyDiscountRate = property.monthlyDiscountRate ?? (typeof property.monthlyDiscountPct === 'number' ? property.monthlyDiscountPct / 100 : 0.4);
   const pricing = calculatePricing({
-    pricePerNight: property.price,
+    pricePerNight: adjustedNightlyRate,
     nights,
-    guests,
+    guests: 1,
     discountWeekly: weeklyDiscountRate,
     discountMonthly: monthlyDiscountRate,
   });
@@ -80,7 +91,6 @@ export default function BookingCard({
   const weeklyRate = property.weeklyPrice ?? Math.round(property.price * (1 - weeklyDiscountRate));
   const monthlyRate = property.monthlyPrice ?? Math.round(property.price * (1 - monthlyDiscountRate));
   const discountRate = pricing.discountRate;
-  const standardSubtotal = pricing.base;
   const discountAmount = pricing.discountAmount;
   const effectiveNightly = pricing.effectiveNightly;
   const cleaningDisplayPct = Math.round(cleaningRate * 100);
@@ -90,6 +100,11 @@ export default function BookingCard({
       ? `Weekly discount (${Math.round(weeklyDiscountRate * 100)}%)`
       : null;
 
+  const baseNightlySubtotal = Math.round(property.price * nights);
+  const guestSurchargeSubtotal = Math.max(0, Math.round(guestSurchargePerNight * nights));
+  const minStaySubtotal = Math.round(property.price * minimumStayNights);
+  const minStayLabel = toCurrency(minStaySubtotal);
+
   // Persist booking draft to localStorage for Guest Portal price summary
   useEffect(() => {
     try {
@@ -98,7 +113,9 @@ export default function BookingCard({
         checkOut: checkOutDate,
         nights,
         guests,
-        pricePerNight: property.price,
+        pricePerNight: adjustedNightlyRate,
+        baseNightlyRate: property.price,
+        extraGuestCount,
         subtotal: subtotalBeforeFees,
         total: totalPrice,
         propertyId,
@@ -141,7 +158,14 @@ export default function BookingCard({
         <div className="border border-gray-200 rounded-xl p-6 shadow-lg booking-card">
           <div className="flex items-center justify-between mb-2">
             <div className="text-2xl font-semibold">
-              ${property.price}<span className="text-base font-normal text-gray-500">/night</span>
+              {minStayLabel}
+              <span className="text-base font-normal text-gray-500">
+                {' '}for {minimumStayNights}{' '}
+                {minimumStayNights === 1 ? 'night' : 'nights'}
+              </span>
+              <div className="text-sm text-gray-500 font-normal">
+                Base rate {toCurrency(property.price)} / night
+              </div>
               {discountRate > 0 && (
                 <div className="text-sm text-green-700 font-medium mt-1">
                   Your rate: ${effectiveNightly} / night ({nights >= 21 ? '40% monthly discount' : '20% weekly discount'})
@@ -242,13 +266,16 @@ export default function BookingCard({
                   <button 
                     aria-label="Increase guests"
                     onClick={() => onGuestChange(true)}
-                    disabled={guests >= 8}
+                    disabled={guests >= maxGuests}
                     className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Up to {includedGuests} guests included. Additional guests +${extraGuestFeePerGuest}/night (max {maxGuests} guests).
+              </p>
             </div>
           </div>
 
@@ -256,13 +283,24 @@ export default function BookingCard({
           <div className="space-y-3 text-sm mb-4">
             <div className="flex justify-between">
               <span className="text-gray-700">
-                ${property.price} x {nights} {nights === 1 ? 'night' : 'nights'} x {guests} {guests === 1 ? 'guest' : 'guests'}
-                {discountRate > 0 && (
-                  <span className="ml-2 text-gray-500">(Your rate: ${effectiveNightly} / night)</span>
-                )}
+                ${property.price} x {nights} {nights === 1 ? 'night' : 'nights'}
               </span>
-              <span className="text-gray-900">{toCurrency(standardSubtotal)}</span>
+              <span className="text-gray-900">{toCurrency(baseNightlySubtotal)}</span>
             </div>
+            {minimumStayNights > 1 && nights === minimumStayNights && (
+              <p className="text-xs text-gray-500">
+                This listing requires a minimum stay of {minimumStayNights}{' '}
+                {minimumStayNights === 1 ? 'night' : 'nights'}.
+              </p>
+            )}
+            {extraGuestCount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-gray-700">
+                  Guest surcharge (+${extraGuestFeePerGuest} x {extraGuestCount} {extraGuestCount === 1 ? 'guest' : 'guests'} x {nights} {nights === 1 ? 'night' : 'nights'})
+                </span>
+                <span className="text-gray-900">{toCurrency(guestSurchargeSubtotal)}</span>
+              </div>
+            )}
             {discountRate > 0 && discountDisplayLabel && (
               <div className="flex justify-between text-green-700">
                 <span>{discountDisplayLabel}</span>

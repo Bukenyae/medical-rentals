@@ -17,6 +17,7 @@ export interface HostPropertyRecord {
   sqft?: number | null;
   nightly_price?: number | null;
   base_price?: number | null;
+  minimum_nights?: number | null;
   weekly_discount_pct?: number | null;
   weekly_price?: number | null;
   monthly_discount_pct?: number | null;

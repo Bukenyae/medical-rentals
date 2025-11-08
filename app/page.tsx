@@ -154,6 +154,7 @@ export default function Home() {
                   rating={4.8}
                   reviewCount={120}
                   price={p.nightly_price ?? 150}
+                  minimumNights={p.minimum_nights ?? 1}
                   bedrooms={p.bedrooms ?? 0}
                   bathrooms={p.bathrooms ?? 0}
                   sqft={p.sqft ?? 0}

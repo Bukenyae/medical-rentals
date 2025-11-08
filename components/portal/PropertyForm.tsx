@@ -50,6 +50,7 @@ export default function PropertyForm({
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [nightlyPrice, setNightlyPrice] = useState<number>(150);
+  const [minimumNights, setMinimumNights] = useState<number>(1);
   const [bedrooms, setBedrooms] = useState<number>(3);
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [sqft, setSqft] = useState<number | "">(1100);
@@ -100,6 +101,22 @@ export default function PropertyForm({
   const [selectedAmenities, setSelectedAmenities] = useState<Set<string>>(new Set());
   const [cleaningFeePct, setCleaningFeePct] = useState<number>(0);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set()); // ISO date strings
+
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+      }),
+    []
+  );
+  const resolvedMinimumNights = Number.isFinite(minimumNights) ? Math.max(1, minimumNights) : 1;
+  const previewNightlyRate = Number.isFinite(nightlyPrice) && nightlyPrice > 0 ? nightlyPrice : 150;
+  const previewMinimumSubtotal = Math.max(0, Math.round(previewNightlyRate * resolvedMinimumNights));
+  const previewMinimumSubtotalLabel = currencyFormatter.format(previewMinimumSubtotal);
+  const previewNightlyRateLabel = currencyFormatter.format(previewNightlyRate);
 
   // Host profile (derived)
   const [hostNameDerived, setHostNameDerived] = useState<string>("");
@@ -224,6 +241,7 @@ export default function PropertyForm({
         is_published: false,
         max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
         sqft: typeof sqft === 'number' ? sqft : null,
+        minimum_nights: resolvedMinimumNights,
       };
       const { data, error } = await supabase
         .from('properties')
@@ -533,6 +551,7 @@ export default function PropertyForm({
         address,
         description,
         base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
+        minimum_nights: resolvedMinimumNights,
         max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
         proximity_badge_1: proximityBadge1 || null,
         proximity_badge_2: proximityBadge2 || null,
@@ -577,8 +596,20 @@ export default function PropertyForm({
           onPropertySelected?.(savedId);
           setStep(1);
           setLoading(false);
-          if (onSaved) onSaved(savedId, selectedId ? 'edit' : 'create');
-          else alert(selectedId ? 'Property updated' : 'Property created');
+          const successMsg = selectedId ? 'Property updated' : 'Property created';
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('host:last-toast', successMsg);
+            } catch {
+              /* ignore */
+            }
+          }
+          if (onSaved) {
+            onSaved(savedId, selectedId ? 'edit' : 'create');
+          } else {
+            setToast({ msg: successMsg, kind: 'success' });
+            setTimeout(() => setToast(null), 2500);
+          }
           return;
         }
       } catch (e: any) {
@@ -596,6 +627,7 @@ export default function PropertyForm({
             address,
             description,
             base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
+            minimum_nights: resolvedMinimumNights,
             max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
             proximity_badge_1: proximityBadge1 || null,
             proximity_badge_2: proximityBadge2 || null,
@@ -615,8 +647,20 @@ export default function PropertyForm({
           onPropertySelected?.(fbId);
           setStep(1);
           setLoading(false);
-          if (onSaved) onSaved(fbId, selectedId ? 'edit' : 'create');
-          else alert(selectedId ? 'Property updated' : 'Property created');
+          const successMsg = selectedId ? 'Property updated' : 'Property created';
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('host:last-toast', successMsg);
+            } catch {
+              /* ignore */
+            }
+          }
+          if (onSaved) {
+            onSaved(fbId, selectedId ? 'edit' : 'create');
+          } else {
+            setToast({ msg: successMsg, kind: 'success' });
+            setTimeout(() => setToast(null), 2500);
+          }
           return;
         } else {
           alert(msg || 'Failed to save property');
@@ -772,6 +816,7 @@ export default function PropertyForm({
       setBathrooms(2);
       setSqft(1100);
       setGoogleMapsUrl("");
+      setMinimumNights(1);
       onPropertySelected?.(null);
       return;
     }
@@ -781,6 +826,7 @@ export default function PropertyForm({
     setDescription(p.description ?? "");
     setAddress(p.address ?? "");
     setNightlyPrice(p.nightly_price ?? 150);
+    setMinimumNights(p.minimum_nights && p.minimum_nights > 1 ? p.minimum_nights : 1);
     setWeeklyDiscountPct(p.weekly_discount_pct ?? 20);
     setWeeklyPrice(p.weekly_price ?? Math.round((p.nightly_price ?? 150) * 0.8));
     setMonthlyDiscountPct(p.monthly_discount_pct ?? 40);
@@ -1083,6 +1129,20 @@ export default function PropertyForm({
                 />
                 <div id="price-hint" className="mt-1 text-xs text-gray-500">If left blank, we default to $150/night.</div>
               </label>
+              <label className="text-sm">Minimum nights per booking
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={resolvedMinimumNights}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setMinimumNights(Number.isFinite(next) && next > 0 ? next : 1);
+                  }}
+                  min={1}
+                  aria-describedby="minimum-nights-hint"
+                />
+                <div id="minimum-nights-hint" className="mt-1 text-xs text-gray-500">Leave at 1 to allow single-night stays. Higher values update the displayed stay price automatically.</div>
+              </label>
               <label className="text-sm">Bedrooms
                 <input
                   type="number"
@@ -1293,7 +1353,11 @@ export default function PropertyForm({
                       {proximityBadge2 && <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-50 text-blue-700 border border-blue-200">{proximityBadge2}</span>}
                     </div>
                   )}
-                  <div className="text-sm text-gray-900 mt-1">${nightlyPrice}/night</div>
+                  <div className="text-sm text-gray-900 mt-1">
+                    From {previewMinimumSubtotalLabel} for {resolvedMinimumNights}{' '}
+                    {resolvedMinimumNights === 1 ? 'night' : 'nights'}
+                  </div>
+                  <div className="text-xs text-gray-500">Base rate {previewNightlyRateLabel} / night</div>
                   <div className="text-xs text-emerald-700 mt-1">{`7+ nights: ${weeklyDiscountPct}% off - $${weeklyPrice}/night`}</div>
                   <div className="text-xs text-emerald-700">{`Monthly: ${monthlyDiscountPct}% off - $${monthlyPrice}/night`}</div>
                   <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft</div>

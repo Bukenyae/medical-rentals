@@ -104,6 +104,20 @@ export default function HostPortalPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cached = sessionStorage.getItem('host:last-toast');
+      if (cached) {
+        setToastMsg(cached);
+        sessionStorage.removeItem('host:last-toast');
+        setTimeout(() => setToastMsg(null), 2500);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // No dashboard-level status fetching; handled inside PublishChecklist
 
   async function publishSelected() {
