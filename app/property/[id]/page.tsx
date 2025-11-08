@@ -65,6 +65,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     proximity_badge_1: string | null;
     proximity_badge_2: string | null;
     nightly_price: number;
+    minimum_nights?: number | null;
     bedrooms: number;
     bathrooms: number;
     sqft: number | null;
@@ -116,7 +117,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
         const [propResult, imgsResult, blocksResult] = await Promise.all([
           supabase
             .from('properties')
-            .select('id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url')
+            .select('id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,minimum_nights,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url')
             .eq('id', pid)
             .limit(1)
             .maybeSingle(),
@@ -286,7 +287,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     return nights > 0 ? nights : 1;
   };
 
-  const nights = calculateNights();
+  const selectedNights = calculateNights();
 
   const parseNumeric = (value: unknown): number | null => {
     if (value === null || value === undefined) return null;
@@ -411,6 +412,8 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     : null;
 
   const nightlyPrice = parseNumeric(propertyRow.nightly_price) ?? 150;
+  const minimumNights = parseNumeric(propertyRow.minimum_nights) ?? 1;
+  const nights = Math.max(selectedNights, minimumNights);
   const bedrooms = parseNumeric(propertyRow.bedrooms) ?? 0;
   const bathrooms = parseNumeric(propertyRow.bathrooms) ?? 0;
   const sqft = parseNumeric(propertyRow.sqft) ?? 0;
@@ -427,6 +430,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     rating: 4.8,
     reviewCount: 0,
     price: nightlyPrice,
+    minimumNights,
     bedrooms,
     bathrooms,
     sqft,
@@ -545,6 +549,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
             guests={guests}
             onGuestChange={handleGuestChange}
             nights={nights}
+            minimumNights={minimumNights}
             user={user}
             resolvedPropertyId={dbProperty?.id}
           />

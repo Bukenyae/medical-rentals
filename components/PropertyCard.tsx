@@ -18,6 +18,7 @@ interface PropertyCardProps {
   rating: number;
   reviewCount: number;
   price: number;
+  minimumNights?: number | null;
   bedrooms: number;
   bathrooms: number;
   sqft: number;
@@ -33,6 +34,7 @@ export default function PropertyCard({
   rating,
   reviewCount,
   price,
+  minimumNights,
   bedrooms,
   bathrooms,
   sqft,
@@ -41,6 +43,15 @@ export default function PropertyCard({
   hoverTint
 }: PropertyCardProps) {
   const hoverTintValue = hoverTint ?? '#FFE9D4';
+  const minNights = typeof minimumNights === 'number' && minimumNights > 0 ? minimumNights : 1;
+  const currency = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  });
+  const minimumStayTotal = currency.format(Math.max(0, Math.round(price * minNights)));
+  const nightlyLabel = currency.format(price);
 
   return (
     <Link
@@ -52,10 +63,10 @@ export default function PropertyCard({
         style={{ '--hover-tint': hoverTintValue } as CSSProperties}
       >
         <div className="relative rounded-[36px] bg-white shadow-[0_12px_28px_-26px_rgba(27,30,40,0.25)] transition-all duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]">
-          <div className="absolute inset-0 rounded-[36px] bg-white transition-transform transition-colors duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.05] group-hover:bg-[var(--hover-tint)] group-hover:shadow-[0_32px_75px_-30px_rgba(27,30,40,0.45)]" />
+          <div className="absolute inset-0 rounded-[36px] bg-white transition-transform transition-colors duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] group-hover:scale-[1.05] group-hover:bg-[var(--hover-tint)] group-hover:shadow-[0_32px_75px_-30px_rgba(27,30,40,0.45)] group-focus-visible:scale-[1.05] group-focus-visible:bg-[var(--hover-tint)] group-focus-visible:shadow-[0_32px_75px_-30px_rgba(27,30,40,0.45)] group-active:scale-[1.03] group-active:bg-[var(--hover-tint)] group-active:shadow-[0_28px_65px_-26px_rgba(27,30,40,0.4)]" />
 
-          <div className="relative rounded-[36px] p-1.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1">
-            <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_16px_26px_-28px_rgba(27,30,40,0.45)] transition-shadow duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:shadow-none">
+          <div className="relative rounded-[36px] p-1.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-focus-visible:-translate-y-1 group-active:-translate-y-0.5">
+            <div className="relative overflow-hidden rounded-3xl bg-white shadow-[0_16px_26px_-28px_rgba(27,30,40,0.45)] transition-shadow duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:shadow-none group-focus-visible:shadow-none group-active:shadow-none">
               <div className="h-96 relative overflow-hidden">
                 <Image
                   src={imageUrl}
@@ -67,7 +78,7 @@ export default function PropertyCard({
                 <div className="absolute inset-0 bg-black bg-opacity-20"></div>
               </div>
 
-              <div className="p-6 bg-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-3xl group-hover:bg-[var(--hover-tint)]">
+              <div className="p-6 bg-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-3xl group-hover:bg-[var(--hover-tint)] group-focus-visible:bg-[var(--hover-tint)] group-active:bg-[var(--hover-tint)]">
                 <div className="flex items-center justify-end mb-2">
                   <div className="flex items-center">
                     <Star className="h-4 w-4 text-yellow-400 fill-current" />
@@ -94,10 +105,17 @@ export default function PropertyCard({
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="flex items-baseline justify-end gap-1">
-                      <span className="text-base font-medium text-gray-500">From</span>
-                      <span className="text-3xl font-extrabold text-gray-900">${price}</span>
-                      <span className="text-base font-medium text-gray-500">/ night</span>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-baseline justify-end gap-1">
+                        <span className="text-base font-medium text-gray-500">From</span>
+                        <span className="text-3xl font-extrabold text-gray-900">{minimumStayTotal}</span>
+                        <span className="text-base font-medium text-gray-500">
+                          for {minNights} {minNights === 1 ? 'night' : 'nights'}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Base rate {nightlyLabel}/night
+                      </div>
                     </div>
                   </div>
                 </div>
