@@ -355,25 +355,6 @@ export default function PropertyForm({
     })();
   }, [supabase]);
 
-  // Persist Step 2 preview fields locally per property id
-  useEffect(() => {
-    if (!selectedId) return;
-    try {
-      const raw = localStorage.getItem(`property:step2:${selectedId}`);
-      if (!raw) return;
-      const v = JSON.parse(raw) as {
-        aboutSpace?: string;
-        professionalsDesc?: string;
-        amenities?: string[];
-        cleaningFeePct?: number;
-      };
-      if (typeof v.aboutSpace === 'string') setAboutSpace(v.aboutSpace);
-      if (typeof v.professionalsDesc === 'string') setProfessionalsDesc(v.professionalsDesc);
-      if (Array.isArray(v.amenities)) setSelectedAmenities(new Set(v.amenities));
-      if (typeof v.cleaningFeePct === 'number') setCleaningFeePct(Math.max(0, v.cleaningFeePct));
-    } catch {}
-  }, [selectedId]);
-
   useEffect(() => {
     if (!selectedId) return;
     try {
@@ -817,9 +798,25 @@ export default function PropertyForm({
       setSqft(1100);
       setGoogleMapsUrl("");
       setMinimumNights(1);
+      setAboutSpace("");
+      setProfessionalsDesc("");
+      setSelectedAmenities(new Set());
+      setCleaningFeePct(0);
       onPropertySelected?.(null);
       return;
     }
+    let draft: {
+      aboutSpace?: string;
+      professionalsDesc?: string;
+      amenities?: string[];
+      cleaningFeePct?: number;
+    } | null = null;
+    try {
+      const raw = localStorage.getItem(`property:step2:${p.id}`);
+      if (raw) {
+        draft = JSON.parse(raw);
+      }
+    } catch {}
     setSelectedId(p.id);
     onPropertySelected?.(p.id);
     setTitle(p.title ?? "");
@@ -836,8 +833,13 @@ export default function PropertyForm({
     setBedrooms(p.bedrooms ?? 3);
     setBathrooms(p.bathrooms ?? 2);
     setSqft(typeof p.sqft === 'number' ? p.sqft : 1100);
-    setCleaningFeePct(typeof p.cleaning_fee_pct === 'number' ? p.cleaning_fee_pct : 0);
+    setCleaningFeePct(typeof p.cleaning_fee_pct === 'number' ? p.cleaning_fee_pct : (draft?.cleaningFeePct ?? 0));
     setGoogleMapsUrl(p.map_url ?? "");
+    setAboutSpace(p.about_space ?? draft?.aboutSpace ?? "");
+    setProfessionalsDesc(p.indoor_outdoor_experiences ?? draft?.professionalsDesc ?? "");
+    if (Array.isArray(draft?.amenities) && draft?.amenities.length) {
+      setSelectedAmenities(new Set(draft.amenities));
+    }
     setStep(1);
   }
 
