@@ -102,7 +102,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       <div className="pb-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">About this space</h3>
         <p className="text-gray-700 mb-4">
-          {property.description}
+          {property.description || 'No description provided yet.'}
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       <div className="pb-6 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">The indoor & outdoor experiences</h3>
         <p className="text-gray-600">
-          {property.professionalsDesc || 'Specially designed for traveling nurses, visiting scholars, military personnel, and young professionals. Quiet neighborhood with easy access to hospitals, campuses, and bases plus a dedicated workspace.'}
+          {property.professionalsDesc || 'No experience details provided yet.'}
         </p>
       </div>
 
