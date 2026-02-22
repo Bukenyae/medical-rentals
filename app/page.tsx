@@ -76,6 +76,8 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const gridColumnsClass = dbProperties.length === 2 ? 'grid-cols-2 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2';
+
   return (
     <div className="min-h-screen bg-white">
       <Header
@@ -128,9 +130,9 @@ export default function Home() {
               </div>
             </div>
           </div>
-          
+
           {/* Property Cards Grid - Mobile Optimized */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+          <div className={`grid ${gridColumnsClass} gap-4 sm:gap-6 lg:gap-8`}>
             {!propertiesTried && loadingProps && <HomePropertiesSkeleton count={4} />}
             {propertiesTried && propertiesError && (
               <div className="col-span-full rounded-3xl border border-rose-200 bg-rose-50 px-6 py-16 text-center text-rose-700">
@@ -146,23 +148,23 @@ export default function Home() {
               </div>
             )}
             {dbProperties.length > 0 && dbProperties.map((p, index) => (
-                <PropertyCard
-                  key={p.id}
-                  id={p.id}
-                  title={p.title ?? 'Untitled listing'}
-                  description={p.description ?? 'Comfortable, furnished rental for professionals.'}
-                  rating={4.8}
-                  reviewCount={120}
-                  price={p.nightly_price ?? 150}
-                  minimumNights={p.minimum_nights ?? 1}
-                  bedrooms={p.bedrooms ?? 0}
-                  bathrooms={p.bathrooms ?? 0}
-                  sqft={p.sqft ?? 0}
-                  imageUrl={p.cover_image_url ?? '/images/placeholder/house.jpg'}
-                  imageAlt={p.title ?? 'Rental property'}
-                  hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
-                />
-              ))}
+              <PropertyCard
+                key={p.id}
+                id={p.id}
+                title={p.title ?? 'Untitled listing'}
+                description={p.description ?? 'Comfortable, furnished rental for professionals.'}
+                rating={4.8}
+                reviewCount={120}
+                price={p.nightly_price ?? 150}
+                minimumNights={p.minimum_nights ?? 1}
+                bedrooms={p.bedrooms ?? 0}
+                bathrooms={p.bathrooms ?? 0}
+                sqft={p.sqft ?? 0}
+                imageUrl={p.cover_image_url ?? '/images/placeholder/house.jpg'}
+                imageAlt={p.title ?? 'Rental property'}
+                hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
+              />
+            ))}
           </div>
         </div>
       </section>

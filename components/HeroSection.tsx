@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
+import { Search } from 'lucide-react';
 import SearchBar from './SearchBar';
 
 interface HeroSectionProps {
@@ -24,6 +26,8 @@ export default function HeroSection({
   onGuestsChange,
   isScrolled,
 }: HeroSectionProps) {
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+
   return (
     <section className="relative flex justify-center px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8 bg-white mt-12 sm:mt-16">
       {/* Content */}
@@ -34,10 +38,10 @@ export default function HeroSection({
           <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
             <div className="hidden lg:flex -space-x-3 flex-shrink-0">
               {[
-                { src: "/images/Reviewers/Dr. Angelica Celestine.jpg", alt: "Dr. Angelica Celestine" },
-                { src: "/images/Reviewers/Dr. Nia Jenkins.jpg", alt: "Dr. Nia Jenkins" },
-                { src: "/images/Reviewers/Erica Rogers.NP.jpg", alt: "Erica Rogers NP" },
-                { src: "/images/Reviewers/Marley Aguillard.NP.jpg", alt: "Marley Aguillard NP" }
+                { src: '/images/Reviewers/Dr. Angelica Celestine.jpg', alt: 'Dr. Angelica Celestine' },
+                { src: '/images/Reviewers/Dr. Nia Jenkins.jpg', alt: 'Dr. Nia Jenkins' },
+                { src: '/images/Reviewers/Erica Rogers.NP.jpg', alt: 'Erica Rogers NP' },
+                { src: '/images/Reviewers/Marley Aguillard.NP.jpg', alt: 'Marley Aguillard NP' }
               ].map((reviewer, index) => (
                 <div key={index} className="relative w-12 h-12 sm:w-16 sm:h-16">
                   <Image
@@ -58,8 +62,41 @@ export default function HeroSection({
           </div>
         </div>
 
-        {/* Search Bar */}
-        <div className={`transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        {/* Mobile Search Trigger */}
+        <div className={`md:hidden transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <button
+            type="button"
+            onClick={() => setIsMobileSearchOpen((prev) => !prev)}
+            className="w-full max-w-4xl mx-auto rounded-full border border-gray-200 bg-white px-5 py-3 shadow-sm flex items-center justify-center gap-2 text-gray-800"
+            aria-expanded={isMobileSearchOpen}
+            aria-controls="mobile-booking-panel"
+          >
+            <Search className="h-4 w-4 text-gray-500" />
+            <span className="text-sm font-semibold">Search Belle Properties</span>
+          </button>
+        </div>
+
+        {/* Mobile Booking Counter */}
+        {isMobileSearchOpen && (
+          <div
+            id="mobile-booking-panel"
+            className={`md:hidden mt-3 transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+          >
+            <SearchBar
+              selectedLocation={selectedLocation}
+              selectedDates={selectedDates}
+              selectedGuests={selectedGuests}
+              selectedPropertyId={selectedPropertyId}
+              onLocationChange={onLocationChange}
+              onDatesChange={onDatesChange}
+              onGuestsChange={onGuestsChange}
+              variant="hero"
+            />
+          </div>
+        )}
+
+        {/* Desktop Search Bar */}
+        <div className={`hidden md:block transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <SearchBar
             selectedLocation={selectedLocation}
             selectedDates={selectedDates}
