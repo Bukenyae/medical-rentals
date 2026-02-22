@@ -6,15 +6,18 @@ import HeroSection from '@/components/HeroSection';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import HomePropertiesSkeleton from '@/components/HomePropertiesSkeleton';
+import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
 import {
   fetchPublishedProperties,
   PROPERTIES_REFRESH_EVENT,
   PublishedPropertyRecord,
 } from '@/lib/queries/properties';
+import useAuthUser from '@/hooks/useAuthUser';
 
 export default function Home() {
   const supabase = useMemo(() => createClient(), []);
+  const { user } = useAuthUser();
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedDates, setSelectedDates] = useState('');
   const [selectedGuests, setSelectedGuests] = useState(1);
@@ -102,11 +105,9 @@ export default function Home() {
         isScrolled={isScrolled}
       />
 
-      {/* Property Cards */}
-      <section className="pt-8 pb-24">
+      <section className="pt-8 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-6">
-            {/* Amenity Badges - Mobile Optimized */}
             <div className="flex gap-2 max-w-7xl mx-auto overflow-x-auto pb-2 scrollbar-hide">
               <div className="flex gap-2 min-w-max px-2">
                 {[
@@ -131,7 +132,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Property Cards Grid - Mobile Optimized */}
           <div className={`grid ${gridColumnsClass} gap-4 sm:gap-6 lg:gap-8`}>
             {!propertiesTried && loadingProps && <HomePropertiesSkeleton count={4} />}
             {propertiesTried && propertiesError && (
@@ -165,6 +165,15 @@ export default function Home() {
                 hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="sm:hidden px-4 pb-8">
+        <div className="max-w-7xl mx-auto flex justify-center">
+          <div className="inline-flex items-center gap-3 rounded-full border border-gray-300 bg-white px-4 py-2 shadow-sm">
+            <span className="text-sm font-medium text-gray-700">Account</span>
+            <AuthButton user={user} />
           </div>
         </div>
       </section>
