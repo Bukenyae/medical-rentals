@@ -5,6 +5,12 @@ import Image from 'next/image';
 import { Search, X } from 'lucide-react';
 import SearchBar from './SearchBar';
 
+interface LocationOption {
+  name: string;
+  address: string;
+  propertyId: string;
+}
+
 interface HeroSectionProps {
   selectedLocation: string;
   selectedDates: string;
@@ -14,6 +20,7 @@ interface HeroSectionProps {
   onDatesChange: (dates: string) => void;
   onGuestsChange: (guests: number) => void;
   isScrolled: boolean;
+  locationOptions: LocationOption[];
 }
 
 export default function HeroSection({
@@ -25,6 +32,7 @@ export default function HeroSection({
   onDatesChange,
   onGuestsChange,
   isScrolled,
+  locationOptions,
 }: HeroSectionProps) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
@@ -97,6 +105,7 @@ export default function HeroSection({
               onDatesChange={onDatesChange}
               onGuestsChange={onGuestsChange}
               variant="hero"
+              locationOptions={locationOptions}
             />
           </div>
         )}
@@ -111,6 +120,7 @@ export default function HeroSection({
             onDatesChange={onDatesChange}
             onGuestsChange={onGuestsChange}
             variant="hero"
+            locationOptions={locationOptions}
           />
         </div>
       </div>

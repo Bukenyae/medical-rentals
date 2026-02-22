@@ -8,6 +8,12 @@ import AuthButton from './AuthButton';
 import SearchBar from './SearchBar';
 import useAuthUser from '@/hooks/useAuthUser';
 
+interface LocationOption {
+  name: string;
+  address: string;
+  propertyId: string;
+}
+
 interface HeaderProps {
   selectedLocation: string;
   selectedDates: string;
@@ -17,6 +23,7 @@ interface HeaderProps {
   onDatesChange: (dates: string) => void;
   onGuestsChange: (guests: number) => void;
   isScrolled: boolean;
+  locationOptions: LocationOption[];
 }
 
 export default function Header({
@@ -28,6 +35,7 @@ export default function Header({
   onDatesChange,
   onGuestsChange,
   isScrolled,
+  locationOptions,
 }: HeaderProps) {
   const { user } = useAuthUser();
   const [isMobileStickySearchOpen, setIsMobileStickySearchOpen] = useState(false);
@@ -95,6 +103,7 @@ export default function Header({
                   onGuestsChange={onGuestsChange}
                   variant="sticky"
                   showBookButton={true}
+                  locationOptions={locationOptions}
                 />
               </div>
 
@@ -140,6 +149,7 @@ export default function Header({
                     onDatesChange={onDatesChange}
                     onGuestsChange={onGuestsChange}
                     variant="hero"
+                    locationOptions={locationOptions}
                   />
                 </div>
               )}

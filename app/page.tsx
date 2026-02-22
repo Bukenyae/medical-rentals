@@ -80,6 +80,11 @@ export default function Home() {
   }, []);
 
   const gridColumnsClass = dbProperties.length === 2 ? 'grid-cols-2 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2';
+  const locationOptions = dbProperties.map((property) => ({
+    name: property.title ?? 'Belle Rouge Property',
+    address: property.address ?? 'Baton Rouge, LA',
+    propertyId: property.id,
+  }));
 
   return (
     <div className="min-h-screen bg-white">
@@ -92,6 +97,7 @@ export default function Home() {
         onDatesChange={handleDatesChange}
         onGuestsChange={handleGuestsChange}
         isScrolled={isScrolled}
+        locationOptions={locationOptions}
       />
 
       <HeroSection
@@ -103,6 +109,7 @@ export default function Home() {
         onDatesChange={handleDatesChange}
         onGuestsChange={handleGuestsChange}
         isScrolled={isScrolled}
+        locationOptions={locationOptions}
       />
 
       <section className="pt-8 pb-16">
