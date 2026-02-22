@@ -23,7 +23,7 @@ interface HeaderProps {
   onDatesChange: (dates: string) => void;
   onGuestsChange: (guests: number) => void;
   isScrolled: boolean;
-  locationOptions: LocationOption[];
+  locationOptions?: LocationOption[];
 }
 
 export default function Header({
@@ -35,7 +35,7 @@ export default function Header({
   onDatesChange,
   onGuestsChange,
   isScrolled,
-  locationOptions,
+  locationOptions = [],
 }: HeaderProps) {
   const { user } = useAuthUser();
   const [isMobileStickySearchOpen, setIsMobileStickySearchOpen] = useState(false);
