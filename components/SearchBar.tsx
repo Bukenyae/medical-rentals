@@ -4,6 +4,12 @@ import { useState } from 'react';
 import { MapPin, Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+interface LocationOption {
+  name: string;
+  address: string;
+  propertyId: string;
+}
+
 interface SearchBarProps {
   selectedLocation: string;
   selectedDates: string;
@@ -14,6 +20,7 @@ interface SearchBarProps {
   onGuestsChange: (guests: number) => void;
   variant?: 'hero' | 'sticky';
   showBookButton?: boolean;
+  locationOptions?: LocationOption[];
 }
 
 export default function SearchBar({
@@ -25,7 +32,8 @@ export default function SearchBar({
   onDatesChange,
   onGuestsChange,
   variant = 'hero',
-  showBookButton = false
+  showBookButton = false,
+  locationOptions = []
 }: SearchBarProps) {
   const router = useRouter();
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout'>('checkin');
@@ -34,16 +42,13 @@ export default function SearchBar({
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const isHero = variant === 'hero';
-  const isComplete = selectedLocation && selectedDates && selectedGuests && selectedPropertyId;
+  const fallbackPropertyId = locationOptions.length === 1 ? locationOptions[0].propertyId : '';
+  const destinationPropertyId = selectedPropertyId || fallbackPropertyId;
 
   const handleBookNow = () => {
-    if (isComplete) {
-      router.push(`/property/${selectedPropertyId}`);
-    } else {
-      router.push('/property/1');
-    }
+    if (!destinationPropertyId) return;
+    router.push(`/property/${destinationPropertyId}`);
   };
-
   const handleDateSelect = (date: Date) => {
     if (calendarMode === 'checkin') {
       setSelectedCheckIn(date);
@@ -109,10 +114,7 @@ export default function SearchBar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const locations = [
-    { name: 'Concord Estates', address: '2978 Lexington Dr, Baton Rouge, LA 70808', propertyId: '3' },
-    { name: 'Maryrose Place', address: '995 N Leighton Dr, Baton Rouge, LA 70806', propertyId: '1' }
-  ];
+  const locations = locationOptions;
 
   if (isHero) {
     return (

@@ -2,8 +2,14 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import SearchBar from './SearchBar';
+
+interface LocationOption {
+  name: string;
+  address: string;
+  propertyId: string;
+}
 
 interface HeroSectionProps {
   selectedLocation: string;
@@ -14,6 +20,7 @@ interface HeroSectionProps {
   onDatesChange: (dates: string) => void;
   onGuestsChange: (guests: number) => void;
   isScrolled: boolean;
+  locationOptions: LocationOption[];
 }
 
 export default function HeroSection({
@@ -25,15 +32,13 @@ export default function HeroSection({
   onDatesChange,
   onGuestsChange,
   isScrolled,
+  locationOptions,
 }: HeroSectionProps) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
 
   return (
     <section className="relative flex justify-center px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-8 bg-white mt-12 sm:mt-16">
-      {/* Content */}
       <div className="relative z-10 text-center max-w-6xl mx-auto w-full">
-
-        {/* Social Proof: Constrained to match SearchBar width */}
         <div className="max-w-4xl mx-auto w-full">
           <div className="flex flex-col sm:flex-row items-center sm:items-center sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6 w-full">
             <div className="hidden lg:flex -space-x-3 flex-shrink-0">
@@ -62,7 +67,6 @@ export default function HeroSection({
           </div>
         </div>
 
-        {/* Mobile Search Trigger */}
         <div className={`md:hidden transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <button
             type="button"
@@ -76,12 +80,22 @@ export default function HeroSection({
           </button>
         </div>
 
-        {/* Mobile Booking Counter */}
         {isMobileSearchOpen && (
           <div
             id="mobile-booking-panel"
             className={`md:hidden mt-3 transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
           >
+            <div className="flex justify-end mb-2">
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchOpen(false)}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-300 bg-white text-gray-700"
+                aria-label="Close booking counter"
+                title="Close booking counter"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
             <SearchBar
               selectedLocation={selectedLocation}
               selectedDates={selectedDates}
@@ -91,11 +105,11 @@ export default function HeroSection({
               onDatesChange={onDatesChange}
               onGuestsChange={onGuestsChange}
               variant="hero"
+              locationOptions={locationOptions}
             />
           </div>
         )}
 
-        {/* Desktop Search Bar */}
         <div className={`hidden md:block transition-opacity duration-300 ${isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <SearchBar
             selectedLocation={selectedLocation}
@@ -106,6 +120,7 @@ export default function HeroSection({
             onDatesChange={onDatesChange}
             onGuestsChange={onGuestsChange}
             variant="hero"
+            locationOptions={locationOptions}
           />
         </div>
       </div>
