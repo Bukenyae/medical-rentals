@@ -114,31 +114,6 @@ export default function Home() {
 
       <section className="pt-8 pb-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-6">
-            <div className="flex gap-2 max-w-7xl mx-auto overflow-x-auto pb-2 scrollbar-hide">
-              <div className="flex gap-2 min-w-max px-2">
-                {[
-                  'Free parking',
-                  'In-unit washer and dryer',
-                  'Full kitchen',
-                  'Wi-Fi',
-                  'Fully furnished units',
-                  'Utilities included',
-                  'Flexible lease terms',
-                  'Workspace',
-                  'Outdoor space'
-                ].map((amenity, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-2 bg-white border border-gray-300 border-opacity-50 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0"
-                  >
-                    {amenity}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-
           <div className={`grid ${gridColumnsClass} gap-4 sm:gap-6 lg:gap-8`}>
             {!propertiesTried && loadingProps && <HomePropertiesSkeleton count={4} />}
             {propertiesTried && propertiesError && (
@@ -172,6 +147,31 @@ export default function Home() {
                 hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
               />
             ))}
+          </div>
+
+          <div className="text-center mt-6">
+            <div className="flex gap-2 max-w-7xl mx-auto overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-2 min-w-max px-2">
+                {[
+                  'Free parking',
+                  'In-unit washer and dryer',
+                  'Full kitchen',
+                  'Wi-Fi',
+                  'Fully furnished units',
+                  'Utilities included',
+                  'Flexible lease terms',
+                  'Workspace',
+                  'Outdoor space'
+                ].map((amenity, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-2 bg-white border border-gray-300 border-opacity-50 text-gray-700 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0"
+                  >
+                    {amenity}
+                  </span>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
