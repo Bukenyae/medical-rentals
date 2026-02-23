@@ -6,18 +6,15 @@ import HeroSection from '@/components/HeroSection';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import HomePropertiesSkeleton from '@/components/HomePropertiesSkeleton';
-import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
 import {
   fetchPublishedProperties,
   PROPERTIES_REFRESH_EVENT,
   PublishedPropertyRecord,
 } from '@/lib/queries/properties';
-import useAuthUser from '@/hooks/useAuthUser';
 
 export default function Home() {
   const supabase = useMemo(() => createClient(), []);
-  const { user } = useAuthUser();
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedDates, setSelectedDates] = useState('');
   const [selectedGuests, setSelectedGuests] = useState(1);
@@ -177,14 +174,6 @@ export default function Home() {
           <p className="mt-4 text-[12px] font-semibold text-center leading-tight text-gray-900/60">
             Trusted by 500+ medical staff, academics, military members, students, and young professionals.
           </p>
-        </div>
-      </section>
-
-      <section className="sm:hidden px-4 pb-8">
-        <div className="max-w-7xl mx-auto flex justify-center">
-          <div className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white p-1 shadow-sm">
-            <AuthButton user={user} iconVariant="user" />
-          </div>
         </div>
       </section>
 
