@@ -114,28 +114,34 @@ export default function Header({
 
             <div className="sm:hidden py-3">
               <div className="flex items-center justify-between">
-                <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-                  <Image
-                    src="/images/logo/BelleRougeLogo.png"
-                    alt="Belle Rouge Properties logo"
-                    width={1168}
-                    height={283}
-                    priority
-                    quality={100}
-                    className="h-8 w-auto"
-                  />
-                  <span className="sr-only">Belle Rouge Properties</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+                    <Image
+                      src="/images/logo/BelleRougeLogo.png"
+                      alt="Belle Rouge Properties logo"
+                      width={1168}
+                      height={283}
+                      priority
+                      quality={100}
+                      className="h-8 w-auto"
+                    />
+                    <span className="sr-only">Belle Rouge Properties</span>
+                  </Link>
 
-                <button
-                  type="button"
-                  onClick={() => setIsMobileStickySearchOpen((prev) => !prev)}
-                  className="w-10 h-10 rounded-full bg-[#8B1A1A] text-white flex items-center justify-center"
-                  aria-label={isMobileStickySearchOpen ? 'Close booking filters' : 'Open booking filters'}
-                  title={isMobileStickySearchOpen ? 'Close booking filters' : 'Open booking filters'}
-                >
-                  {isMobileStickySearchOpen ? <X className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsMobileStickySearchOpen((prev) => !prev)}
+                    className="w-10 h-10 rounded-full bg-[#8B1A1A] text-white flex items-center justify-center"
+                    aria-label={isMobileStickySearchOpen ? 'Close booking filters' : 'Open booking filters'}
+                    title={isMobileStickySearchOpen ? 'Close booking filters' : 'Open booking filters'}
+                  >
+                    {isMobileStickySearchOpen ? <X className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                  </button>
+                </div>
+
+                <div className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white p-1 shadow-sm">
+                  <AuthButton user={user} iconVariant="user" />
+                </div>
               </div>
 
               {isMobileStickySearchOpen && (
