@@ -59,7 +59,7 @@ export default function Header({
                 height={283}
                 priority
                 quality={100}
-                className="h-8 w-auto sm:h-10 filter saturate-150 contrast-125"
+                className="h-8 w-auto sm:h-10"
               />
               <h1 className="sr-only">Belle Rouge Properties</h1>
             </Link>
@@ -87,7 +87,7 @@ export default function Header({
                   height={283}
                   priority
                   quality={100}
-                  className="h-8 w-auto sm:h-10 filter saturate-150 contrast-125"
+                  className="h-8 w-auto sm:h-10"
                 />
                 <span className="sr-only">Belle Rouge Properties</span>
               </Link>
@@ -122,7 +122,7 @@ export default function Header({
                     height={283}
                     priority
                     quality={100}
-                    className="h-8 w-auto filter saturate-150 contrast-125"
+                    className="h-8 w-auto"
                   />
                   <span className="sr-only">Belle Rouge Properties</span>
                 </Link>
