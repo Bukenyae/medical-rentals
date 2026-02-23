@@ -76,7 +76,7 @@ export default function Home() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const gridColumnsClass = dbProperties.length === 2 ? 'grid-cols-2 md:grid-cols-2' : 'grid-cols-1 md:grid-cols-2';
+  const gridColumnsClass = 'grid-cols-1 md:grid-cols-2';
   const locationOptions = dbProperties.map((property) => ({
     name: property.title ?? 'Belle Rouge Property',
     address: property.address ?? 'Baton Rouge, LA',
