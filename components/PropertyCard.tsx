@@ -90,17 +90,17 @@ export default function PropertyCard({
                 <p className="hidden sm:block text-gray-600 mb-4">{description}</p>
 
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
-                  <div className="flex items-center gap-2 sm:space-x-4 text-[10px] sm:text-sm text-gray-600">
+                  <div className="flex items-center gap-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
                     <div className="hidden sm:flex items-center">
                       <span className="mr-1">🏠</span>
                       <span>{sqft.toLocaleString()} sqft</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="mr-1">🛏️</span>
+                      <span className="mr-1 text-base sm:text-sm">🛏️</span>
                       <span>{bedrooms}</span>
                     </div>
                     <div className="flex items-center">
-                      <span className="mr-1">🚿</span>
+                      <span className="mr-1 text-base sm:text-sm">🚿</span>
                       <span>{bathrooms}</span>
                     </div>
                   </div>
@@ -113,7 +113,7 @@ export default function PropertyCard({
                           for {minNights} {minNights === 1 ? 'night' : 'nights'}
                         </span>
                       </div>
-                      <div className="text-[10px] sm:text-xs text-gray-500">
+                      <div className="text-xs sm:text-xs text-gray-500">
                         {nightlyLabel}/night
                       </div>
                     </div>
