@@ -22,6 +22,17 @@ Migrations are stored in the `migrations` directory and should be applied in num
 4. `004_calendar_enhancements.sql` - Calendar and availability features
 5. `004_chatbot_tables.sql` - AI chatbot support tables
 6. `005_financial_functions.sql` - Financial reporting functions
+7. `015_dual_rail_event_booking.sql` - Dual-rail booking model (`stay` + `event`)
+8. `016_payment_hold_fields.sql` - Deposit/payment hold fields
+9. `017_admin_portal_foundation.sql` - Admin portal tables, indexes, and admin/ops RLS for v1
+
+## Admin Portal Seed (v1)
+
+To seed development data for the admin dashboard:
+
+1. Apply migrations through `017_admin_portal_foundation.sql`.
+2. Run `database/seeds/admin_portal_v1_seed.sql` in Supabase SQL Editor.
+3. Ensure at least 3 records exist in `auth.users` first, or the seed script will skip safely.
 
 ## Production Database Management
 
