@@ -36,6 +36,10 @@ export interface HostPropertyRecord {
   indoor_outdoor_experiences?: string | null;
   host_bio?: string | null;
   host_avatar_url?: string | null;
+  event_hourly_from_cents?: number | null;
+  max_event_guests?: number | null;
+  event_instant_book_enabled?: boolean | null;
+  event_curfew_time?: string | null;
 }
 
 export async function fetchHostProperties(

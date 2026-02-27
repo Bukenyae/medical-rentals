@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MapPin, Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -114,7 +114,14 @@ export default function SearchBar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const locations = locationOptions;
+  const locations = useMemo(() => {
+    const unique = new Map<string, LocationOption>();
+    for (const option of locationOptions) {
+      const key = option.propertyId || option.address.trim().toLowerCase();
+      if (!unique.has(key)) unique.set(key, option);
+    }
+    return Array.from(unique.values());
+  }, [locationOptions]);
 
   if (isHero) {
     return (
@@ -139,8 +146,7 @@ export default function SearchBar({
                       className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer text-sm"
                       onClick={() => onLocationChange(location.address, location.propertyId)}
                     >
-                      <div className="font-medium text-gray-900">{location.name}</div>
-                      <div className="text-gray-500">{location.address}</div>
+                      <div className="font-medium text-gray-900">{location.address}</div>
                     </div>
                   ))}
                 </div>
@@ -328,8 +334,7 @@ export default function SearchBar({
                       className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer text-sm"
                       onClick={() => onLocationChange(location.address, location.propertyId)}
                     >
-                      <div className="font-medium text-gray-900">{location.name}</div>
-                      <div className="text-gray-500 text-xs">{location.address}</div>
+                      <div className="font-medium text-gray-900">{location.address}</div>
                     </div>
                   ))}
                 </div>

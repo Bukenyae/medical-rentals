@@ -83,6 +83,10 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     monthly_price?: number | null;
     host_bio?: string | null;
     host_avatar_url?: string | null;
+    event_hourly_from_cents?: number | null;
+    max_event_guests?: number | null;
+    event_instant_book_enabled?: boolean | null;
+    event_curfew_time?: string | null;
   }
   interface HostProfileRow {
     id: string;
@@ -114,13 +118,38 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       const pid = params.id;
       try {
         setDbError(null);
-        const [propResult, imgsResult, blocksResult] = await Promise.all([
-          supabase
+        const basePropertySelect = 'id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,minimum_nights,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url';
+        const extendedPropertySelect = `${basePropertySelect},event_hourly_from_cents,max_event_guests,event_instant_book_enabled,event_curfew_time`;
+
+        const propertyFetchPromise = (async () => {
+          const extendedResult = await supabase
             .from('properties')
-            .select('id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,minimum_nights,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url')
+            .select(extendedPropertySelect)
             .eq('id', pid)
             .limit(1)
-            .maybeSingle(),
+            .maybeSingle();
+
+          if (!extendedResult.error) return extendedResult;
+
+          const message = extendedResult.error.message ?? '';
+          const missingEventColumns =
+            message.includes('event_hourly_from_cents') ||
+            message.includes('max_event_guests') ||
+            message.includes('event_instant_book_enabled') ||
+            message.includes('event_curfew_time');
+
+          if (!missingEventColumns) return extendedResult;
+
+          return supabase
+            .from('properties')
+            .select(basePropertySelect)
+            .eq('id', pid)
+            .limit(1)
+            .maybeSingle();
+        })();
+
+        const [propResult, imgsResult, blocksResult] = await Promise.all([
+          propertyFetchPromise,
           supabase
             .from('property_images')
             .select('id,url,is_approved,sort_order')
@@ -461,6 +490,12 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     monthlyPrice: parseNumeric(propertyRow.monthly_price),
     hostBio: propertyRow.host_bio ?? null,
     hostAvatarUrl: propertyRow.host_avatar_url ?? null,
+    eventHourlyFromCents: parseNumeric(propertyRow.event_hourly_from_cents) ?? 12500,
+    maxEventGuests: parseNumeric(propertyRow.max_event_guests) ?? 20,
+    eventInstantBookEnabled: !!propertyRow.event_instant_book_enabled,
+    eventCurfewTime: propertyRow.event_curfew_time ?? null,
+    timezone: 'America/Chicago',
+    baseParkingCapacity: 8,
   };
 
   return (

@@ -40,6 +40,13 @@ const STATUS_META: Record<
     Icon: typeof CheckCircleIcon;
   }
 > = {
+  awaiting_payment: {
+    label: 'Payment required',
+    tone: 'text-amber-700',
+    badge: 'bg-amber-100 text-amber-800',
+    description: 'Host approved your request. Complete payment and deposit authorization to confirm your booking.',
+    Icon: ClockIcon,
+  },
   confirmed: {
     label: 'Booking confirmed',
     tone: 'text-green-700',
@@ -278,8 +285,16 @@ export default function GuestConfirmationPage() {
                       >
                         Open guest portal
                       </Link>
+                      {booking?.status === 'awaiting_payment' && (
+                        <Link
+                          href={booking ? ('/portal/guest/payment?booking=' + booking.id) : '#'}
+                          className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition"
+                        >
+                          Complete payment
+                        </Link>
+                      )}
                       <Link
-                        href={booking ? `/portal/guest/confirmation?booking=${booking.id}` : '#'}
+                        href={booking ? ('/portal/guest/confirmation?booking=' + booking.id) : '#'}
                         className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
                       >
                         Refresh status
