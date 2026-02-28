@@ -12,6 +12,7 @@ import Icon from "@/components/portal/Icon";
 import SidebarItem from "@/components/portal/SidebarItem";
 import BottomBar from "@/components/portal/BottomBar";
 import PaymentsList from "@/components/portal/PaymentsList";
+import EventBookingQueue from "@/components/portal/EventBookingQueue";
 import TenantsList from "@/components/portal/TenantsList";
 import AccountMenu from "@/components/AccountMenu";
 import { PropertySwitcher } from "@/components/portal/PropertySwitcher";
@@ -342,6 +343,10 @@ export default function HostPortalPage() {
                   </Card>
                 </div>
               </div>
+            </section>
+
+            <section className="mt-6">
+              <EventBookingQueue />
             </section>
 
             {/* Check-in / Check-out */}

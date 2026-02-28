@@ -6,7 +6,7 @@ import HeroSection from '@/components/HeroSection';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import HomePropertiesSkeleton from '@/components/HomePropertiesSkeleton';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, getSupabaseClientConfigError } from '@/lib/supabase/client';
 import {
   fetchPublishedProperties,
   PROPERTIES_REFRESH_EVENT,
@@ -15,6 +15,7 @@ import {
 
 export default function Home() {
   const supabase = useMemo(() => createClient(), []);
+  const supabaseConfigError = useMemo(() => getSupabaseClientConfigError(), []);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedDates, setSelectedDates] = useState('');
   const [selectedGuests, setSelectedGuests] = useState(1);
@@ -39,6 +40,16 @@ export default function Home() {
   };
 
   const loadPublished = useCallback(async () => {
+    if (supabaseConfigError) {
+      setPropertiesError(
+        supabaseConfigError ??
+          'Unable to initialize the app configuration. Please check environment variables.'
+      );
+      setPropertiesTried(true);
+      setLoadingProps(false);
+      return;
+    }
+
     try {
       setLoadingProps(true);
       setPropertiesError(null);
@@ -52,7 +63,7 @@ export default function Home() {
       setPropertiesTried(true);
       setLoadingProps(false);
     }
-  }, [supabase]);
+  }, [supabase, supabaseConfigError]);
 
   useEffect(() => {
     void loadPublished();
@@ -135,6 +146,8 @@ export default function Home() {
                 rating={4.8}
                 reviewCount={120}
                 price={p.nightly_price ?? 150}
+                eventHourlyRate={((p.event_hourly_from_cents ?? 12500) as number) / 100}
+                eventMaxGuests={(p.max_event_guests ?? 20) as number}
                 minimumNights={p.minimum_nights ?? 1}
                 bedrooms={p.bedrooms ?? 0}
                 bathrooms={p.bathrooms ?? 0}

@@ -1,0 +1,3 @@
+BEGIN;
+ALTER TABLE bookings DROP CONSTRAINT IF EXISTS future_checkin;
+COMMIT;

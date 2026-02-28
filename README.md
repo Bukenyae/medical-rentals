@@ -7,6 +7,10 @@ Belle Rouge Properties provides flexible short-term rentals near hospitals, univ
 - Flexible lease terms suited for assignments, semesters, or training
 - Property management tools and secure authentication powered by Supabase and Next.js
 
+## Specs Index
+- Dual-rail booking/events flow spec: [`specs.md`](/Users/emmanuelbukenya/Projects/BelleRouge/medical-rentals/specs.md)
+- Admin portal build + execution + swarm plan: [`spec.md`](/Users/emmanuelbukenya/Projects/BelleRouge/medical-rentals/spec.md)
+
 ## Development
 Run the development server:
 

@@ -9,7 +9,7 @@ import { toCurrency } from "@/lib/pricing";
 import { EnvelopeIcon, PuzzlePieceIcon, WrenchIcon, MapPinIcon, UserCircleIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, ShieldCheckIcon, UserMinusIcon } from "@heroicons/react/24/outline";
 import AccountMenu from "@/components/AccountMenu";
 import useAuthUser from "@/hooks/useAuthUser";
-import CheckoutDialog from "@/components/payments/CheckoutDialog";
+import InlineCheckoutForm from "@/components/payments/InlineCheckoutForm";
 import { createClient } from "@/lib/supabase/client";
 import Footer from "@/components/Footer";
 
@@ -264,8 +264,12 @@ export default function GuestPortalPage() {
   const leftStickyRef = useRef<HTMLDivElement | null>(null);
   const [priceSummary, setPriceSummary] = useState<{ subtotal?: number; total?: number }>({});
   const [draftDetails, setDraftDetails] = useState<{ propertyId?: string; propertyTitle?: string; checkIn?: string; checkOut?: string; guests?: number; currency?: string }>({});
-  const [showCheckout, setShowCheckout] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [successDetails, setSuccessDetails] = useState<{ paymentIntentId: string; bookingId: string } | null>(null);
   const [isReserveInView, setIsReserveInView] = useState(false);
+  const [pendingPaymentBookingId, setPendingPaymentBookingId] = useState<string | null>(null);
+  const [pendingPaymentCount, setPendingPaymentCount] = useState(0);
 
   const sidebarTabs = [
     { key: "reserve", label: "Finish Reserve" },
@@ -421,6 +425,48 @@ export default function GuestPortalPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const fetchPendingPayments = async () => {
+      let bookingRef = searchParams?.get("booking") || "";
+      if (!bookingRef && typeof window !== "undefined") {
+        bookingRef = window.localStorage.getItem("booking:last") || "";
+      }
+
+      if (!bookingRef) {
+        setPendingPaymentBookingId(null);
+        setPendingPaymentCount(0);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          "/api/bookings/payment-session?bookingId=" + encodeURIComponent(bookingRef),
+          { cache: "no-store" }
+        );
+        const json = await res.json();
+        if (!res.ok) {
+          setPendingPaymentBookingId(null);
+          setPendingPaymentCount(0);
+          return;
+        }
+
+        const actionable = Array.isArray(json.sessions)
+          ? json.sessions.filter((s: any) =>
+              ["requires_payment_method", "requires_confirmation", "requires_action"].includes(s.intentStatus)
+            )
+          : [];
+
+        setPendingPaymentBookingId(bookingRef);
+        setPendingPaymentCount(actionable.length);
+      } catch {
+        setPendingPaymentBookingId(null);
+        setPendingPaymentCount(0);
+      }
+    };
+
+    void fetchPendingPayments();
+  }, [searchParams, bookingSuccess]);
+
 // Observe the sidebar visibility to hide mobile CTA when Reserve is fully visible
 useEffect(() => {
   const target = leftStickyRef.current;
@@ -478,7 +524,7 @@ return (
                   <button
                     key={t.key}
                     role="tab"
-                    aria-selected={selected ? "true" : "false"}
+                    aria-selected={selected ? true : false}
                     className={`pb-1 text-xs md:text-sm font-medium whitespace-nowrap border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       selected ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"
                     }`}
@@ -495,20 +541,75 @@ return (
                 <div aria-labelledby="Finish Reserve" className="space-y-3">
                   <h3 className="text-base font-semibold text-gray-900">Complete Your Reservation</h3>
                   <p className="text-sm text-gray-600">Review your dates, guests, and price, then confirm.</p>
+                  {pendingPaymentBookingId && pendingPaymentCount > 0 && (
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3">
+                      <p className="text-sm font-semibold text-blue-800">Host approved your event request</p>
+                      <p className="mt-1 text-xs text-blue-700">Complete payment and deposit hold authorization now.</p>
+                      <Link
+                        href={"/portal/guest/payment?booking=" + encodeURIComponent(pendingPaymentBookingId)}
+                        className="mt-2 inline-flex items-center rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700"
+                      >
+                        Open payment screen
+                      </Link>
+                    </div>
+                  )}
                   <ul className="text-sm text-gray-700 space-y-1">
                     <li className="flex justify-between"><span>Check‑in</span><span>{draftDetails.checkIn || "—"}</span></li>
                     <li className="flex justify-between"><span>Check‑out</span><span>{draftDetails.checkOut || "—"}</span></li>
                     <li className="flex justify-between"><span>Guests</span><span>{draftDetails.guests ?? "—"}</span></li>
                     <li className="flex justify-between font-medium"><span>Total</span><span>{typeof priceSummary.total === "number" ? toCurrency(priceSummary.total) : "—"}</span></li>
                   </ul>
-                  <button
-                    onClick={() => setShowCheckout(true)}
-                    disabled={!(typeof priceSummary.total === "number")}
-                    className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Finish Reserve
-                  </button>
-                  <p className="text-xs text-gray-500">You’ll receive an email confirmation after completing your booking.</p>
+                  {!bookingSuccess ? (
+                    <>
+                      <button
+                        onClick={() => setShowPaymentForm((prev) => !prev)}
+                        disabled={!(typeof priceSummary.total === "number")}
+                        className="w-full inline-flex justify-center items-center px-4 py-2.5 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {showPaymentForm ? "Hide payment form" : "Finish Reserve"}
+                      </button>
+                      <p className="text-xs text-gray-500">You’ll receive an email confirmation after completing your booking.</p>
+                      <InlineCheckoutForm
+                        expanded={showPaymentForm}
+                        amount={Math.max(0, Math.round(((priceSummary.total ?? 0) as number) * 100))}
+                        currency={draftDetails.currency || "usd"}
+                        propertyId={draftDetails.propertyId || ""}
+                        propertyTitle={draftDetails.propertyTitle || undefined}
+                        checkIn={draftDetails.checkIn || ""}
+                        checkOut={draftDetails.checkOut || ""}
+                        guests={draftDetails.guests ?? 1}
+                        metadata={{ source: "guest-portal" }}
+                        introText="Enter your card details to complete your reservation."
+                        onCancel={() => setShowPaymentForm(false)}
+                        onSuccess={({ paymentIntentId, bookingId }) => {
+                          setSuccessDetails({ paymentIntentId, bookingId });
+                          setShowPaymentForm(false);
+                          setBookingSuccess(true);
+                          setTransactionDetails((prev) => ({
+                            ...prev,
+                            paymentIntentId,
+                            status: "confirmed",
+                            amount: priceSummary.total,
+                            updatedAt: new Date().toISOString(),
+                          }));
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                      <div className="flex items-start gap-3">
+                        <svg className="mt-0.5 h-5 w-5 flex-shrink-0 text-emerald-600" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                          <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.42l-6.364 6.364a1 1 0 01-1.414 0L5.296 9.445a1 1 0 011.414-1.414l2.53 2.53 5.657-5.657a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className="text-sm font-semibold">Success</p>
+                          <p className="mt-1 text-sm">
+                            Great news — your stay at {draftDetails.propertyTitle || "this property"} is booked and payment has gone through. We’re looking forward to hosting you in Baton Rouge. We’ll send the house rules, Wi-Fi, parking information and access code one day before arrival. Safe travels!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -854,7 +955,7 @@ return (
                   <button
                     key={t.key}
                     role="tab"
-                    aria-selected={selected ? "true" : "false"}
+                    aria-selected={selected ? true : false}
                     aria-controls={`message-panel-${activeRoom?.key ?? "room"}`}
                     className={`pb-1 text-xs md:text-sm font-medium whitespace-nowrap border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                       selected ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -881,7 +982,7 @@ return (
                       <button
                         key={area}
                         type="button"
-                        aria-pressed={selected ? "true" : "false"}
+                        aria-pressed={selected}
                         className={`pb-1 text-xs md:text-sm font-medium whitespace-nowrap border-b-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
                           selected
                             ? "border-blue-600 text-blue-600"
@@ -933,30 +1034,7 @@ return (
         </div>
 
         {/* Checkout dialog lives outside column grid */}
-        <CheckoutDialog
-          isOpen={showCheckout}
-          onClose={() => setShowCheckout(false)}
-          amount={Math.max(0, Math.round(((priceSummary.total ?? 0) as number) * 100))}
-          currency={draftDetails.currency || "usd"}
-          propertyId={draftDetails.propertyId || ""}
-          propertyTitle={draftDetails.propertyTitle || undefined}
-          checkIn={draftDetails.checkIn || ""}
-          checkOut={draftDetails.checkOut || ""}
-          guests={draftDetails.guests ?? 1}
-          metadata={{
-            source: "guest-portal",
-            property_ref: draftDetails.propertyId || "",
-            property_title: draftDetails.propertyTitle || "",
-            check_in: draftDetails.checkIn || "",
-            check_out: draftDetails.checkOut || "",
-            guests: String(draftDetails.guests ?? ""),
-          }}
-          onSuccess={(paymentIntentId) => {
-            console.log("Guest Portal payment successful:", paymentIntentId);
-            setShowCheckout(false);
-            // TODO: navigate to a confirmation view or show a toast
-          }}
-        />
+        {/* Inline checkout handled within sidebar */}
 
         {/* Mobile sticky bottom CTA: Finish Reserve (hidden if Reserve card fully visible) */}
         <div
@@ -978,18 +1056,25 @@ return (
               type="button"
               aria-label="Finish Reserve"
               onClick={() => {
+                if (bookingSuccess && successDetails?.bookingId) {
+                  window.location.href = `/portal/guest/confirmation?booking=${encodeURIComponent(successDetails.bookingId)}`;
+                  return;
+                }
                 setActiveSidebar("reserve");
                 scrollToSidebar();
+                setShowPaymentForm(true);
               }}
-              className="shrink-0 inline-flex items-center justify-center rounded-xl bg-blue-600 text-white font-semibold px-4 py-3 shadow-sm hover:bg-blue-700 active:bg-blue-700"
+              className={`shrink-0 inline-flex items-center justify-center rounded-xl px-4 py-3 shadow-sm font-semibold ${
+                bookingSuccess ? "bg-emerald-600 text-white hover:bg-emerald-700" : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
-              Finish Reserve
+              {bookingSuccess ? "View booking" : "Finish Reserve"}
             </button>
           </div>
         </div>
 
         {/* Spacer so mobile content isn't hidden behind bottom bar (only when the bar is shown) */}
-        <div className={`lg:hidden ${activeSidebar === "reserve" && isReserveInView ? "h-0" : "h-20"}`} />
+        <div className={`lg:hidden ${activeSidebar === "reserve" && (isReserveInView || bookingSuccess) ? "h-0" : "h-20"}`} />
         </main>
         <Footer />
       </div>
