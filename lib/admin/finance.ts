@@ -78,7 +78,7 @@ function sumBy<T>(rows: T[], keyOf: (row: T) => string, amountOf: (row: T) => nu
     const key = keyOf(row);
     map.set(key, (map.get(key) ?? 0) + amountOf(row));
   }
-  return [...map.entries()].map(([label, amount]) => ({ label, amount })).sort((a, b) => b.amount - a.amount);
+  return Array.from(map.entries()).map(([label, amount]) => ({ label, amount })).sort((a, b) => b.amount - a.amount);
 }
 
 export async function loadFinanceData(supabase: any, searchParams: Record<string, string | string[] | undefined>): Promise<FinanceData> {

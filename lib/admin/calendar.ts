@@ -152,7 +152,7 @@ export async function loadCalendarData(
     byProperty.set(item.propertyId, current);
   }
 
-  for (const [propId, propItems] of byProperty) {
+  for (const [propId, propItems] of Array.from(byProperty.entries())) {
     const sorted = [...propItems].sort((a, b) => a.start.getTime() - b.start.getTime());
     for (let i = 1; i < sorted.length; i += 1) {
       const prev = sorted[i - 1];
@@ -173,7 +173,7 @@ export async function loadCalendarData(
     grouped.set(key, list);
   }
 
-  const groupedByDay = [...grouped.entries()]
+  const groupedByDay = Array.from(grouped.entries())
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([day, dayItems]) => ({ day, items: dayItems }));
 
