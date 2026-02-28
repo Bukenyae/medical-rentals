@@ -25,6 +25,17 @@ function sanitizeGuestFacingError(message: string) {
   return message;
 }
 
+function useDebouncedValue<T>(value: T, delayMs: number) {
+  const [debounced, setDebounced] = useState(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebounced(value), delayMs);
+    return () => window.clearTimeout(timeoutId);
+  }, [value, delayMs]);
+
+  return debounced;
+}
+
 type Params = {
   property: BookingCardProperty;
   propertyId: string;
@@ -73,6 +84,28 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
   const eventDurationHours = Number.isFinite(startTimestamp) && Number.isFinite(endTimestamp) ? (endTimestamp - startTimestamp) / (1000 * 60 * 60) : 0;
   const endsAfterCurfew = !!(property.eventCurfewTime && eventEnd > property.eventCurfewTime);
   const availabilityUnknown = !!availabilityError && isAvailable === null;
+  const debouncedQuoteInputs = useDebouncedValue(
+    useMemo(() => ({
+      eventDate,
+      eventType,
+      eventStartAt,
+      eventEndAt,
+      eventGuests,
+      eventVehicles,
+      hourlyRateCents,
+      eventAddonsTotalCents,
+      curfewTime: property.eventCurfewTime,
+      allowInstantBook: !!property.eventInstantBookEnabled,
+      propertyId,
+      alcohol,
+      amplifiedSound,
+    }), [eventDate, eventType, eventStartAt, eventEndAt, eventGuests, eventVehicles, hourlyRateCents, eventAddonsTotalCents, property.eventCurfewTime, property.eventInstantBookEnabled, propertyId, alcohol, amplifiedSound]),
+    220
+  );
+  const debouncedAvailabilityInputs = useDebouncedValue(
+    useMemo(() => ({ eventDate, eventStartAt, eventEndAt, propertyId }), [eventDate, eventStartAt, eventEndAt, propertyId]),
+    220
+  );
 
   const stepOneValidation = useCallback(() => {
     if (!eventDate) return 'Event date is required.';
@@ -89,6 +122,18 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     return null;
   }, [eventDate, todayIso, eventStart, eventEnd, startTimestamp, endTimestamp, eventDurationHours, eventGuests, maxEventGuests, eventVehicles, isAvailable, availabilityUnknown]);
 
+  const availabilityPrereqError = useMemo(() => {
+    if (!eventDate) return 'Event date is required.';
+    if (eventDate < todayIso) return 'Event date cannot be in the past.';
+    if (!eventStart || !eventEnd) return 'Start and end time are required.';
+    if (!Number.isFinite(startTimestamp) || !Number.isFinite(endTimestamp)) return 'Invalid event date/time.';
+    if (endTimestamp <= startTimestamp) return 'End time must be after start time.';
+    if (eventDurationHours < MIN_EVENT_DURATION_HOURS) return `Event duration must be at least ${MIN_EVENT_DURATION_HOURS} hours.`;
+    if (eventGuests < 1 || eventGuests > maxEventGuests) return 'Guest count is out of range.';
+    if (eventVehicles < 0) return 'Vehicle count cannot be negative.';
+    return null;
+  }, [eventDate, todayIso, eventStart, eventEnd, startTimestamp, endTimestamp, eventDurationHours, eventGuests, maxEventGuests, eventVehicles]);
+
   const stepThreeValidation = useCallback(() => {
     if (!eventDescription.trim()) return 'Event description is required.';
     if (!vendors.trim()) return 'Vendor list is required. Enter vendor names or type "None".';
@@ -97,18 +142,32 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
   }, [eventDescription, vendors, eventType, crewSize, equipmentScale]);
 
   useEffect(() => {
-    if (!eventDate) return;
+    if (!debouncedQuoteInputs.eventDate) return;
     let isActive = true;
-    setEventError(null);
+    const controller = new AbortController();
 
     void fetch('/api/bookings/quote', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
       body: JSON.stringify({
-        kind: 'event', propertyId, eventType, startAt: eventStartAt, endAt: eventEndAt, guestCount: eventGuests,
-        estimatedVehicles: eventVehicles, hourlyRateCents, minHours: 4, dayRateHours: 8, cleaningFeeCents: 25000,
-        depositCents: 75000, addonsTotalCents: eventAddonsTotalCents, allowInstantBook: !!property.eventInstantBookEnabled,
-        curfewTime: property.eventCurfewTime, alcohol, amplifiedSound,
+        kind: 'event',
+        propertyId: debouncedQuoteInputs.propertyId,
+        eventType: debouncedQuoteInputs.eventType,
+        startAt: debouncedQuoteInputs.eventStartAt,
+        endAt: debouncedQuoteInputs.eventEndAt,
+        guestCount: debouncedQuoteInputs.eventGuests,
+        estimatedVehicles: debouncedQuoteInputs.eventVehicles,
+        hourlyRateCents: debouncedQuoteInputs.hourlyRateCents,
+        minHours: 4,
+        dayRateHours: 8,
+        cleaningFeeCents: 25000,
+        depositCents: 75000,
+        addonsTotalCents: debouncedQuoteInputs.eventAddonsTotalCents,
+        allowInstantBook: debouncedQuoteInputs.allowInstantBook,
+        curfewTime: debouncedQuoteInputs.curfewTime,
+        alcohol: debouncedQuoteInputs.alcohol,
+        amplifiedSound: debouncedQuoteInputs.amplifiedSound,
       }),
     })
       .then(async (res) => {
@@ -118,29 +177,36 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
       })
       .catch((err: unknown) => {
         if (!isActive) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         const message = err instanceof Error ? err.message : 'Unable to quote event';
         setEventError(sanitizeGuestFacingError(message));
       });
 
     return () => {
       isActive = false;
+      controller.abort();
     };
-  }, [eventDate, eventType, eventStartAt, eventEndAt, eventGuests, eventVehicles, hourlyRateCents, eventAddonsTotalCents, property.eventCurfewTime, property.eventInstantBookEnabled, propertyId, alcohol, amplifiedSound]);
+  }, [debouncedQuoteInputs]);
 
   useEffect(() => {
-    const validationError = stepOneValidation();
-    if (validationError && !validationError.includes('unavailable')) {
+    if (availabilityPrereqError) {
       setIsAvailable(null);
       setAvailabilityError(null);
       return;
     }
-    if (!eventDate || !eventStartAt || !eventEndAt || !propertyId) return;
+    if (!debouncedAvailabilityInputs.eventDate || !debouncedAvailabilityInputs.eventStartAt || !debouncedAvailabilityInputs.eventEndAt || !debouncedAvailabilityInputs.propertyId) return;
 
     let isActive = true;
+    const controller = new AbortController();
     void fetch('/api/bookings/availability', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId, startAt: eventStartAt, endAt: eventEndAt }),
+      signal: controller.signal,
+      body: JSON.stringify({
+        propertyId: debouncedAvailabilityInputs.propertyId,
+        startAt: debouncedAvailabilityInputs.eventStartAt,
+        endAt: debouncedAvailabilityInputs.eventEndAt,
+      }),
     })
       .then(async (res) => {
         const json = await res.json();
@@ -151,6 +217,7 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
       })
       .catch((err: unknown) => {
         if (!isActive) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setIsAvailable(null);
         const message = err instanceof Error ? err.message : 'Unable to check availability';
         setAvailabilityError(sanitizeGuestFacingError(message));
@@ -158,8 +225,9 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
 
     return () => {
       isActive = false;
+      controller.abort();
     };
-  }, [eventDate, eventStartAt, eventEndAt, propertyId, stepOneValidation]);
+  }, [debouncedAvailabilityInputs, availabilityPrereqError]);
 
   const submitEventBooking = useCallback(async () => {
     if (!user) {

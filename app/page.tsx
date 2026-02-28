@@ -6,7 +6,7 @@ import HeroSection from '@/components/HeroSection';
 import PropertyCard from '@/components/PropertyCard';
 import Footer from '@/components/Footer';
 import HomePropertiesSkeleton from '@/components/HomePropertiesSkeleton';
-import { createClient } from '@/lib/supabase/client';
+import { createClient, getSupabaseClientConfigError } from '@/lib/supabase/client';
 import {
   fetchPublishedProperties,
   PROPERTIES_REFRESH_EVENT,
@@ -15,6 +15,7 @@ import {
 
 export default function Home() {
   const supabase = useMemo(() => createClient(), []);
+  const supabaseConfigError = useMemo(() => getSupabaseClientConfigError(), []);
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedDates, setSelectedDates] = useState('');
   const [selectedGuests, setSelectedGuests] = useState(1);
@@ -39,6 +40,16 @@ export default function Home() {
   };
 
   const loadPublished = useCallback(async () => {
+    if (supabaseConfigError) {
+      setPropertiesError(
+        supabaseConfigError ??
+          'Unable to initialize the app configuration. Please check environment variables.'
+      );
+      setPropertiesTried(true);
+      setLoadingProps(false);
+      return;
+    }
+
     try {
       setLoadingProps(true);
       setPropertiesError(null);
@@ -52,7 +63,7 @@ export default function Home() {
       setPropertiesTried(true);
       setLoadingProps(false);
     }
-  }, [supabase]);
+  }, [supabase, supabaseConfigError]);
 
   useEffect(() => {
     void loadPublished();
