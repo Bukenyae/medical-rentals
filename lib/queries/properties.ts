@@ -89,6 +89,6 @@ export async function fetchPublishedProperties(
     .eq('is_published', true)
     .order('created_at', { ascending: false });
 
-  if (error) throw error;
+  if (error) throw new Error(error.message);
   return (data ?? []) as PublishedPropertyRecord[];
 }

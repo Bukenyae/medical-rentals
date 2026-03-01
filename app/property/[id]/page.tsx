@@ -477,8 +477,8 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       : propertyRow.cover_image_url
         ? [propertyRow.cover_image_url, ...FALLBACK_DETAIL_IMAGES]
         : FALLBACK_DETAIL_IMAGES,
-    description: propertyRow.about_space ?? 'Comfortable, furnished rental for professionals.',
-    professionalsDesc: propertyRow.indoor_outdoor_experiences ?? 'Specially designed for traveling nurses, visiting scholars, military personnel, and young professionals. Quiet neighborhood with easy access to hospitals, campuses, and bases plus a dedicated workspace.',
+    description: propertyRow.about_space ?? '',
+    professionalsDesc: propertyRow.indoor_outdoor_experiences ?? '',
     amenities: derivedAmenities,
     cleaningFeePct,
     cleaningFeeRate: cleaningFeePct === null ? null : cleaningFeePct / 100,
