@@ -17,6 +17,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { X } from 'lucide-react';
 
 // Import components
 import BookingCard from './components/BookingCard';
@@ -53,6 +54,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const [selectedCheckIn, setSelectedCheckIn] = useState<Date | null>(null);
   const [selectedCheckOut, setSelectedCheckOut] = useState<Date | null>(null);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showMobileBookingSheet, setShowMobileBookingSheet] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout'>('checkin');
   const supabase = useMemo(() => createClient(), []);
 
@@ -506,13 +508,6 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
   const mobileStayLabel = `${money.format(propertyWithDefaults.price)}/night`;
   const mobileEventLabel = `${money.format((propertyWithDefaults.eventHourlyFromCents ?? 12500) / 100)}/hr`;
 
-  const scrollToBookingPanel = () => {
-    if (typeof window === 'undefined') return;
-    const node = document.getElementById('booking-panel');
-    if (!node) return;
-    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -654,13 +649,52 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           </div>
           <button
             type="button"
-            onClick={scrollToBookingPanel}
+            onClick={() => setShowMobileBookingSheet(true)}
             className="shrink-0 rounded-full bg-[#8B1A1A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#731414]"
           >
             Reserve
           </button>
         </div>
       </div>
+
+      {showMobileBookingSheet && (
+        <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true" aria-label="Booking options">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/45"
+            aria-label="Close booking sheet"
+            onClick={() => setShowMobileBookingSheet(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-2xl">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold text-gray-900">Book this property</p>
+              <button
+                type="button"
+                onClick={() => setShowMobileBookingSheet(false)}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-700"
+                aria-label="Close booking sheet"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <BookingCard
+              property={propertyWithDefaults}
+              propertyTitle={propertyWithDefaults.title}
+              onOpenCalendar={openCalendar}
+              checkInDate={checkInDate}
+              checkOutDate={checkOutDate}
+              guests={guests}
+              onGuestChange={handleGuestChange}
+              nights={nights}
+              minimumNights={minimumNights}
+              user={user}
+              resolvedPropertyId={dbProperty?.id}
+              compact
+              anchorId=""
+            />
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

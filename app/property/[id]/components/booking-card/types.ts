@@ -38,4 +38,6 @@ export interface BookingCardProps {
   minimumNights?: number | null;
   user: User | null;
   resolvedPropertyId?: string;
+  compact?: boolean;
+  anchorId?: string;
 }

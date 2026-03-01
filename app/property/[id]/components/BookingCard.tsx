@@ -19,17 +19,24 @@ export default function BookingCard({
   minimumNights,
   user,
   resolvedPropertyId,
+  compact = false,
+  anchorId = 'booking-panel',
 }: BookingCardProps) {
   const params = useParams<{ id: string }>();
   const propertyId = resolvedPropertyId || params?.id || '';
 
   const [rail, setRail] = useState<BookingRail>('stay');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const wrapperClass = compact ? '' : 'lg:col-span-1';
+  const stickyClass = compact ? '' : 'lg:sticky lg:top-24';
+  const cardClass = compact
+    ? 'rounded-xl border border-gray-200 p-4 shadow-sm'
+    : 'rounded-xl border border-gray-200 p-6 shadow-lg';
 
   return (
-    <div className="lg:col-span-1" id="booking-panel">
-      <div className="lg:sticky lg:top-24">
-        <div className="rounded-xl border border-gray-200 p-6 shadow-lg">
+    <div className={wrapperClass} id={anchorId || undefined}>
+      <div className={stickyClass}>
+        <div className={cardClass}>
           <div className="mb-4 grid grid-cols-2 rounded-lg border border-gray-200 p-1">
             <button
               onClick={() => setRail('stay')}

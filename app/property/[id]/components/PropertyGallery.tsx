@@ -98,6 +98,7 @@ export default function PropertyGallery({ images, title, onBack }: PropertyGalle
             className="object-cover transition-transform duration-300"
             priority
           />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/35 to-transparent" />
 
           {hasMultipleImages && (
             <>

@@ -41,7 +41,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
       {/* Property Title and key stats */}
       <div className="mb-6">
         <div className="flex flex-col gap-3">
-          <h1 className="text-2xl font-semibold text-gray-900">{property.title}</h1>
+          <h1 className="text-2xl font-semibold leading-[1.15] text-gray-900 sm:leading-tight">{property.title}</h1>
           {proximityBadges.length > 0 && (
             <div className="flex flex-wrap items-center gap-2">
               {proximityBadges.map((badge, index) => (
