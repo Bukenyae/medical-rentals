@@ -31,7 +31,6 @@ export default function PropertyCard({
   reviewCount,
   price,
   eventHourlyRate,
-  eventMaxGuests,
   minimumNights,
   bedrooms,
   bathrooms,
@@ -49,10 +48,8 @@ export default function PropertyCard({
     minimumFractionDigits: 0,
   });
 
-  const minimumStayTotal = currency.format(Math.max(0, Math.round(price * minNights)));
   const nightlyLabel = currency.format(price);
   const eventLabel = currency.format(Math.max(0, Math.round((eventHourlyRate ?? 125) || 125)));
-  const eventCap = Math.max(1, Math.round(eventMaxGuests ?? 20));
 
   return (
     <Link href={`/property/${id}`} className="group block focus:outline-none">
@@ -100,18 +97,15 @@ export default function PropertyCard({
                     <div className="text-left">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stay Pricing</p>
                       <div className="mt-0.5 flex items-baseline gap-1">
-                        <span className="text-[10px] sm:text-sm font-medium text-gray-500">From</span>
-                        <span className="text-xl sm:text-3xl font-extrabold text-gray-900">{minimumStayTotal}</span>
+                        <span className="text-xl sm:text-3xl font-extrabold text-gray-900">{nightlyLabel}</span>
+                        <span className="text-xs sm:text-sm font-medium text-gray-500">/night</span>
                       </div>
-                      <p className="text-xs text-gray-500">{nightlyLabel}/night for {minNights} {minNights === 1 ? 'night' : 'nights'}</p>
+                      <p className="text-xs text-gray-500">minimum {minNights} {minNights === 1 ? 'night' : 'nights'}</p>
                     </div>
 
                     <div className="text-left sm:text-right">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Event Pricing</p>
-                      <div className="mt-1 inline-flex items-center rounded-full bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-white sm:ml-auto">
-                        Events from {eventLabel}/hr
-                      </div>
-                      <p className="mt-1 text-[11px] text-gray-500">Events up to {eventCap} · Request to book</p>
+                      <p className="mt-0.5 text-sm font-semibold text-gray-900 sm:text-base">from {eventLabel}/hr</p>
                     </div>
                   </div>
                 </div>
