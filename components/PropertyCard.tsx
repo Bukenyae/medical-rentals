@@ -59,8 +59,8 @@ export default function PropertyCard({
 
           <div className="relative rounded-[24px] sm:rounded-[36px] p-1 sm:p-1.5 transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-focus-visible:-translate-y-1 group-active:-translate-y-0.5">
             <div className="relative overflow-hidden rounded-[20px] sm:rounded-3xl bg-white shadow-[0_16px_26px_-28px_rgba(27,30,40,0.45)] transition-shadow duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:shadow-none group-focus-visible:shadow-none group-active:shadow-none">
-              <div className="h-36 sm:h-64 lg:h-96 relative overflow-hidden">
-                <Image src={imageUrl} alt={imageAlt} fill className="object-cover" priority />
+              <div className="h-44 sm:h-64 lg:h-96 relative overflow-hidden">
+                <Image src={imageUrl} alt={imageAlt} fill className="object-cover object-[center_58%]" priority />
                 <div className="absolute inset-0 bg-black bg-opacity-20" />
               </div>
 
