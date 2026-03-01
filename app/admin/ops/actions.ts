@@ -24,7 +24,7 @@ export async function createOpsTask(formData: FormData) {
 
   const dueAt = parseOpsDueDate(formData.get('dueDate'));
 
-  await supabase.from('ops_tasks').insert({
+  const payload = {
     property_id: propertyId,
     booking_id: bookingId || null,
     task_type: taskType,
@@ -33,7 +33,24 @@ export async function createOpsTask(formData: FormData) {
     due_at: dueAt,
     notes: notes || null,
     created_by: user?.id ?? null,
-  });
+  };
+
+  const { data: inserted, error } = await supabase
+    .from('ops_tasks')
+    .insert(payload)
+    .select('id,property_id,booking_id,task_type,status,assigned_to,due_at,notes')
+    .maybeSingle();
+
+  if (!error && inserted) {
+    await supabase.from('audit_log').insert({
+      actor_id: user?.id ?? null,
+      action: 'ops_task_created',
+      entity_type: 'ops_task',
+      entity_id: inserted.id,
+      before: null,
+      after: inserted,
+    });
+  }
 
   revalidatePath('/admin/ops');
 }
