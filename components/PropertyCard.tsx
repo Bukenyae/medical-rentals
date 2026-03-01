@@ -93,19 +93,25 @@ export default function PropertyCard({
                       <span>{bathrooms}</span>
                     </div>
                   </div>
+                </div>
 
-                  <div className="text-left sm:text-right">
-                    <div className="flex flex-col items-start sm:items-end gap-1">
-                      <div className="flex items-baseline justify-start sm:justify-end gap-1">
-                        <span className="text-[10px] sm:text-base font-medium text-gray-500">From</span>
-                        <span className="text-base sm:text-3xl font-extrabold text-gray-900">{minimumStayTotal}</span>
+                <div className="mt-3 border-t border-gray-200/80 pt-3">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+                    <div className="text-left">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stay Pricing</p>
+                      <div className="mt-0.5 flex items-baseline gap-1">
+                        <span className="text-[10px] sm:text-sm font-medium text-gray-500">From</span>
+                        <span className="text-xl sm:text-3xl font-extrabold text-gray-900">{minimumStayTotal}</span>
                       </div>
-                      <div className="text-xs text-gray-500">{nightlyLabel}/night for {minNights} {minNights === 1 ? 'night' : 'nights'}</div>
+                      <p className="text-xs text-gray-500">{nightlyLabel}/night for {minNights} {minNights === 1 ? 'night' : 'nights'}</p>
+                    </div>
 
-                      <div className="mt-1 inline-flex items-center rounded-full bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-white">
+                    <div className="text-left sm:text-right">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Event Pricing</p>
+                      <div className="mt-1 inline-flex items-center rounded-full bg-gray-900 px-2.5 py-1 text-[11px] font-semibold text-white sm:ml-auto">
                         Events from {eventLabel}/hr
                       </div>
-                      <div className="text-[11px] text-gray-500">Events up to {eventCap} · Request to book</div>
+                      <p className="mt-1 text-[11px] text-gray-500">Events up to {eventCap} · Request to book</p>
                     </div>
                   </div>
                 </div>
