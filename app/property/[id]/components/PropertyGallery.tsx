@@ -12,6 +12,7 @@ interface PropertyGalleryProps {
 export default function PropertyGallery({ images, title }: PropertyGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [thumbnailPage, setThumbnailPage] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const THUMBNAILS_PER_PAGE = 9;
   const totalThumbnailPages = useMemo(() => {
@@ -56,7 +57,27 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
     <div className="mb-6 lg:mb-8">
       <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-6">
         {/* Main Image */}
-        <div className="relative aspect-[16/11] md:aspect-[16/10] lg:aspect-[4/3] bg-gray-200 rounded-2xl overflow-hidden">
+        <div
+          className="relative aspect-[16/11] md:aspect-[16/10] lg:aspect-[4/3] bg-gray-200 rounded-2xl overflow-hidden"
+          onTouchStart={(event) => {
+            const start = event.touches?.[0]?.clientX;
+            setTouchStartX(typeof start === 'number' ? start : null);
+          }}
+          onTouchEnd={(event) => {
+            if (touchStartX === null || !hasMultipleImages) return;
+            const end = event.changedTouches?.[0]?.clientX;
+            if (typeof end !== 'number') {
+              setTouchStartX(null);
+              return;
+            }
+            const delta = touchStartX - end;
+            if (Math.abs(delta) > 45) {
+              if (delta > 0) nextImage();
+              else prevImage();
+            }
+            setTouchStartX(null);
+          }}
+        >
           <Image
             src={currentImage}
             alt={title}
@@ -71,7 +92,7 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
               <button
                 type="button"
                 onClick={prevImage}
-                className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all"
+                className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/80 p-2 transition-all hover:bg-white md:inline-flex"
                 aria-label="Previous photo"
               >
                 <ChevronLeft className="w-5 h-5 text-gray-700" />
@@ -79,7 +100,7 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
               <button
                 type="button"
                 onClick={nextImage}
-                className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-2 transition-all"
+                className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/80 p-2 transition-all hover:bg-white md:inline-flex"
                 aria-label="Next photo"
               >
                 <ChevronRight className="w-5 h-5 text-gray-700" />
@@ -88,7 +109,7 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
           )}
 
           {hasMultipleImages && (
-            <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+            <div className="absolute right-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-xs font-semibold text-white lg:right-4 lg:top-auto lg:bottom-4 lg:text-sm">
               {currentImageIndex + 1} / {images.length}
             </div>
           )}
@@ -152,32 +173,6 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
         )}
       </div>
 
-      {/* Mobile thumbnail strip */}
-      {hasImages && (
-        <div className="mt-3 flex space-x-2 overflow-x-auto pb-2 scrollbar-hide lg:hidden">
-          {images.map((_, index) => (
-            <button
-              key={index}
-              type="button"
-              onClick={() => goToImage(index)}
-              className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
-                index === currentImageIndex
-                  ? 'border-blue-500 opacity-100'
-                  : 'border-gray-200 opacity-60 hover:opacity-80'
-              }`}
-              aria-label={`View photo ${index + 1}`}
-            >
-              <Image
-                src={images[index]}
-                alt={`Thumbnail ${index + 1}`}
-                width={56}
-                height={56}
-                className="h-full w-full object-cover"
-              />
-            </button>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

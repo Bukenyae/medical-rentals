@@ -498,6 +498,21 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     baseParkingCapacity: 8,
   };
 
+  const money = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+  });
+  const mobileStayLabel = `${money.format(propertyWithDefaults.price)}/night`;
+  const mobileEventLabel = `${money.format((propertyWithDefaults.eventHourlyFromCents ?? 12500) / 100)}/hr`;
+
+  const scrollToBookingPanel = () => {
+    if (typeof window === 'undefined') return;
+    const node = document.getElementById('booking-panel');
+    if (!node) return;
+    node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
@@ -524,7 +539,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
         {/* Back Button */}
         <div className="mb-6">
           <button
@@ -619,6 +634,25 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           selectedCheckOut={selectedCheckOut}
           onModeChange={setCalendarMode}
         />
+      </div>
+
+      <div
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-gray-200 bg-white/95 px-4 py-3 backdrop-blur lg:hidden"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      >
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-gray-900">{mobileStayLabel}</p>
+            <p className="truncate text-xs text-gray-600">Event {mobileEventLabel}</p>
+          </div>
+          <button
+            type="button"
+            onClick={scrollToBookingPanel}
+            className="shrink-0 rounded-full bg-[#8B1A1A] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#731414]"
+          >
+            Reserve
+          </button>
+        </div>
       </div>
 
       <Footer />

@@ -27,8 +27,8 @@ export default function BookingCard({
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
-    <div className="lg:col-span-1">
-      <div className="sticky top-24">
+    <div className="lg:col-span-1" id="booking-panel">
+      <div className="lg:sticky lg:top-24">
         <div className="rounded-xl border border-gray-200 p-6 shadow-lg">
           <div className="mb-4 grid grid-cols-2 rounded-lg border border-gray-200 p-1">
             <button
