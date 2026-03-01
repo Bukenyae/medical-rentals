@@ -1,8 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MapPin, Calendar, Users, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+interface LocationOption {
+  name: string;
+  address: string;
+  propertyId: string;
+}
 
 interface SearchBarProps {
   selectedLocation: string;
@@ -14,6 +20,7 @@ interface SearchBarProps {
   onGuestsChange: (guests: number) => void;
   variant?: 'hero' | 'sticky';
   showBookButton?: boolean;
+  locationOptions?: LocationOption[];
 }
 
 export default function SearchBar({
@@ -25,7 +32,8 @@ export default function SearchBar({
   onDatesChange,
   onGuestsChange,
   variant = 'hero',
-  showBookButton = false
+  showBookButton = false,
+  locationOptions = []
 }: SearchBarProps) {
   const router = useRouter();
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout'>('checkin');
@@ -34,16 +42,13 @@ export default function SearchBar({
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const isHero = variant === 'hero';
-  const isComplete = selectedLocation && selectedDates && selectedGuests && selectedPropertyId;
+  const fallbackPropertyId = locationOptions.length === 1 ? locationOptions[0].propertyId : '';
+  const destinationPropertyId = selectedPropertyId || fallbackPropertyId;
 
   const handleBookNow = () => {
-    if (isComplete) {
-      router.push(`/property/${selectedPropertyId}`);
-    } else {
-      router.push('/property/1');
-    }
+    if (!destinationPropertyId) return;
+    router.push(`/property/${destinationPropertyId}`);
   };
-
   const handleDateSelect = (date: Date) => {
     if (calendarMode === 'checkin') {
       setSelectedCheckIn(date);
@@ -109,10 +114,14 @@ export default function SearchBar({
   const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-  const locations = [
-    { name: 'Concord Estates', address: '2978 Lexington Dr, Baton Rouge, LA 70808', propertyId: '3' },
-    { name: 'Maryrose Place', address: '995 N Leighton Dr, Baton Rouge, LA 70806', propertyId: '1' }
-  ];
+  const locations = useMemo(() => {
+    const unique = new Map<string, LocationOption>();
+    for (const option of locationOptions) {
+      const key = option.propertyId || option.address.trim().toLowerCase();
+      if (!unique.has(key)) unique.set(key, option);
+    }
+    return Array.from(unique.values());
+  }, [locationOptions]);
 
   if (isHero) {
     return (
@@ -137,8 +146,7 @@ export default function SearchBar({
                       className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer text-sm"
                       onClick={() => onLocationChange(location.address, location.propertyId)}
                     >
-                      <div className="font-medium text-gray-900">{location.name}</div>
-                      <div className="text-gray-500">{location.address}</div>
+                      <div className="font-medium text-gray-900">{location.address}</div>
                     </div>
                   ))}
                 </div>
@@ -169,6 +177,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('prev')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Previous month"
+                      title="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -178,6 +188,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('next')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Next month"
+                      title="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -289,11 +301,7 @@ export default function SearchBar({
             <div className="flex items-center justify-center">
               <button
                 onClick={handleBookNow}
-                className={`px-6 py-3 rounded-xl font-semibold text-white transition-all duration-300 w-full h-full ${
-                  isComplete
-                    ? 'bg-blue-600 hover:bg-blue-700 cursor-pointer'
-                    : 'bg-blue-300 hover:bg-blue-400 cursor-pointer'
-                }`}
+                className="px-6 py-3 rounded-xl font-semibold text-[#8B1A1A] bg-[#F8F5F2] border border-[#8B1A1A] hover:bg-[#ede9e3] transition-all duration-300 w-full h-full cursor-pointer"
               >
                 Book Now
               </button>
@@ -326,8 +334,7 @@ export default function SearchBar({
                       className="p-3 hover:bg-gray-50 rounded-lg cursor-pointer text-sm"
                       onClick={() => onLocationChange(location.address, location.propertyId)}
                     >
-                      <div className="font-medium text-gray-900">{location.name}</div>
-                      <div className="text-gray-500 text-xs">{location.address}</div>
+                      <div className="font-medium text-gray-900">{location.address}</div>
                     </div>
                   ))}
                 </div>
@@ -356,6 +363,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('prev')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Previous month"
+                      title="Previous month"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
@@ -365,6 +374,8 @@ export default function SearchBar({
                     <button 
                       onClick={() => navigateMonth('next')}
                       className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                      aria-label="Next month"
+                      title="Next month"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -474,7 +485,7 @@ export default function SearchBar({
           {showBookButton && (
             <button
               onClick={handleBookNow}
-              className="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-full transition-all duration-300 flex items-center justify-center touch-manipulation flex-shrink-0 ml-1"
+              className="w-10 h-10 bg-[#8B1A1A] hover:bg-[#761717] text-[#F8F5F2] rounded-full transition-all duration-300 flex items-center justify-center touch-manipulation flex-shrink-0 ml-1"
               title="Search Properties"
             >
               <ChevronRight className="w-5 h-5" />

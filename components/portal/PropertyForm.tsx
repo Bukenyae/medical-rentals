@@ -3,6 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import {
+  dispatchPropertiesRefresh,
+  fetchHostProperties,
+  PROPERTIES_REFRESH_EVENT,
+  HostPropertyRecord,
+} from "@/lib/queries/properties";
 
 interface PropertyFormProps {
   onPropertySelected?: (propertyId: string | null) => void;
@@ -11,28 +17,9 @@ interface PropertyFormProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
-interface PropertyRow {
-  id: string;
-  title: string;
-  address: string;
-  description: string | null;
-  nightly_price: number | null;
-  weekly_discount_pct: number | null;
-  weekly_price: number | null;
-  monthly_discount_pct: number | null;
-  monthly_price: number | null;
-  proximity_badge_1?: string | null;
-  proximity_badge_2?: string | null;
-  bedrooms: number;
-  bathrooms: number;
-  map_url: string | null;
-  is_published: boolean;
-  cover_image_url: string | null;
-  // optional metadata (fetched if available)
-  created_at?: string | null;
-  updated_at?: string | null;
+type PropertyRow = HostPropertyRecord & {
   published_at?: string | null;
-}
+};
 
 interface ApprovedImageRow {
   id: string;
@@ -51,22 +38,26 @@ export default function PropertyForm({
   onDirtyChange,
 }: PropertyFormProps) {
   const supabase = useMemo(() => createClient(), []);
+  const BUCKET = (process.env.NEXT_PUBLIC_PROPERTY_IMAGES_BUCKET || 'property-images').trim();
 
   const [loading, setLoading] = useState(false);
+  // lightweight toast for UX feedback
+  const [toast, setToast] = useState<{ msg: string; kind: 'success' | 'error' } | null>(null);
   const [myProps, setMyProps] = useState<PropertyRow[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
-  const [nightlyPrice, setNightlyPrice] = useState<number>(150); // preview-only until schema column exists
+  const [nightlyPrice, setNightlyPrice] = useState<number>(150);
+  const [minimumNights, setMinimumNights] = useState<number>(1);
   const [bedrooms, setBedrooms] = useState<number>(3);
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [sqft, setSqft] = useState<number | "">(1100);
   const [weeklyDiscountPct, setWeeklyDiscountPct] = useState<number>(20);
-  const [weeklyPrice, setWeeklyPrice] = useState<number>(40);
+  const [weeklyPrice, setWeeklyPrice] = useState<number>(120);
   const [monthlyDiscountPct, setMonthlyDiscountPct] = useState<number>(40);
-  const [monthlyPrice, setMonthlyPrice] = useState<number>(30);
+  const [monthlyPrice, setMonthlyPrice] = useState<number>(90);
   const [proximityBadge1, setProximityBadge1] = useState<string>("");
   const [proximityBadge2, setProximityBadge2] = useState<string>("");
   // Google Maps URL (Step 1)
@@ -74,6 +65,15 @@ export default function PropertyForm({
   const [mapSaving, setMapSaving] = useState<boolean>(false);
   const [mapSavedAt, setMapSavedAt] = useState<number | null>(null);
   const [mapError, setMapError] = useState<string | null>(null);
+
+  // Auto-calculate weekly and monthly prices based on nightly and discount %
+  useEffect(() => {
+    const nightly = Number.isFinite(nightlyPrice) ? nightlyPrice : 0;
+    const weekly = Math.max(0, Math.round(nightly * (1 - (weeklyDiscountPct || 0) / 100)));
+    const monthly = Math.max(0, Math.round(nightly * (1 - (monthlyDiscountPct || 0) / 100)));
+    if (weekly !== weeklyPrice) setWeeklyPrice(weekly);
+    if (monthly !== monthlyPrice) setMonthlyPrice(monthly);
+  }, [nightlyPrice, weeklyDiscountPct, monthlyDiscountPct, weeklyPrice, monthlyPrice]);
 
   // wizard state
   const [step, setStep] = useState<1 | 2>(1);
@@ -97,13 +97,31 @@ export default function PropertyForm({
     ],
     []
   );
+  const PLACEHOLDER_AVATAR = "/images/placeholder/avatar.png";
   const [selectedAmenities, setSelectedAmenities] = useState<Set<string>>(new Set());
   const [cleaningFeePct, setCleaningFeePct] = useState<number>(0);
   const [blockedDates, setBlockedDates] = useState<Set<string>>(new Set()); // ISO date strings
 
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0,
+        minimumFractionDigits: 0,
+      }),
+    []
+  );
+  const resolvedMinimumNights = Number.isFinite(minimumNights) ? Math.max(1, minimumNights) : 1;
+  const previewNightlyRate = Number.isFinite(nightlyPrice) && nightlyPrice > 0 ? nightlyPrice : 150;
+  const previewMinimumSubtotal = Math.max(0, Math.round(previewNightlyRate * resolvedMinimumNights));
+  const previewMinimumSubtotalLabel = currencyFormatter.format(previewMinimumSubtotal);
+  const previewNightlyRateLabel = currencyFormatter.format(previewNightlyRate);
+
   // Host profile (derived)
   const [hostNameDerived, setHostNameDerived] = useState<string>("");
   const [hostAvatarDerived, setHostAvatarDerived] = useState<string>("");
+  const [hostBioDerived, setHostBioDerived] = useState<string>("");
   const [hostJoinedYear, setHostJoinedYear] = useState<string>("");
 
   // approved images for preview/cover selection
@@ -127,7 +145,10 @@ export default function PropertyForm({
 
   const [isDirty, setIsDirty] = useState(false);
   const hasMarkedDirty = useRef(false);
+  const [drafting, setDrafting] = useState(false);
+  const draftCreatedRef = useRef(false);
 
+  // Fetch and refresh the owner's properties list
   const refresh = useCallback(async () => {
     setLoading(true);
     const { data: session } = await supabase.auth.getUser();
@@ -135,26 +156,152 @@ export default function PropertyForm({
       setLoading(false);
       return;
     }
-    // Try to fetch metadata columns; fallback if not present
-    let { data, error } = await supabase
-      .from("properties")
-      .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url,created_at,updated_at,published_at")
-      .eq('owner_id', session.user.id)
-      .order("created_at", { ascending: false });
-    if (error) {
-      const fb = await supabase
-        .from("properties")
-        .select("id,title,address,description,proximity_badge_1,proximity_badge_2,bedrooms,bathrooms,is_published,cover_image_url,map_url")
-        .eq('owner_id', session.user.id)
-        .order("created_at", { ascending: false });
-      data = fb.data as any;
+    try {
+      const rows = await fetchHostProperties(supabase, session.user.id);
+      setMyProps(rows as PropertyRow[]);
+    } catch (error) {
+      console.error('Failed to load properties', error);
+      setMyProps([]);
     }
-    if (data) setMyProps(data as PropertyRow[]);
     setLoading(false);
   }, [supabase]);
 
+  // Delete property and related rows, and attempt to remove storage objects under userId/propertyId
+  async function deletePropertyAndAssets(p: PropertyRow) {
+    const yes = confirm('Delete this property and all related photos? This cannot be undone.');
+    if (!yes) return;
+    setLoading(true);
+    try {
+      try {
+        const { data: auth } = await supabase.auth.getUser();
+        const uid = auth.user?.id || p.created_by;
+        if (uid) {
+          const listAll = async (prefix: string): Promise<string[]> => {
+            const keys: string[] = [];
+            const { data } = await supabase.storage.from(BUCKET).list(prefix, { limit: 1000 });
+            for (const ent of data || []) {
+              const full = prefix ? `${prefix}/${ent.name}` : ent.name;
+              if ((ent as any).metadata?.mimetype) keys.push(full);
+              else keys.push(...(await listAll(full)));
+            }
+            return keys;
+          };
+          const keys = await listAll(`${uid}/${p.id}`);
+          if (keys.length) await supabase.storage.from(BUCKET).remove(keys);
+        }
+      } catch { /* ignore storage errors */ }
+
+      await supabase.from('property_images').delete().eq('property_id', p.id);
+      await supabase.from('property_unavailable_dates').delete().eq('property_id', p.id);
+      await supabase.from('properties').delete().eq('id', p.id);
+      await refresh();
+      dispatchPropertiesRefresh();
+      if (selectedId === p.id) loadIntoForm(undefined);
+      setToast({ msg: 'Property deleted', kind: 'success' });
+      setTimeout(() => setToast(null), 2000);
+    } catch (e: any) {
+      alert(e?.message || 'Failed to delete property');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Derived completion states
+  const basicsValid = useMemo(() => {
+    const hasTitle = Boolean(title && title.trim().length > 5);
+    return hasTitle;
+  }, [title]);
+
+  const hasPhotos = useMemo(() => approvedImages.length > 0, [approvedImages.length]);
+  const step1Ready = useMemo(() => basicsValid && hasPhotos, [basicsValid, hasPhotos]);
+  const step2Ready = useMemo(
+    () => basicsValid && hasPhotos,
+    [basicsValid, hasPhotos]
+  );
+
+  // Ensure a draft record exists once basics are valid so uploads (photos) are enabled
+  const ensureDraft = useCallback(async () => {
+    if (selectedId || drafting || !basicsValid || draftCreatedRef.current) {
+      return selectedId;
+    }
+    try {
+      setDrafting(true);
+      draftCreatedRef.current = true;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('No authenticated user');
+      }
+      // Insert only columns that exist in the database
+      const insertBody: Record<string, unknown> = {
+        owner_id: user.id,
+        created_by: user.id,
+        title,
+        address,
+        base_price: 150, // satisfy NOT NULL default if present
+        is_published: false,
+        max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
+        sqft: typeof sqft === 'number' ? sqft : null,
+        minimum_nights: resolvedMinimumNights,
+      };
+      const { data, error } = await supabase
+        .from('properties')
+        .insert([insertBody])
+        .select('id')
+        .single();
+      if (error) throw error;
+      if (data?.id) {
+        setSelectedId(data.id);
+        onPropertySelected?.(data.id);
+        await refresh();
+      }
+    } catch (error) {
+      draftCreatedRef.current = false;
+      throw error;
+    } finally {
+      setDrafting(false);
+    }
+  }, [address, basicsValid, bedrooms, drafting, onPropertySelected, refresh, selectedId, sqft, supabase, title]);
+
+  // Click helpers to enable uploads earlier
+  const handleCoverClick = useCallback(async () => {
+    if (selectedId) {
+      coverInputRef.current?.click();
+      return;
+    }
+    if (basicsValid) {
+      await ensureDraft();
+      // Wait for selectedId to be set
+      setTimeout(() => {
+        if (coverInputRef.current) coverInputRef.current.click();
+      }, 200);
+    }
+  }, [basicsValid, ensureDraft, selectedId]);
+
+  const handleGalleryClick = useCallback(async () => {
+    if (selectedId) {
+      galleryInputRef.current?.click();
+      return;
+    }
+    if (basicsValid) {
+      await ensureDraft();
+      setTimeout(() => {
+        if (galleryInputRef.current) galleryInputRef.current.click();
+      }, 200);
+    }
+  }, [basicsValid, ensureDraft, selectedId]);
+
+  // Removed auto-draft effect to avoid repeated attempts; draft is created when user clicks an upload action.
+
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+
+  useEffect(() => {
+    const handler = () => {
+      void refresh();
+    };
+    window.addEventListener(PROPERTIES_REFRESH_EVENT, handler);
+    return () => window.removeEventListener(PROPERTIES_REFRESH_EVENT, handler);
   }, [refresh]);
 
   // derive host info from profile
@@ -163,36 +310,112 @@ export default function PropertyForm({
       const { data: userRes } = await supabase.auth.getUser();
       const uid = userRes.user?.id;
       if (!uid) return;
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name, avatar_url, created_at")
-        .eq("id", uid)
-        .single();
-      if (data) {
-        setHostNameDerived((data.full_name as string) || "");
-        setHostAvatarDerived((data.avatar_url as string) || "");
-        if (data.created_at) setHostJoinedYear(String(new Date(data.created_at).getFullYear()));
+
+      const fetchProfile = async () => {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('first_name,last_name,avatar_url,created_at')
+          .eq('id', uid)
+          .maybeSingle();
+        if (data) {
+          const name = [data.first_name, data.last_name].filter(Boolean).join(' ').trim();
+          if (name) setHostNameDerived(name);
+          if (data.avatar_url?.trim()) setHostAvatarDerived(data.avatar_url.trim());
+          if (data.created_at) setHostJoinedYear(String(new Date(data.created_at).getFullYear()));
+          return true;
+        }
+        if (error && error.code !== 'PGRST116') {
+          console.warn('[PropertyForm] user_profiles lookup failed', error);
+        }
+        const { data: legacy } = await supabase
+          .from('profiles')
+          .select('full_name,name,avatar_url,created_at')
+          .eq('id', uid)
+          .maybeSingle();
+        if (legacy) {
+          const legacyName = ((legacy.full_name as string) || (legacy.name as string) || '').trim();
+          if (legacyName) setHostNameDerived(legacyName);
+          if ((legacy.avatar_url as string)?.trim()) setHostAvatarDerived((legacy.avatar_url as string).trim());
+          if (legacy.created_at) setHostJoinedYear(String(new Date(legacy.created_at).getFullYear()));
+          return true;
+        }
+        return false;
+      };
+
+      const user = userRes.user;
+      if (user) {
+        const meta = (user.user_metadata || {}) as Record<string, any>;
+        if (typeof meta.name === 'string' && meta.name.trim()) setHostNameDerived(meta.name.trim());
+        if (typeof meta.avatar_url === 'string' && meta.avatar_url.trim()) setHostAvatarDerived(meta.avatar_url.trim());
+        if (typeof meta.bio === 'string' && meta.bio.trim()) setHostBioDerived(meta.bio.trim());
+        if (user.created_at) setHostJoinedYear(String(new Date(user.created_at).getFullYear()));
       }
+
+      await fetchProfile();
     })();
   }, [supabase]);
 
-  // --- Map URL handling ---
-  const isValidMapsUrl = (url: string): boolean => {
+  // Persist Step 2 preview fields locally per property id
+  useEffect(() => {
+    if (!selectedId) return;
     try {
-      const u = new URL(url);
+      const raw = localStorage.getItem(`property:step2:${selectedId}`);
+      if (!raw) return;
+      const v = JSON.parse(raw) as {
+        aboutSpace?: string;
+        professionalsDesc?: string;
+        amenities?: string[];
+        cleaningFeePct?: number;
+      };
+      if (typeof v.aboutSpace === 'string') setAboutSpace(v.aboutSpace);
+      if (typeof v.professionalsDesc === 'string') setProfessionalsDesc(v.professionalsDesc);
+      if (Array.isArray(v.amenities)) setSelectedAmenities(new Set(v.amenities));
+      if (typeof v.cleaningFeePct === 'number') setCleaningFeePct(Math.max(0, v.cleaningFeePct));
+    } catch {}
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    try {
+      const payload = {
+        aboutSpace,
+        professionalsDesc,
+        amenities: Array.from(selectedAmenities),
+        cleaningFeePct,
+      };
+      localStorage.setItem(`property:step2:${selectedId}`, JSON.stringify(payload));
+    } catch {}
+  }, [aboutSpace, professionalsDesc, selectedAmenities, cleaningFeePct, selectedId]);
+
+  // --- Map URL handling ---
+  function isValidMapsUrl(url: string): boolean {
+    try {
+      const trimmed = url.trim();
+      if (!trimmed) return false;
+      const u = new URL(trimmed);
       if (!(u.protocol === 'http:' || u.protocol === 'https:')) return false;
       const host = u.hostname.toLowerCase();
-      return host.includes('maps.google.') || host === 'goo.gl';
+
+      if (host === 'goo.gl' || host.endsWith('.goo.gl')) return true;
+      if (host.endsWith('.googleusercontent.com')) return true;
+      if (host === 'google.com' || host === 'www.google.com') {
+        return u.pathname.startsWith('/maps');
+      }
+      if (host.endsWith('.google.com')) {
+        return true;
+      }
+      return false;
     } catch {
       return false;
     }
-  };
+  }
 
   const saveMapUrl = async (value: string) => {
     setMapError(null);
     setMapSavedAt(null);
     if (!selectedId) return; // gated until saved
-    if (!value) {
+    const sanitized = value.trim();
+    if (!sanitized) {
       // allow clearing link
       setMapSaving(true);
       const { error } = await supabase.from('properties').update({ map_url: null }).eq('id', selectedId);
@@ -201,20 +424,22 @@ export default function PropertyForm({
         setMapError(error.message || 'Failed to save');
       } else {
         setMapSavedAt(Date.now());
+        setGoogleMapsUrl('');
       }
       return;
     }
-    if (!isValidMapsUrl(value)) {
+    if (!isValidMapsUrl(sanitized)) {
       setMapError('Enter a valid Google Maps URL');
       return;
     }
     setMapSaving(true);
-    const { error } = await supabase.from('properties').update({ map_url: value }).eq('id', selectedId);
+    const { error } = await supabase.from('properties').update({ map_url: sanitized }).eq('id', selectedId);
     setMapSaving(false);
     if (error) {
       setMapError(error.message || 'Failed to save');
     } else {
       setMapSavedAt(Date.now());
+      setGoogleMapsUrl(sanitized);
     }
   };
 
@@ -326,12 +551,19 @@ export default function PropertyForm({
         address,
         description,
         base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
+        minimum_nights: resolvedMinimumNights,
         max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
         proximity_badge_1: proximityBadge1 || null,
         proximity_badge_2: proximityBadge2 || null,
         bedrooms,
         bathrooms,
+        sqft: typeof sqft === 'number' ? sqft : null,
         cover_image_url: displayImageUrl || null,
+        about_space: aboutSpace || null,
+        indoor_outdoor_experiences: professionalsDesc || null,
+        host_bio: hostBioDerived || null,
+        host_avatar_url: hostAvatarDerived || null,
+        cleaning_fee_pct: Number.isFinite(cleaningFeePct) ? cleaningFeePct : null,
       };
 
       const trySave = async (body: Record<string, unknown>): Promise<string> => {
@@ -343,8 +575,8 @@ export default function PropertyForm({
           if (error) throw error;
           return selectedId;
         } else {
-          // ensure owner_id is set for new records
-          const insertBody = { ...body, owner_id: user.id } as Record<string, unknown>;
+          // ensure owner_id and created_by are set for new records (RLS requires created_by = auth.uid())
+          const insertBody = { ...body, owner_id: user.id, created_by: user.id } as Record<string, unknown>;
           const { data, error } = await supabase
             .from('properties')
             .insert([insertBody])
@@ -360,11 +592,24 @@ export default function PropertyForm({
         savedId = await trySave(primary);
         if (savedId) {
           await refresh();
+          dispatchPropertiesRefresh();
           onPropertySelected?.(savedId);
           setStep(1);
           setLoading(false);
-          if (onSaved) onSaved(savedId, selectedId ? 'edit' : 'create');
-          else alert(selectedId ? 'Property updated' : 'Property created');
+          const successMsg = selectedId ? 'Property updated' : 'Property created';
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('host:last-toast', successMsg);
+            } catch {
+              /* ignore */
+            }
+          }
+          if (onSaved) {
+            onSaved(savedId, selectedId ? 'edit' : 'create');
+          } else {
+            setToast({ msg: successMsg, kind: 'success' });
+            setTimeout(() => setToast(null), 2500);
+          }
           return;
         }
       } catch (e: any) {
@@ -382,20 +627,40 @@ export default function PropertyForm({
             address,
             description,
             base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
+            minimum_nights: resolvedMinimumNights,
             max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
             proximity_badge_1: proximityBadge1 || null,
             proximity_badge_2: proximityBadge2 || null,
             bedrooms,
             bathrooms,
+            sqft: typeof sqft === 'number' ? sqft : null,
+            about_space: aboutSpace || null,
+            indoor_outdoor_experiences: professionalsDesc || null,
+            host_bio: hostBioDerived || null,
+            host_avatar_url: hostAvatarDerived || null,
+            cleaning_fee_pct: Number.isFinite(cleaningFeePct) ? cleaningFeePct : null,
           };
           const fbId = await trySave(fallback);
           // notify parent with the created/updated id
           await refresh();
+          dispatchPropertiesRefresh();
           onPropertySelected?.(fbId);
           setStep(1);
           setLoading(false);
-          if (onSaved) onSaved(fbId, selectedId ? 'edit' : 'create');
-          else alert(selectedId ? 'Property updated' : 'Property created');
+          const successMsg = selectedId ? 'Property updated' : 'Property created';
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem('host:last-toast', successMsg);
+            } catch {
+              /* ignore */
+            }
+          }
+          if (onSaved) {
+            onSaved(fbId, selectedId ? 'edit' : 'create');
+          } else {
+            setToast({ msg: successMsg, kind: 'success' });
+            setTimeout(() => setToast(null), 2500);
+          }
           return;
         } else {
           alert(msg || 'Failed to save property');
@@ -434,6 +699,8 @@ export default function PropertyForm({
             .eq('id', img.id)
         )
       );
+      // Set cover to first image
+      await supabase.from('properties').update({ cover_image_url: images[0].url }).eq('id', selectedId);
     } catch (e: any) {
       console.error('Failed to persist sort order', e?.message || e);
     }
@@ -475,13 +742,12 @@ export default function PropertyForm({
       if (error) throw error;
       // Try to remove storage object if URL maps to bucket path
       try {
-        const m = img.url.match(/\/object\/public\/property-images\/(.+)$/);
+        const m = img.url.match(new RegExp(`/object/public/${BUCKET.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}/(.+)$`));
         if (m && m[1]) {
-          await supabase.storage.from('property-images').remove([m[1]]);
+          await supabase.storage.from(BUCKET).remove([m[1]]);
         }
       } catch (e) {
         // non-fatal
-        console.warn('Could not remove storage object for image');
       }
       // If was cover, set next cover or clear
       if (wasCover) {
@@ -491,6 +757,8 @@ export default function PropertyForm({
         await supabase.from('properties').update({ cover_image_url: nextCover }).eq('id', selectedId);
         await refresh();
       }
+      setToast({ msg: 'Image deleted', kind: 'success' });
+      setTimeout(() => setToast(null), 2000);
     } catch (e: any) {
       alert(e?.message || 'Failed to delete image');
       // rollback by reloading
@@ -512,13 +780,9 @@ export default function PropertyForm({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const path = `${user.id}/${selectedId}/${Date.now()}-${file.name}`;
-      const { error: upErr } = await supabase.storage
-        .from('property-images')
-        .upload(path, file, { upsert: false });
+      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false });
       if (upErr) throw upErr;
-      const { data: pub } = await supabase.storage
-        .from('property-images')
-        .getPublicUrl(path);
+      const { data: pub } = await supabase.storage.from(BUCKET).getPublicUrl(path);
       const url = pub.publicUrl;
       const { error: updErr } = await supabase
         .from('property_images')
@@ -531,6 +795,8 @@ export default function PropertyForm({
       }
       await reloadApproved();
       await refresh();
+      setToast({ msg: 'Image replaced', kind: 'success' });
+      setTimeout(() => setToast(null), 2000);
     } catch (e: any) {
       alert(e?.message || 'Failed to replace image');
     } finally {
@@ -550,24 +816,27 @@ export default function PropertyForm({
       setBathrooms(2);
       setSqft(1100);
       setGoogleMapsUrl("");
+      setMinimumNights(1);
       onPropertySelected?.(null);
       return;
     }
     setSelectedId(p.id);
     onPropertySelected?.(p.id);
-    setTitle(p.title);
+    setTitle(p.title ?? "");
     setDescription(p.description ?? "");
-    setAddress(p.address);
+    setAddress(p.address ?? "");
     setNightlyPrice(p.nightly_price ?? 150);
+    setMinimumNights(p.minimum_nights && p.minimum_nights > 1 ? p.minimum_nights : 1);
     setWeeklyDiscountPct(p.weekly_discount_pct ?? 20);
     setWeeklyPrice(p.weekly_price ?? Math.round((p.nightly_price ?? 150) * 0.8));
     setMonthlyDiscountPct(p.monthly_discount_pct ?? 40);
     setMonthlyPrice(p.monthly_price ?? Math.round((p.nightly_price ?? 150) * 0.6));
     setProximityBadge1(p.proximity_badge_1 ?? "");
     setProximityBadge2(p.proximity_badge_2 ?? "");
-    setBedrooms(p.bedrooms);
-    setBathrooms(p.bathrooms);
-    setSqft(1100);
+    setBedrooms(p.bedrooms ?? 3);
+    setBathrooms(p.bathrooms ?? 2);
+    setSqft(typeof p.sqft === 'number' ? p.sqft : 1100);
+    setCleaningFeePct(typeof p.cleaning_fee_pct === 'number' ? p.cleaning_fee_pct : 0);
     setGoogleMapsUrl(p.map_url ?? "");
     setStep(1);
   }
@@ -578,38 +847,113 @@ export default function PropertyForm({
       .from("properties")
       .update({ cover_image_url: url })
       .eq("id", selectedId);
-    if (error) alert(error.message);
-    await refresh();
+    if (!error) {
+      setToast({ msg: 'Cover image updated', kind: 'success' });
+      setTimeout(() => setToast(null), 2500);
+    }
+  }
+
+  // Compress image helper
+  function compressImage(file: File, maxWidth: number = 1200, quality: number = 0.8): Promise<File> {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      // Use the DOM Image constructor explicitly to avoid clashing with Next.js's Image component import
+      const img = new window.Image();
+      
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        if (width > maxWidth) {
+          height = (height * maxWidth) / width;
+          width = maxWidth;
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now(),
+            });
+            resolve(compressedFile);
+          } else {
+            resolve(file); // fallback to original
+          }
+        }, 'image/jpeg', quality);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
   }
 
   // Upload helpers (auto-approve)
-  async function uploadImages(files: FileList, setAsCover = false) {
-    if (!selectedId) return;
+  async function uploadImages(files: FileList, setAsCover: boolean) {
+    if (files.length === 0) return;
+    
+    let propertyId = selectedId;
+    
+    // If no selectedId, create a draft first
+    if (!propertyId) {
+      if (!title || title.trim().length < 5) {
+        alert('Please enter a title first');
+        return;
+      }
+      try {
+        const draftId = await ensureDraft();
+        if (!draftId) {
+          alert('Failed to create property draft');
+          return;
+        }
+        propertyId = draftId;
+      } catch (error) {
+        alert('Failed to create property draft');
+        return;
+      }
+    }
+    
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       const uploadedUrls: string[] = [];
-      for (const file of Array.from(files)) {
-        const path = `${user.id}/${selectedId}/${Date.now()}-${file.name}`;
+      
+      for (const originalFile of Array.from(files)) {
+        // Check file size and compress if needed
+        let fileToUpload = originalFile;
+        if (originalFile.size > 1024 * 1024) { // > 1MB
+          fileToUpload = await compressImage(originalFile);
+        }
+        
+        const path = `${user.id}/${propertyId}/${Date.now()}-${fileToUpload.name}`;
         const { error: upErr } = await supabase.storage
-          .from('property-images')
-          .upload(path, file, { upsert: false });
-        if (upErr) { console.error(upErr); continue; }
-        const { data: publicUrl } = supabase.storage
-          .from('property-images')
+          .from(BUCKET)
+          .upload(path, fileToUpload, { upsert: false });
+        if (upErr) throw upErr;
+        const { data: pub } = await supabase.storage
+          .from(BUCKET)
           .getPublicUrl(path);
-        const url = publicUrl.publicUrl;
+        const url = pub.publicUrl;
         uploadedUrls.push(url);
-        await supabase
+        // insert into property_images table (surface any RLS/validation errors)
+        const { error: insertErr } = await supabase
           .from('property_images')
-          .insert({ property_id: selectedId, url, alt: file.name, is_approved: true });
+          .insert({ property_id: propertyId, url, alt: fileToUpload.name, is_approved: true });
+        if (insertErr) {
+          // Stop early and let the user know exactly what failed
+          alert(`Album insert failed: ${insertErr.message}`);
+          // Attempt to continue uploading remaining files but do not assume DB row exists
+        }
       }
       // refresh approved images
       let { data, error } = await supabase
         .from('property_images')
         .select('id,url,is_approved,sort_order,created_at,updated_at')
-        .eq('property_id', selectedId)
+        .eq('property_id', propertyId)
         .eq('is_approved', true)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true });
@@ -617,14 +961,34 @@ export default function PropertyForm({
         const fb = await supabase
           .from('property_images')
           .select('id,url,is_approved,sort_order')
-          .eq('property_id', selectedId)
+          .eq('property_id', propertyId)
           .eq('is_approved', true)
           .order('sort_order', { ascending: true })
           .order('created_at', { ascending: true });
         data = fb.data as any;
       }
       setApprovedImages((data ?? []) as unknown as ApprovedImageRow[]);
-      if (setAsCover && uploadedUrls[0]) await applyCoverImage(uploadedUrls[0]);
+      // Auto-set cover if requested or if property currently has no cover
+      if (uploadedUrls[0]) {
+        if (setAsCover) {
+          await applyCoverImage(uploadedUrls[0]);
+        } else {
+          // Check if the property has a cover set; if not, set first uploaded
+          const { data: propRow } = await supabase
+            .from('properties')
+            .select('cover_image_url')
+            .eq('id', propertyId)
+            .single();
+          if (!propRow?.cover_image_url) {
+            await applyCoverImage(uploadedUrls[0]);
+          }
+        }
+      }
+      // Ensure UI reflects updates
+      await refresh();
+      // Success toast for upload flow
+      setToast({ msg: uploadedUrls.length > 1 ? 'Images uploaded' : 'Image uploaded', kind: 'success' });
+      setTimeout(() => setToast(null), 2500);
     } finally {
       setLoading(false);
     }
@@ -650,7 +1014,7 @@ export default function PropertyForm({
     const createdAt = fmt(current?.created_at ?? null);
     const updatedAt = fmt(current?.updated_at ?? null);
     const photoUpdated = fmt(latestPhotoDate);
-    const published = current?.is_published ? fmt((current as any).published_at ?? null) : '—';
+    const published = current?.is_published ? 'Yes' : '—';
     return [
       `Created ${createdAt} • Edited ${updatedAt}`,
       `Published ${published} • URL ${googleSet}`,
@@ -660,11 +1024,9 @@ export default function PropertyForm({
 
   // Publish controls
   const canPublish = useMemo(() => {
-    // Require a selected property, valid maps URL and at least one approved image
-    return Boolean(
-      selectedId && isValidMapsUrl(googleMapsUrl) && approvedImages.length > 0
-    );
-  }, [selectedId, googleMapsUrl, approvedImages]);
+    // Google Maps URL NOT required. Require a selected property and at least one approved image.
+    return Boolean(selectedId && approvedImages.length > 0);
+  }, [selectedId, approvedImages]);
 
   const togglePublish = async (next: boolean) => {
     if (!selectedId) return;
@@ -672,8 +1034,6 @@ export default function PropertyForm({
     try {
       const payload: Record<string, unknown> = {
         is_published: next,
-        // set/unset published_at if column exists
-        published_at: next ? new Date().toISOString() : null,
       };
       const { error } = await supabase
         .from('properties')
@@ -681,6 +1041,9 @@ export default function PropertyForm({
         .eq('id', selectedId);
       if (error) throw error;
       await refresh();
+      dispatchPropertiesRefresh();
+      setToast({ msg: next ? 'Property published' : 'Property unpublished', kind: 'success' });
+      setTimeout(() => setToast(null), 2000);
     } catch (e: any) {
       alert(e?.message || (next ? 'Failed to publish property' : 'Failed to unpublish property'));
     } finally {
@@ -690,8 +1053,8 @@ export default function PropertyForm({
 
   return (
     <div
-      className="bg-white rounded-2xl border border-gray-200/50 p-4 space-y-4"
-      aria-busy={loading ? 'true' : 'false'}
+      className="bg-white rounded-2xl border border-gray-200/50 p-4 space-y-4 pointer-events-auto relative z-0"
+      role="region"
       onInput={() => {
         if (!hasMarkedDirty.current) {
           hasMarkedDirty.current = true;
@@ -713,6 +1076,12 @@ export default function PropertyForm({
         }
       }}
     >
+      {/* Toast */}
+      {toast && (
+        <div className={`fixed bottom-4 left-4 z-[70] px-3 py-2 rounded-md shadow-md text-sm border ${toast.kind === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'}`} role="status" aria-live="polite">
+          {toast.msg}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Create or Edit Property</h3>
         <button
@@ -723,7 +1092,7 @@ export default function PropertyForm({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left: wizard content */}
-        <div className="space-y-3">
+        <div className="space-y-3 relative z-50">
           {/* Step header */}
           <div className="flex items-center gap-2 text-xs">
             <span className={`px-2 py-1 rounded ${step === 1 ? 'bg-blue-100 text-blue-700' : 'bg-blue-50 text-blue-600'}`}>Step 1</span>
@@ -733,7 +1102,15 @@ export default function PropertyForm({
           {step === 1 ? (
             <>
               <label className="text-sm">Title
-                <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={title} onChange={e => setTitle(e.target.value)} />
+                <input
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="e.g., 995 N Leighton Dr, Baton Rouge, LA 70806"
+                  aria-describedby="title-hint"
+                  autoFocus
+                />
+                <div id="title-hint" className="mt-1 text-xs text-gray-500">Use the full address as the public title. This helps match bookings and display on the homepage.</div>
               </label>
               <label className="text-sm">Description
                 <textarea className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" rows={3} value={description} onChange={e => setDescription(e.target.value)} />
@@ -742,10 +1119,40 @@ export default function PropertyForm({
                 <input className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={address} onChange={e => setAddress(e.target.value)} />
               </label>
               <label className="text-sm">Nightly Price ($)
-                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={nightlyPrice} onChange={e => setNightlyPrice(Number(e.target.value))} />
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={nightlyPrice}
+                  onChange={e => setNightlyPrice(Number(e.target.value))}
+                  min={0}
+                  aria-describedby="price-hint"
+                />
+                <div id="price-hint" className="mt-1 text-xs text-gray-500">If left blank, we default to $150/night.</div>
+              </label>
+              <label className="text-sm">Minimum nights per booking
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={resolvedMinimumNights}
+                  onChange={(e) => {
+                    const next = Number(e.target.value);
+                    setMinimumNights(Number.isFinite(next) && next > 0 ? next : 1);
+                  }}
+                  min={1}
+                  aria-describedby="minimum-nights-hint"
+                />
+                <div id="minimum-nights-hint" className="mt-1 text-xs text-gray-500">Leave at 1 to allow single-night stays. Higher values update the displayed stay price automatically.</div>
               </label>
               <label className="text-sm">Bedrooms
-                <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={bedrooms} onChange={e => setBedrooms(Number(e.target.value))} />
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={bedrooms}
+                  onChange={e => setBedrooms(Number(e.target.value))}
+                  min={0}
+                  aria-describedby="max-guests-hint"
+                />
+                <div id="max-guests-hint" className="mt-1 text-xs text-gray-500">Max guests auto-calculated as bedrooms × 2 for booking limit.</div>
               </label>
               <label className="text-sm">Bathrooms
                 <input type="number" className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2" value={bathrooms} onChange={e => setBathrooms(Number(e.target.value))} />
@@ -777,7 +1184,13 @@ export default function PropertyForm({
               </div>
 
               <div className="flex items-center gap-2 pt-2">
-                <button type="button" onClick={() => setStep(2)} disabled={loading} className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-60">Next</button>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  disabled={!step1Ready || loading}
+                  className={`px-4 py-2 rounded-md text-white ${step1Ready ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 disabled:opacity-50'} `}
+                  title={step1Ready ? 'Proceed to Step 2' : 'Complete basics and add at least one photo to continue'}
+                >Next</button>
                 {selectedId && (
                   <button type="button" onClick={handleSave} disabled={loading} className="px-4 py-2 rounded-md border disabled:opacity-60 flex items-center gap-2">
                     {loading && (
@@ -869,7 +1282,7 @@ export default function PropertyForm({
                     disabled={!selectedId}
                   />
                 </label>
-                <p className="mt-1 text-xs text-gray-500">Paste a Google Maps share link for this property. Required to publish.</p>
+                <p className="mt-1 text-xs text-gray-500">Paste a Google Maps share link for this property. Optional but recommended.</p>
                 {!selectedId && (
                   <p className="mt-1 text-xs text-amber-600">Save the property first to enable the map link.</p>
                 )}
@@ -894,7 +1307,12 @@ export default function PropertyForm({
 
               <div className="flex items-center gap-2 pt-2">
                 <button type="button" onClick={() => setStep(1)} disabled={loading} className="px-4 py-2 rounded-md border disabled:opacity-60">Back</button>
-                <button onClick={handleSave} disabled={loading} className="px-4 py-2 rounded-md bg-blue-600 text-white disabled:opacity-60 flex items-center gap-2">
+                <button
+                  onClick={handleSave}
+                  disabled={!step2Ready || loading}
+                  className={`px-4 py-2 rounded-md text-white flex items-center gap-2 ${step2Ready ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-600 disabled:opacity-50'}`}
+                  title={step2Ready ? 'Create Property' : 'Add a valid Google Maps URL and at least one photo to enable'}
+                >
                   {loading && (
                     <svg className="h-4 w-4 animate-spin text-white" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -913,15 +1331,21 @@ export default function PropertyForm({
           {step === 1 && (
             <div className="space-y-2">
               <h4 className="font-medium">Homepage card preview</h4>
-              <div className="border border-gray-200/50 rounded-xl overflow-hidden bg-white shadow-sm">
-                <div className="aspect-video bg-gray-100">
-                  <Image src={displayImageUrl} alt="preview" fill className="w-full h-full object-cover" unoptimized />
+              <div className="border border-gray-200/50 rounded-xl overflow-hidden bg-white shadow-sm relative z-0">
+                <div className="aspect-video bg-gray-100 pointer-events-none relative">
+                  {displayImageUrl ? (
+                    <img src={displayImageUrl} alt="preview" className="absolute inset-0 w-full h-full object-cover" decoding="async" loading="eager" />
+                  ) : (
+                    <span className="sr-only">No preview</span>
+                  )}
                 </div>
                 <div className="p-3">
                   <div className="flex items-center justify-between">
                     <div className="font-semibold text-gray-900 truncate">{title || 'Untitled'}</div>
                   </div>
-                  <div className="text-xs text-gray-600 mt-1 truncate">{address || 'Address TBD'}</div>
+                  {address && address.trim() !== (title || '').trim() && (
+                    <div className="text-xs text-gray-600 mt-1 truncate">{address}</div>
+                  )}
                   {description && (<div className="text-xs text-gray-700 mt-1 line-clamp-2">{description}</div>)}
                   {(proximityBadge1 || proximityBadge2) && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -929,7 +1353,11 @@ export default function PropertyForm({
                       {proximityBadge2 && <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-50 text-blue-700 border border-blue-200">{proximityBadge2}</span>}
                     </div>
                   )}
-                  <div className="text-sm text-gray-900 mt-1">${nightlyPrice}/night</div>
+                  <div className="text-sm text-gray-900 mt-1">
+                    From {previewMinimumSubtotalLabel} for {resolvedMinimumNights}{' '}
+                    {resolvedMinimumNights === 1 ? 'night' : 'nights'}
+                  </div>
+                  <div className="text-xs text-gray-500">Base rate {previewNightlyRateLabel} / night</div>
                   <div className="text-xs text-emerald-700 mt-1">{`7+ nights: ${weeklyDiscountPct}% off - $${weeklyPrice}/night`}</div>
                   <div className="text-xs text-emerald-700">{`Monthly: ${monthlyDiscountPct}% off - $${monthlyPrice}/night`}</div>
                   <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft</div>
@@ -937,8 +1365,9 @@ export default function PropertyForm({
               </div>
 
               {/* Media controls (Step 1) */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 relative z-50">
                 <input
+                  id="cover-upload-input"
                   ref={coverInputRef}
                   type="file"
                   className="hidden"
@@ -948,6 +1377,7 @@ export default function PropertyForm({
                   onChange={(e) => e.target.files && uploadImages(e.target.files, true)}
                 />
                 <input
+                  id="gallery-upload-input"
                   ref={galleryInputRef}
                   type="file"
                   className="hidden"
@@ -957,21 +1387,18 @@ export default function PropertyForm({
                   aria-label="Upload gallery images"
                   onChange={(e) => e.target.files && uploadImages(e.target.files, false)}
                 />
-                <button
-                  type="button"
-                  disabled={!selectedId || loading}
-                  onClick={() => coverInputRef.current?.click()}
-                  className="px-3 py-2 rounded-md border text-sm disabled:opacity-50"
-                  title={!selectedId ? 'Save basics first to enable uploads' : 'Replace cover image'}
-                >{selectedId ? 'Add/Replace cover' : 'Add/Replace cover (save first)'}</button>
-                <button
-                  type="button"
-                  disabled={!selectedId || loading}
-                  onClick={() => galleryInputRef.current?.click()}
-                  className="px-3 py-2 rounded-md border text-sm disabled:opacity-50"
-                  title={!selectedId ? 'Save basics first to enable uploads' : 'Add gallery images'}
-                >{selectedId ? 'Add images' : 'Add images (save first)'}</button>
+                <label
+                  htmlFor="cover-upload-input"
+                  className="px-3 py-2 rounded-md border text-sm cursor-pointer select-none relative z-50"
+                >Add/Replace cover</label>
+                <label
+                  htmlFor="gallery-upload-input"
+                  className="px-3 py-2 rounded-md border text-sm cursor-pointer select-none relative z-50"
+                >Add images</label>
               </div>
+              {!selectedId && (
+                <p className="text-xs text-amber-600">Tip: enter a Title to auto-create a draft and unlock uploads.</p>
+              )}
 
               {/* Photo album grid (2 x 5) with drag & drop */}
               <div className="mt-3">
@@ -1000,32 +1427,30 @@ export default function PropertyForm({
                           setApprovedImages(next);
                           setDraggingIndex(null);
                           void persistSortOrderLocal(next);
+                          // Set cover to the first image after reorder
+                          if (next[0]) void applyCoverImage(next[0].url);
                         }}
                       >
                         {img ? (
                           <button
                             type="button"
                             onClick={() => applyCoverImage(img.url)}
-                            className={`block w-full aspect-[4/3] overflow-hidden rounded-md border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
+                            className={`relative block w-full aspect-[4/3] overflow-hidden rounded-md border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
                             title={displayImageUrl === img.url ? 'Current cover' : 'Click to set as cover'}
                             aria-label={displayImageUrl === img.url ? 'Current cover image' : 'Set as cover image'}
                           >
-                            <Image src={img.url} alt={`album ${idx + 1}`} fill className="w-full h-full object-cover" unoptimized />
+                            <img src={img.url} alt={`album ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" decoding="async" loading="lazy" />
                             {displayImageUrl === img.url && (
                               <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
                             )}
                           </button>
                         ) : (
-                          <button
-                            type="button"
-                            disabled={!selectedId || loading}
-                            onClick={() => galleryInputRef.current?.click()}
-                            className="flex items-center justify-center w-full aspect-[4/3] rounded-md border border-dashed border-gray-300 text-xs text-gray-500 hover:border-gray-400 disabled:opacity-50"
-                            title={!selectedId ? 'Save basics first to enable uploads' : 'Add photo'}
-                            aria-label={!selectedId ? 'Uploads disabled until saved' : 'Add photo'}
+                          <label
+                            htmlFor="gallery-upload-input"
+                            className="flex items-center justify-center w-full aspect-[4/3] rounded-md border border-dashed border-gray-300 text-xs text-gray-500 hover:border-gray-400 cursor-pointer select-none"
                           >
                             + Add photo
-                          </button>
+                          </label>
                         )}
                       </div>
                     );
@@ -1067,12 +1492,13 @@ export default function PropertyForm({
                                 setApprovedImages(next);
                                 setDraggingIndex(null);
                                 void persistSortOrderLocal(next);
+                                if (next[0]) void applyCoverImage(next[0].url);
                               }}
                             >
                               <button
                                 type="button"
                                 onClick={() => applyCoverImage(img.url)}
-                                className={`block w-full aspect-[4/3] overflow-hidden rounded-md border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
+                                className={`relative block w-full aspect-[4/3] overflow-hidden rounded-md border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
                                 title={displayImageUrl === img.url ? 'Current cover' : 'Click to set as cover'}
                                 aria-label={displayImageUrl === img.url ? 'Current cover image' : 'Set as cover image'}
                               >
@@ -1116,6 +1542,7 @@ export default function PropertyForm({
                 type="file"
                 accept="image/*"
                 className="hidden"
+                title="Replace selected image"
                 onChange={(e) => e.target.files && handleReplaceFile(e.target.files)}
               />
             </div>
@@ -1139,7 +1566,7 @@ export default function PropertyForm({
                     className={`px-3 py-2 rounded-md text-sm border ${canPublish ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'}`}
                     onClick={() => togglePublish(true)}
                     disabled={!canPublish || loading}
-                    title={!canPublish ? 'Add a valid Google Maps URL and at least one approved photo to publish' : 'Publish property'}
+                    title={!canPublish ? 'Add at least one approved photo to publish' : 'Publish property'}
                   >
                     Publish
                   </button>
@@ -1159,13 +1586,16 @@ export default function PropertyForm({
               <div className="space-y-2">
                 <h4 className="font-medium">Property details hero preview</h4>
                 <div className="rounded-xl overflow-hidden border border-gray-200/50 bg-white">
-                  <div className="aspect-[16/9] bg-gray-100">
-                    <Image src={displayImageUrl} alt="hero preview" fill className="w-full h-full object-cover" unoptimized />
+                  <div className="aspect-[16/9] bg-gray-100 relative">
+                    {displayImageUrl ? (
+                      <img src={displayImageUrl} alt="hero preview" className="absolute inset-0 w-full h-full object-cover" decoding="async" loading="eager" />
+                    ) : (
+                      <span className="sr-only">No hero preview</span>
+                    )}
                   </div>
                   <div className="p-4">
-                    <div className="text-lg font-semibold text-gray-900">{title || 'Untitled Property'}</div>
-                    <div className="text-sm text-gray-600">{address || 'Address to be added'}</div>
-                  </div>
+                  <div className="text-sm text-gray-600">{address || (title ? 'Address to be added' : 'Title & address to be added')}</div>
+                </div>
                 </div>
 
               {/* Step 2 media controls & thumbnails (mirror step 1) */}
@@ -1193,7 +1623,7 @@ export default function PropertyForm({
                         onClick={() => applyCoverImage(img.url)}
                         className={`relative flex-shrink-0 w-28 h-20 rounded-md overflow-hidden border ${displayImageUrl === img.url ? 'border-blue-500' : 'border-gray-200'}`}
                       >
-                        <Image src={img.url} alt="thumb" fill className="w-full h-full object-cover" unoptimized />
+                        <img src={img.url} alt="thumb" className="absolute inset-0 w-full h-full object-cover" decoding="async" loading="lazy" />
                         {displayImageUrl === img.url && (
                           <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded">Cover</span>
                         )}
@@ -1219,20 +1649,43 @@ export default function PropertyForm({
             <div className="text-sm text-gray-500">No properties yet. Create your first above.</div>
           )}
           {myProps.map((p) => (
-            <button
+            <div
               key={p.id}
-              onClick={() => loadIntoForm(p)}
-              className={`text-left p-3 border rounded-md hover:bg-gray-50 ${selectedId === p.id ? "border-blue-500" : "border-gray-200"}`}
+              className={`group relative flex items-center gap-3 rounded-lg border p-3 hover:bg-gray-50 ${selectedId === p.id ? 'border-blue-500' : 'border-gray-200'}`}
             >
-              <div className="text-sm font-medium">{p.title}</div>
-              <div className="text-xs text-gray-600">{p.address}</div>
-              <div className="text-xs text-gray-500 mt-1">{p.bedrooms} bd • {p.bathrooms} ba</div>
-              <div className={`text-[11px] mt-1 ${p.is_published ? 'text-green-600' : 'text-amber-600'}`}>{p.is_published ? 'Published' : 'Unpublished'}</div>
-            </button>
+              {/* Cover thumbnail */}
+              <div className="relative w-16 h-12 flex-shrink-0 overflow-hidden rounded-md bg-gray-100">
+                {p.cover_image_url ? (
+                  <img src={p.cover_image_url} alt="cover" className="absolute inset-0 w-full h-full object-cover" />
+                ) : (
+                  <span className="sr-only">No cover</span>
+                )}
+              </div>
+              {/* Text content */}
+              <button onClick={() => loadIntoForm(p)} className="flex-1 text-left">
+                <div className="text-sm font-medium line-clamp-1">{p.title}</div>
+                <div className="text-xs text-gray-600 line-clamp-1">{p.address}</div>
+                <div className="text-xs text-gray-500 mt-1">{p.bedrooms} bd • {p.bathrooms} ba</div>
+                <div className={`text-[11px] mt-1 ${p.is_published ? 'text-green-600' : 'text-amber-600'}`}>{p.is_published ? 'Published' : 'Unpublished'}</div>
+              </button>
+              {/* Trash icon */}
+              <button
+                type="button"
+                onClick={() => deletePropertyAndAssets(p)}
+                title="Delete property"
+                aria-label="Delete property"
+                className="opacity-70 hover:opacity-100 text-red-600 p-1 rounded-md hover:bg-red-50"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                  <path fillRule="evenodd" d="M9 2a1 1 0 00-1 1v1H5.5a1 1 0 100 2H6v13a3 3 0 003 3h6a3 3 0 003-3V6h.5a1 1 0 100-2H16V3a1 1 0 00-1-1H9zm7 4H8v13a1 1 0 001 1h6a1 1 0 001-1V6zM9 9a1 1 0 012 0v8a1 1 0 11-2 0V9zm5-1a1 1 0 00-1 1v8a1 1 0 102 0V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
           ))}
         </div>
       </div>
     </div>
+
   );
 }
 
@@ -1318,15 +1771,30 @@ function CalendarBlocker({
             if (!d) return <div key={`${wi}-${di}`} className="h-8" />;
             const iso = fmt(year, month, d);
             const active = blockedDates.has(iso);
+            if (active) {
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => toggle(d)}
+                  className="h-8 text-sm rounded border bg-rose-50 text-rose-700 border-rose-200/60"
+                  aria-pressed="true"
+                  aria-label={`Toggle ${iso}`}
+                  title={`Unavailable: ${iso}`}
+                >
+                  {d}
+                </button>
+              );
+            }
             return (
               <button
-                key={`${wi}-${di}`}
+                key={iso}
                 type="button"
                 onClick={() => toggle(d)}
-                className={`h-8 text-sm rounded border ${active ? 'bg-rose-50 text-rose-700 border-rose-200/60' : 'bg-white text-gray-800 border-gray-200/50'}`}
-                aria-pressed={active ? 'true' : 'false'}
+                className="h-8 text-sm rounded border bg-white text-gray-800 border-gray-200/50"
+                aria-pressed="false"
                 aria-label={`Toggle ${iso}`}
-                title={active ? `Unavailable: ${iso}` : `Available: ${iso}`}
+                title={`Available: ${iso}`}
               >
                 {d}
               </button>
@@ -1334,8 +1802,8 @@ function CalendarBlocker({
           })
         )}
       </div>
-      <div className="text-xs text-gray-600">Click dates to toggle unavailable. These dates will be used to disable booking on the guest calendar after we wire persistence.</div>
-      <div className="text-xs text-gray-500">Changes save instantly. Blocked dates are already persisted and will disable booking for guests on those days.</div>
+      <div className="text-xs text-gray-600">Click dates to toggle unavailable. These dates will disable booking for guests on those days.</div>
+      <div className="text-xs text-gray-500">Changes save instantly.</div>
     </div>
   );
 }

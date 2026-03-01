@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import Image from "next/image";
 import AuthGate from "@/components/portal/AuthGate";
 import SectionFeedback from "@/components/portal/SectionFeedback";
 import { PropertyListView } from "@/components/portal/PropertyListView";
@@ -11,6 +12,7 @@ import Icon from "@/components/portal/Icon";
 import SidebarItem from "@/components/portal/SidebarItem";
 import BottomBar from "@/components/portal/BottomBar";
 import PaymentsList from "@/components/portal/PaymentsList";
+import EventBookingQueue from "@/components/portal/EventBookingQueue";
 import TenantsList from "@/components/portal/TenantsList";
 import AccountMenu from "@/components/AccountMenu";
 import { PropertySwitcher } from "@/components/portal/PropertySwitcher";
@@ -103,6 +105,20 @@ export default function HostPortalPage() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const cached = sessionStorage.getItem('host:last-toast');
+      if (cached) {
+        setToastMsg(cached);
+        sessionStorage.removeItem('host:last-toast');
+        setTimeout(() => setToastMsg(null), 2500);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   // No dashboard-level status fetching; handled inside PublishChecklist
 
   async function publishSelected() {
@@ -141,7 +157,15 @@ export default function HostPortalPage() {
         <header className="sticky top-0 z-30 backdrop-blur supports-[backdrop-filter]:bg-white/70 bg-white/90 border-b border-gray-100">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-4 flex items-center gap-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-2xl bg-emerald-600 text-white grid place-items-center font-bold">A</div>
+              <Image
+                src="/images/logo/BelleRougeLogo.png"
+                alt="Belle Rouge Properties logo"
+                width={200}
+                height={48}
+                className="h-10 w-auto sm:h-12"
+                priority
+                quality={100}
+              />
             </div>
             <p className="flex-1 text-center text-sm text-gray-600 whitespace-nowrap"><span className="font-semibold text-gray-900">Host Dashboard</span> -- Finish your listing setup and publish when ready.</p>
             <div className="flex items-center gap-3">
@@ -319,6 +343,10 @@ export default function HostPortalPage() {
                   </Card>
                 </div>
               </div>
+            </section>
+
+            <section className="mt-6">
+              <EventBookingQueue />
             </section>
 
             {/* Check-in / Check-out */}

@@ -11,7 +11,7 @@ interface ReviewsSectionProps {
 export default function ReviewsSection({ rating, reviewCount }: ReviewsSectionProps) {
   const reviews = [
     {
-      name: "Dr. Angelica Celestine",
+      name: "Dr. Angelica Celestin Brumfield",
       image: "/images/Reviewers/Dr. Angelica Celestine.jpg",
       date: "March 2025",
       content: "Perfect location for my assignment at OLOL. Clean, quiet, and exactly what I needed as a traveling physician."
@@ -38,10 +38,6 @@ export default function ReviewsSection({ rating, reviewCount }: ReviewsSectionPr
 
   return (
     <div>
-      <div className="flex items-center mb-6">
-        <Star className="w-5 h-5 text-yellow-400 fill-current mr-2" />
-        <span className="text-lg font-semibold">{rating} • {reviewCount} reviews</span>
-      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {reviews.map((review, index) => (
           <div key={index} className="bg-gray-50 p-6 rounded-lg">
@@ -60,6 +56,11 @@ export default function ReviewsSection({ rating, reviewCount }: ReviewsSectionPr
                 <div className="mb-2">
                   <div className="font-semibold text-gray-900 text-base">{review.name}</div>
                   <div className="text-sm text-gray-500">{review.date}</div>
+                </div>
+                <div className="flex items-center gap-1 mb-2 text-yellow-400">
+                  {Array.from({ length: 5 }).map((_, starIdx) => (
+                    <Star key={starIdx} className="h-4 w-4 fill-current" />
+                  ))}
                 </div>
                 <p className="text-gray-700 text-sm leading-relaxed">
                   "{review.content}"

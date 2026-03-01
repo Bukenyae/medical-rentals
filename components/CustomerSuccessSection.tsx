@@ -1,8 +1,13 @@
 'use client';
 
+import Image from 'next/image';
 import { Star, Heart, Users } from 'lucide-react';
 
-export default function CustomerSuccessSection() {
+interface CustomerSuccessSectionProps {
+  showHeading?: boolean;
+}
+
+export default function CustomerSuccessSection({ showHeading = true }: CustomerSuccessSectionProps = {}) {
   const stats = [
     {
       icon: Users,
@@ -28,15 +33,26 @@ export default function CustomerSuccessSection() {
     <section className="py-24 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-20">
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-            Trusted by Professionals Nationwide
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Our commitment to excellence has made us the preferred choice for
-            traveling medical staff, visiting scholars, service members, college students, and young professionals across the region.
-          </p>
-        </div>
+        {showHeading && (
+          <div className="text-center mb-20">
+            <div className="flex items-center justify-center gap-3 md:gap-4 mb-6">
+              <Image
+                src="/images/logo/BR Logo.png"
+                alt="Belle Rouge Properties"
+                width={36}
+                height={36}
+                className="h-8 w-8 md:h-9 md:w-9 object-contain"
+              />
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+                Trusted by Professionals Nationwide
+              </h2>
+            </div>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              Our commitment to excellence has made us the preferred choice for
+              traveling medical staff, visiting scholars, service members, college students, and young professionals across the region.
+            </p>
+          </div>
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">

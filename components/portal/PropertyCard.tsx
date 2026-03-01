@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import Icon from "@/components/portal/Icon";
 import { useRouter } from "next/navigation";
+import { DEFAULT_BLUR_DATA_URL, getOptimizedImageUrl } from "@/lib/images";
 
 export interface PropertyCardProps {
   id: string;
@@ -16,6 +17,9 @@ export interface PropertyCardProps {
   isSelected?: boolean;
   onSelect?: (id: string) => void;
   className?: string;
+  onPublish?: () => void;
+  publishEnabled?: boolean;
+  imagePriority?: boolean;
 }
 
 export function PropertyCard({
@@ -28,9 +32,25 @@ export function PropertyCard({
   isSelected = false,
   onSelect,
   className = '',
+  onPublish,
+  publishEnabled = false,
+  imagePriority = false,
 }: PropertyCardProps) {
   const router = useRouter();
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const optimizedImageUrl = useMemo(() => getOptimizedImageUrl(imageUrl) ?? imageUrl ?? null, [imageUrl]);
+  const [imageSrc, setImageSrc] = useState<string | null>(optimizedImageUrl);
+  useEffect(() => {
+    setImageSrc(optimizedImageUrl);
+  }, [optimizedImageUrl]);
+
+  const formattedAddress = useMemo(() => {
+    if (!address) return "Address pending";
+    const parts = address.split(",").map((part) => part.trim()).filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0]}, ${parts[1]}`;
+    }
+    return parts[0];
+  }, [address]);
   const [metrics, setMetrics] = useState({
     activeBookings: 0,
     monthlyRevenue: 0,
@@ -145,24 +165,25 @@ export function PropertyCard({
     >
       {/* Property Image */}
       <div className="aspect-video bg-gray-100 relative">
-        {imageUrl ? (
-          <>
-            <Image
-              src={imageUrl}
-              alt={name}
-              fill
-              sizes="(max-width: 640px) 100vw, 50vw"
-              className={`object-cover transition-opacity duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
-              onLoad={() => setImageLoaded(true)}
-              unoptimized
-              priority={false}
-            />
-            {!imageLoaded && (
-              <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
-                <Icon name="home" className="w-8 h-8 text-gray-300" />
-              </div>
-            )}
-          </>
+        {imageSrc ? (
+          <Image
+            src={imageSrc}
+            alt={name}
+            fill
+            sizes="(max-width: 640px) 100vw, 50vw"
+            className="object-cover"
+            priority={imagePriority}
+            loading={imagePriority ? "eager" : "lazy"}
+            placeholder="blur"
+            blurDataURL={DEFAULT_BLUR_DATA_URL}
+            onError={() => {
+              if (imageSrc && imageUrl && imageSrc !== imageUrl) {
+                setImageSrc(imageUrl);
+                return;
+              }
+              setImageSrc(null);
+            }}
+          />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-emerald-50 to-blue-50 flex items-center justify-center">
             <Icon name="home" className="w-8 h-8 text-emerald-400" />
@@ -177,13 +198,7 @@ export function PropertyCard({
 
       {/* Property Info */}
       <div className="p-4">
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="font-medium text-gray-900 truncate">{name}</h3>
-            <p className="text-sm text-gray-500 mt-1 line-clamp-2">{address}</p>
-          </div>
-          {/* Removed top-right pencil to let the title line breathe */}
-        </div>
+        <p className="text-sm text-gray-600 leading-snug line-clamp-2">{formattedAddress}</p>
 
         {/* Metrics */}
         {!isLoading && (
@@ -234,8 +249,10 @@ export function PropertyCard({
             </button>
             {displayStatus === 'draft' && (
               <button
-                onClick={(e) => handleQuickAction('publish', e)}
-                className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md text-white bg-emerald-600 hover:bg-emerald-700"
+                onClick={(e) => { e.stopPropagation(); if (publishEnabled && onPublish) onPublish(); }}
+                className={`inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md ${publishEnabled ? 'text-white bg-emerald-600 hover:bg-emerald-700' : 'text-gray-500 bg-gray-100 cursor-not-allowed'}`}
+                disabled={!publishEnabled}
+                title={publishEnabled ? 'Publish property' : 'Add a Google Maps URL and at least one approved photo to enable publishing'}
               >
                 Publish
               </button>
