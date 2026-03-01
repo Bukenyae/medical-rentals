@@ -51,6 +51,7 @@ export default function PropertyForm({
   const [address, setAddress] = useState("");
   const [nightlyPrice, setNightlyPrice] = useState<number>(150);
   const [minimumNights, setMinimumNights] = useState<number>(1);
+  const [minimumEventHours, setMinimumEventHours] = useState<number>(4);
   const [bedrooms, setBedrooms] = useState<number>(3);
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [sqft, setSqft] = useState<number | "">(1100);
@@ -113,6 +114,7 @@ export default function PropertyForm({
     []
   );
   const resolvedMinimumNights = Number.isFinite(minimumNights) ? Math.max(1, minimumNights) : 1;
+  const resolvedMinimumEventHours = Number.isFinite(minimumEventHours) ? Math.max(1, minimumEventHours) : 4;
   const previewNightlyRate = Number.isFinite(nightlyPrice) && nightlyPrice > 0 ? nightlyPrice : 150;
   const previewMinimumSubtotal = Math.max(0, Math.round(previewNightlyRate * resolvedMinimumNights));
   const previewMinimumSubtotalLabel = currencyFormatter.format(previewMinimumSubtotal);
@@ -242,6 +244,7 @@ export default function PropertyForm({
         max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
         sqft: typeof sqft === 'number' ? sqft : null,
         minimum_nights: resolvedMinimumNights,
+        minimum_event_hours: resolvedMinimumEventHours,
       };
       const { data, error } = await supabase
         .from('properties')
@@ -260,7 +263,20 @@ export default function PropertyForm({
     } finally {
       setDrafting(false);
     }
-  }, [address, basicsValid, bedrooms, drafting, onPropertySelected, refresh, selectedId, sqft, supabase, title]);
+  }, [
+    address,
+    basicsValid,
+    bedrooms,
+    drafting,
+    onPropertySelected,
+    refresh,
+    resolvedMinimumEventHours,
+    resolvedMinimumNights,
+    selectedId,
+    sqft,
+    supabase,
+    title,
+  ]);
 
   // Click helpers to enable uploads earlier
   const handleCoverClick = useCallback(async () => {
@@ -533,6 +549,7 @@ export default function PropertyForm({
         description,
         base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
         minimum_nights: resolvedMinimumNights,
+        minimum_event_hours: resolvedMinimumEventHours,
         max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
         proximity_badge_1: proximityBadge1 || null,
         proximity_badge_2: proximityBadge2 || null,
@@ -609,6 +626,7 @@ export default function PropertyForm({
             description,
             base_price: Number.isFinite(nightlyPrice) ? nightlyPrice : 150,
             minimum_nights: resolvedMinimumNights,
+            minimum_event_hours: resolvedMinimumEventHours,
             max_guests: Math.max(1, (Number.isFinite(bedrooms) ? (bedrooms as number) : 2) * 2),
             proximity_badge_1: proximityBadge1 || null,
             proximity_badge_2: proximityBadge2 || null,
@@ -798,6 +816,7 @@ export default function PropertyForm({
       setSqft(1100);
       setGoogleMapsUrl("");
       setMinimumNights(1);
+      setMinimumEventHours(4);
       setAboutSpace("");
       setProfessionalsDesc("");
       setSelectedAmenities(new Set());
@@ -824,6 +843,7 @@ export default function PropertyForm({
     setAddress(p.address ?? "");
     setNightlyPrice(p.nightly_price ?? 150);
     setMinimumNights(p.minimum_nights && p.minimum_nights > 1 ? p.minimum_nights : 1);
+    setMinimumEventHours(p.minimum_event_hours && p.minimum_event_hours > 0 ? p.minimum_event_hours : 4);
     setWeeklyDiscountPct(p.weekly_discount_pct ?? 20);
     setWeeklyPrice(p.weekly_price ?? Math.round((p.nightly_price ?? 150) * 0.8));
     setMonthlyDiscountPct(p.monthly_discount_pct ?? 40);
@@ -1144,6 +1164,38 @@ export default function PropertyForm({
                   aria-describedby="minimum-nights-hint"
                 />
                 <div id="minimum-nights-hint" className="mt-1 text-xs text-gray-500">Leave at 1 to allow single-night stays. Higher values update the displayed stay price automatically.</div>
+              </label>
+              <label className="text-sm">Minimum event hours
+                <div className="mt-1 flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="px-2 py-1 border border-gray-300/50 rounded"
+                    onClick={() => setMinimumEventHours(Math.max(1, resolvedMinimumEventHours - 1))}
+                    aria-label="Decrease minimum event hours"
+                  >
+                    -
+                  </button>
+                  <input
+                    type="number"
+                    className="w-full border border-gray-300/50 rounded-md px-3 py-2"
+                    value={resolvedMinimumEventHours}
+                    onChange={(e) => {
+                      const next = Number(e.target.value);
+                      setMinimumEventHours(Number.isFinite(next) && next > 0 ? next : 1);
+                    }}
+                    min={1}
+                    aria-describedby="minimum-event-hours-hint"
+                  />
+                  <button
+                    type="button"
+                    className="px-2 py-1 border border-gray-300/50 rounded"
+                    onClick={() => setMinimumEventHours(resolvedMinimumEventHours + 1)}
+                    aria-label="Increase minimum event hours"
+                  >
+                    +
+                  </button>
+                </div>
+                <div id="minimum-event-hours-hint" className="mt-1 text-xs text-gray-500">Default is 4 hours. This value appears on the property card under Event Pricing.</div>
               </label>
               <label className="text-sm">Bedrooms
                 <input

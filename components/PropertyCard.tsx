@@ -13,7 +13,7 @@ interface PropertyCardProps {
   reviewCount: number;
   price: number;
   eventHourlyRate?: number | null;
-  eventMaxGuests?: number | null;
+  minimumEventHours?: number | null;
   minimumNights?: number | null;
   bedrooms: number;
   bathrooms: number;
@@ -31,6 +31,7 @@ export default function PropertyCard({
   reviewCount,
   price,
   eventHourlyRate,
+  minimumEventHours,
   minimumNights,
   bedrooms,
   bathrooms,
@@ -50,6 +51,8 @@ export default function PropertyCard({
 
   const nightlyLabel = currency.format(price);
   const eventLabel = currency.format(Math.max(0, Math.round((eventHourlyRate ?? 125) || 125)));
+  const minEventHours =
+    typeof minimumEventHours === 'number' && minimumEventHours > 0 ? Math.round(minimumEventHours) : 4;
 
   return (
     <Link href={`/property/${id}`} className="group block focus:outline-none">
@@ -66,7 +69,7 @@ export default function PropertyCard({
 
               <div className="p-3 sm:p-6 bg-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-[20px] sm:rounded-b-3xl group-hover:bg-[var(--hover-tint)] group-focus-visible:bg-[var(--hover-tint)] group-active:bg-[var(--hover-tint)]">
                 <div className="mb-1 sm:mb-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[11px] sm:text-sm text-gray-600">
+                  <div className="flex items-center gap-8 text-[11px] sm:text-sm text-gray-600">
                     <div className="flex items-center">
                       <span className="mr-1">🏠</span>
                       <span>{sqft.toLocaleString()} sqft</span>
@@ -103,6 +106,7 @@ export default function PropertyCard({
                     <div className="text-left sm:text-right">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Event Pricing</p>
                       <p className="mt-0.5 text-sm font-semibold text-gray-900 sm:text-base">from {eventLabel}/hr</p>
+                      <p className="text-xs text-gray-500">minimum {minEventHours} {minEventHours === 1 ? 'hour' : 'hours'}</p>
                     </div>
                   </div>
                 </div>

@@ -147,7 +147,7 @@ export default function Home() {
                 reviewCount={120}
                 price={p.nightly_price ?? 150}
                 eventHourlyRate={((p.event_hourly_from_cents ?? 12500) as number) / 100}
-                eventMaxGuests={(p.max_event_guests ?? 20) as number}
+                minimumEventHours={p.minimum_event_hours ?? 4}
                 minimumNights={p.minimum_nights ?? 1}
                 bedrooms={p.bedrooms ?? 0}
                 bathrooms={p.bathrooms ?? 0}
