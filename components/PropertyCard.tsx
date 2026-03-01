@@ -95,7 +95,7 @@ export default function PropertyCard({
                 <div className="mt-3 border-t border-gray-200/80 pt-3">
                   <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="text-left flex min-h-[72px] flex-col justify-between sm:min-h-[88px]">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stay Pricing</p>
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stay</p>
                       <div className="mt-0.5 flex items-baseline gap-1">
                         <span className="text-xl sm:text-3xl font-extrabold text-gray-900">{nightlyLabel}</span>
                         <span className="text-xs sm:text-sm font-medium text-gray-500">/night</span>
@@ -103,8 +103,8 @@ export default function PropertyCard({
                       <p className="text-xs text-gray-500">minimum {minNights} {minNights === 1 ? 'night' : 'nights'}</p>
                     </div>
 
-                    <div className="text-left sm:text-right flex min-h-[72px] flex-col justify-between sm:min-h-[88px]">
-                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Event Pricing</p>
+                    <div className="text-right flex min-h-[72px] flex-col justify-between sm:min-h-[88px]">
+                      <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Event</p>
                       <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-gray-900">{eventLabel}<span className="text-xs sm:text-sm font-medium text-gray-500">/hr</span></p>
                       <p className="text-xs text-gray-500">minimum {minEventHours} {minEventHours === 1 ? 'hour' : 'hours'}</p>
                     </div>
