@@ -65,19 +65,9 @@ export default function PropertyCard({
               </div>
 
               <div className="p-3 sm:p-6 bg-white transition-colors duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] rounded-b-[20px] sm:rounded-b-3xl group-hover:bg-[var(--hover-tint)] group-focus-visible:bg-[var(--hover-tint)] group-active:bg-[var(--hover-tint)]">
-                <div className="flex items-center justify-end mb-1 sm:mb-2">
-                  <div className="flex items-center">
-                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-400 fill-current" />
-                    <span className="ml-1 text-xs sm:text-sm font-medium text-gray-900">{rating}</span>
-                  </div>
-                </div>
-
-                <h3 className="text-sm sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 leading-tight">{title}</h3>
-                <p className="hidden sm:block text-gray-600 mb-4">{description}</p>
-
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-0">
-                  <div className="flex items-center gap-2 sm:space-x-4 text-xs sm:text-sm text-gray-600">
-                    <div className="hidden sm:flex items-center">
+                <div className="mb-1 sm:mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-[11px] sm:text-sm text-gray-600">
+                    <div className="flex items-center">
                       <span className="mr-1">🏠</span>
                       <span>{sqft.toLocaleString()} sqft</span>
                     </div>
@@ -90,10 +80,17 @@ export default function PropertyCard({
                       <span>{bathrooms}</span>
                     </div>
                   </div>
+                  <div className="flex items-center">
+                    <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-yellow-400 fill-current" />
+                    <span className="ml-1 text-xs sm:text-sm font-medium text-gray-900">{rating}</span>
+                  </div>
                 </div>
 
+                <h3 className="text-sm sm:text-xl font-bold text-gray-900 mb-1 sm:mb-2 leading-tight">{title}</h3>
+                <p className="hidden sm:block text-gray-600 mb-4">{description}</p>
+
                 <div className="mt-3 border-t border-gray-200/80 pt-3">
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4">
                     <div className="text-left">
                       <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Stay Pricing</p>
                       <div className="mt-0.5 flex items-baseline gap-1">
