@@ -7,9 +7,10 @@ import Image from 'next/image';
 interface PropertyGalleryProps {
   images: string[];
   title: string;
+  onBack?: () => void;
 }
 
-export default function PropertyGallery({ images, title }: PropertyGalleryProps) {
+export default function PropertyGallery({ images, title, onBack }: PropertyGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [thumbnailPage, setThumbnailPage] = useState(0);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
@@ -54,11 +55,11 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
   const currentImage = hasImages ? images[currentImageIndex] : '/images/placeholder/house.jpg';
 
   return (
-    <div className="mb-6 lg:mb-8">
+    <div className="-mx-4 mb-6 sm:mx-0 lg:mb-8">
       <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-6">
         {/* Main Image */}
         <div
-          className="relative aspect-[16/11] md:aspect-[16/10] lg:aspect-[4/3] bg-gray-200 rounded-2xl overflow-hidden"
+          className="relative aspect-[4/3] bg-gray-200 overflow-hidden sm:aspect-[16/10] sm:rounded-2xl lg:aspect-[4/3]"
           onTouchStart={(event) => {
             const start = event.touches?.[0]?.clientX;
             setTouchStartX(typeof start === 'number' ? start : null);
@@ -78,6 +79,17 @@ export default function PropertyGallery({ images, title }: PropertyGalleryProps)
             setTouchStartX(null);
           }}
         >
+          {onBack && (
+            <button
+              type="button"
+              onClick={onBack}
+              className="absolute left-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-gray-900 shadow-sm backdrop-blur md:hidden"
+              aria-label="Back to properties"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+
           <Image
             src={currentImage}
             alt={title}

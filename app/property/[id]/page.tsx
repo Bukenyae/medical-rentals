@@ -541,7 +541,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
         {/* Back Button */}
-        <div className="mb-6">
+        <div className="mb-6 hidden lg:block">
           <button
             type="button"
             onClick={() => {
@@ -582,6 +582,13 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
         <PropertyGallery 
           images={propertyWithDefaults.images} 
           title={propertyWithDefaults.title} 
+          onBack={() => {
+            if (typeof window !== 'undefined' && window.history.length > 1) {
+              router.back();
+            } else {
+              router.push('/');
+            }
+          }}
         />
 
         {/* Main Content Grid */}
