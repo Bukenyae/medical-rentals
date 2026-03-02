@@ -24,11 +24,18 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
   const { state, derived, actions } = useEventBookingFlow({ property, propertyId, user, onRequireAuth });
 
   const riskReasons = (state.eventQuote?.riskFlags || []).map((flag) => RISK_REASON_MAP[flag] || flag);
+  const quoteSnapshot = state.eventQuote?.pricingSnapshot;
+  const sessionDays = quoteSnapshot?.sessionDays || [];
+  const sessionSubtotal = quoteSnapshot?.productionSubtotalCents ?? state.eventQuote?.subtotalCents ?? 0;
+  const multiDayDiscountCents = quoteSnapshot?.multiDayDiscountCents ?? 0;
+  const overnightHoldingCents = quoteSnapshot?.overnightHoldingCents ?? 0;
   const policyChecklist = [
     { label: 'Alcohol', value: state.alcohol ? 'Yes' : 'No' },
     { label: 'Amplified sound', value: state.amplifiedSound ? 'Yes' : 'No' },
     { label: 'After curfew', value: derived.endsAfterCurfew ? 'Yes' : 'No' },
     { label: 'Vehicles', value: `${state.eventVehicles}/${derived.baseParkingCapacity}` },
+    { label: 'Session days', value: String(state.sessionDates.length || 0) },
+    { label: 'Scout requested', value: state.requestScout ? 'Yes' : 'No' },
     { label: 'Event type', value: state.eventType.replace(/_/g, ' ') },
     { label: 'Availability', value: derived.isAvailable === true ? 'Available' : derived.isAvailable === false ? 'Unavailable' : 'Unverified' },
   ];
@@ -42,9 +49,17 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
       {state.eventStep === 1 && (
         <EventStepOne
           todayIso={derived.todayIso}
-          eventDate={state.eventDate}
-          eventStart={state.eventStart}
-          eventEnd={state.eventEnd}
+          eventStartDate={state.eventStartDate}
+          eventEndDate={state.eventEndDate}
+          globalStartTime={state.globalStartTime}
+          globalEndTime={state.globalEndTime}
+          sessionDates={state.sessionDates}
+          dayOverrides={state.dayOverrides}
+          overnightHold={state.overnightHold}
+          requestScout={state.requestScout}
+          scoutNotes={state.scoutNotes}
+          parkingCapacityLabel={`${derived.baseParkingCapacity} vehicles (base)`}
+          powerDetailsLabel={property.basePowerDetails || 'Standard residential supply'}
           maxEventGuests={derived.maxEventGuests}
           eventGuests={state.eventGuests}
           eventVehicles={state.eventVehicles}
@@ -53,9 +68,15 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           eventDurationHours={derived.eventDurationHours}
           availabilityError={state.availabilityError}
           eventCurfewTime={property.eventCurfewTime}
-          onEventDateChange={actions.setEventDate}
-          onEventStartChange={actions.setEventStart}
-          onEventEndChange={actions.setEventEnd}
+          onEventStartDateChange={actions.setEventStartDate}
+          onEventEndDateChange={actions.setEventEndDate}
+          onGlobalStartTimeChange={actions.setGlobalStartTime}
+          onGlobalEndTimeChange={actions.setGlobalEndTime}
+          onSetDayOverride={actions.setDayOverride}
+          onClearDayOverride={actions.clearDayOverride}
+          onOvernightHoldChange={actions.setOvernightHold}
+          onRequestScoutChange={actions.setRequestScout}
+          onScoutNotesChange={actions.setScoutNotes}
           onEventGuestsChange={actions.setEventGuests}
           onEventVehiclesChange={actions.setEventVehicles}
         />
@@ -92,10 +113,20 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
       {state.eventQuote && (
         <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm">
           <div className="flex justify-between"><span>Mode</span><span className="font-semibold">{state.eventQuote.mode === 'instant' ? 'Instant book' : 'Request to book'}</span></div>
-          <div className="flex justify-between"><span>Subtotal</span><span>{toCurrency(state.eventQuote.subtotalCents / 100)}</span></div>
+          <div className="flex justify-between"><span>Production subtotal</span><span>{toCurrency(sessionSubtotal / 100)}</span></div>
+          {multiDayDiscountCents > 0 && (
+            <div className="flex justify-between text-emerald-700"><span>Multi-day discount</span><span>-{toCurrency(multiDayDiscountCents / 100)}</span></div>
+          )}
+          {overnightHoldingCents > 0 && (
+            <div className="flex justify-between"><span>Overnight holding</span><span>{toCurrency(overnightHoldingCents / 100)}</span></div>
+          )}
+          <div className="flex justify-between"><span>Session hours</span><span>{state.eventQuote.durationHours?.toFixed(1) || '0.0'}h</span></div>
           <div className="flex justify-between"><span>Fees + Add-ons</span><span>{toCurrency((state.eventQuote.feesCents + state.eventQuote.addonsTotalCents) / 100)}</span></div>
           <div className="flex justify-between"><span>Deposit authorization</span><span>{toCurrency(state.eventQuote.depositCents / 100)}</span></div>
           <div className="mt-2 flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{toCurrency(state.eventQuote.totalCents / 100)}</span></div>
+          {sessionDays.length > 1 && (
+            <p className="mt-2 text-xs text-gray-600">{sessionDays.length} days selected · Global {state.globalStartTime} to {state.globalEndTime} (local)</p>
+          )}
           {riskReasons.length > 0 && <p className="mt-2 text-xs text-amber-700">Request reason: {riskReasons.join(' · ')}</p>}
         </div>
       )}

@@ -37,6 +37,18 @@ export interface EventQuoteInput {
   eventType: EventType;
   startAt: string;
   endAt: string;
+  startDate?: string;
+  endDate?: string;
+  globalStartTime?: string;
+  globalEndTime?: string;
+  dayOverrides?: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  overnightHold?: boolean;
+  overnightHoldingPct?: number;
+  multiDayDiscountPct?: number;
   guestCount: number;
   estimatedVehicles?: number;
   hourlyRateCents: number;

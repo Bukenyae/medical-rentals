@@ -89,6 +89,10 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     max_event_guests?: number | null;
     event_instant_book_enabled?: boolean | null;
     event_curfew_time?: string | null;
+    event_multi_day_discount_pct?: number | null;
+    event_overnight_holding_pct?: number | null;
+    base_power_details?: string | null;
+    base_parking_capacity?: number | null;
   }
   interface HostProfileRow {
     id: string;
@@ -121,7 +125,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       try {
         setDbError(null);
         const basePropertySelect = 'id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,minimum_nights,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url';
-        const extendedPropertySelect = `${basePropertySelect},event_hourly_from_cents,max_event_guests,event_instant_book_enabled,event_curfew_time`;
+        const extendedPropertySelect = `${basePropertySelect},event_hourly_from_cents,max_event_guests,event_instant_book_enabled,event_curfew_time,event_multi_day_discount_pct,event_overnight_holding_pct,base_power_details,base_parking_capacity`;
 
         const propertyFetchPromise = (async () => {
           const extendedResult = await supabase
@@ -138,7 +142,11 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
             message.includes('event_hourly_from_cents') ||
             message.includes('max_event_guests') ||
             message.includes('event_instant_book_enabled') ||
-            message.includes('event_curfew_time');
+            message.includes('event_curfew_time') ||
+            message.includes('event_multi_day_discount_pct') ||
+            message.includes('event_overnight_holding_pct') ||
+            message.includes('base_power_details') ||
+            message.includes('base_parking_capacity');
 
           if (!missingEventColumns) return extendedResult;
 
@@ -496,8 +504,11 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     maxEventGuests: parseNumeric(propertyRow.max_event_guests) ?? 20,
     eventInstantBookEnabled: !!propertyRow.event_instant_book_enabled,
     eventCurfewTime: propertyRow.event_curfew_time ?? null,
+    eventMultiDayDiscountPct: parseNumeric(propertyRow.event_multi_day_discount_pct) ?? 0,
+    eventOvernightHoldingPct: parseNumeric(propertyRow.event_overnight_holding_pct) ?? 25,
+    basePowerDetails: propertyRow.base_power_details ?? 'Standard residential supply',
     timezone: 'America/Chicago',
-    baseParkingCapacity: 8,
+    baseParkingCapacity: parseNumeric(propertyRow.base_parking_capacity) ?? 8,
   };
 
   const money = new Intl.NumberFormat('en-US', {
