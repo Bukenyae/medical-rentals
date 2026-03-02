@@ -1,8 +1,23 @@
+import { useState } from 'react';
+import EventSessionCalendarModal from './EventSessionCalendarModal';
+
 type StepOneProps = {
   todayIso: string;
-  eventDate: string;
-  eventStart: string;
-  eventEnd: string;
+  eventStartDate: string;
+  eventEndDate: string;
+  globalStartTime: string;
+  globalEndTime: string;
+  sessionDates: string[];
+  dayOverrides: Array<{
+    date: string;
+    startTime: string;
+    endTime: string;
+  }>;
+  overnightHold: boolean;
+  requestScout: boolean;
+  scoutNotes: string;
+  parkingCapacityLabel: string;
+  powerDetailsLabel: string;
   maxEventGuests: number;
   eventGuests: number;
   eventVehicles: number;
@@ -11,18 +26,32 @@ type StepOneProps = {
   eventDurationHours: number;
   availabilityError: string | null;
   eventCurfewTime?: string | null;
-  onEventDateChange: (value: string) => void;
-  onEventStartChange: (value: string) => void;
-  onEventEndChange: (value: string) => void;
+  onEventStartDateChange: (value: string) => void;
+  onEventEndDateChange: (value: string) => void;
+  onGlobalStartTimeChange: (value: string) => void;
+  onGlobalEndTimeChange: (value: string) => void;
+  onSetDayOverride: (date: string, field: 'startTime' | 'endTime', value: string) => void;
+  onClearDayOverride: (date: string) => void;
+  onOvernightHoldChange: (value: boolean) => void;
+  onRequestScoutChange: (value: boolean) => void;
+  onScoutNotesChange: (value: string) => void;
   onEventGuestsChange: (value: number) => void;
   onEventVehiclesChange: (value: number) => void;
 };
 
 export function EventStepOne({
   todayIso,
-  eventDate,
-  eventStart,
-  eventEnd,
+  eventStartDate,
+  eventEndDate,
+  globalStartTime,
+  globalEndTime,
+  sessionDates,
+  dayOverrides,
+  overnightHold,
+  requestScout,
+  scoutNotes,
+  parkingCapacityLabel,
+  powerDetailsLabel,
   maxEventGuests,
   eventGuests,
   eventVehicles,
@@ -31,36 +60,152 @@ export function EventStepOne({
   eventDurationHours,
   availabilityError,
   eventCurfewTime,
-  onEventDateChange,
-  onEventStartChange,
-  onEventEndChange,
+  onEventStartDateChange,
+  onEventEndDateChange,
+  onGlobalStartTimeChange,
+  onGlobalEndTimeChange,
+  onSetDayOverride,
+  onClearDayOverride,
+  onOvernightHoldChange,
+  onRequestScoutChange,
+  onScoutNotesChange,
   onEventGuestsChange,
   onEventVehiclesChange,
 }: StepOneProps) {
-  return (
-    <div className="mt-3 space-y-2">
-      <label className="text-xs font-semibold text-gray-700">Event date</label>
-      <input type="date" min={todayIso} value={eventDate} onChange={(e) => onEventDateChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" />
+  const overrideMap = new Map(dayOverrides.map((override) => [override.date, override]));
+  const [showSessionCalendar, setShowSessionCalendar] = useState(false);
+  const [calendarField, setCalendarField] = useState<'start' | 'end'>('start');
 
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="text-xs font-semibold text-gray-700">Start time</label>
-          <input type="time" value={eventStart} onChange={(e) => onEventStartChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" />
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="rounded-lg border border-gray-200 p-3">
+        <p className="text-sm font-semibold text-gray-900">Session dates</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setCalendarField('start');
+              setShowSessionCalendar(true);
+            }}
+            className="rounded-md border p-2 text-left text-sm"
+          >
+            <p className="text-xs font-semibold text-gray-700">Start date</p>
+            <p className="mt-1 text-gray-900">{eventStartDate || 'Select date'}</p>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setCalendarField('end');
+              setShowSessionCalendar(true);
+            }}
+            className="rounded-md border p-2 text-left text-sm"
+          >
+            <p className="text-xs font-semibold text-gray-700">End date</p>
+            <p className="mt-1 text-gray-900">{eventEndDate || 'Select date'}</p>
+          </button>
         </div>
-        <div>
-          <label className="text-xs font-semibold text-gray-700">End time</label>
-          <input type="time" value={eventEnd} onChange={(e) => onEventEndChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" />
-        </div>
+        <p className="mt-2 text-xs text-gray-500">Use calendar mode for range selection, then tap Apply to confirm dates.</p>
       </div>
+
+      <EventSessionCalendarModal
+        show={showSessionCalendar}
+        activeField={calendarField}
+        startDate={eventStartDate}
+        endDate={eventEndDate}
+        onClose={() => setShowSessionCalendar(false)}
+        onActiveFieldChange={setCalendarField}
+        onApply={(start, end) => {
+          onEventStartDateChange(start);
+          onEventEndDateChange(end);
+        }}
+        onReset={() => {
+          onEventStartDateChange('');
+          onEventEndDateChange('');
+        }}
+      />
+
+      <div className="rounded-lg border border-gray-200 p-3">
+        <p className="text-sm font-semibold text-gray-900">Global daily time window</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <label className="text-xs font-semibold text-gray-700">
+            Start time
+            <input type="time" value={globalStartTime} onChange={(e) => onGlobalStartTimeChange(e.target.value)} className="mt-1 w-full rounded-md border p-2 text-sm" aria-label="Global start time" title="Global start time" />
+          </label>
+          <label className="text-xs font-semibold text-gray-700">
+            End time
+            <input type="time" value={globalEndTime} onChange={(e) => onGlobalEndTimeChange(e.target.value)} className="mt-1 w-full rounded-md border p-2 text-sm" aria-label="Global end time" title="Global end time" />
+          </label>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">For overnight shoots, set an end time earlier than the start time (e.g. 18:00 → 04:00).</p>
+      </div>
+
+      {sessionDates.length > 1 && (
+        <div className="rounded-lg border border-gray-200 p-3">
+          <p className="text-sm font-semibold text-gray-900">Per-day overrides</p>
+          <p className="mt-1 text-xs text-gray-600">Override specific days for custom call times (e.g., night shoot).</p>
+          <div className="mt-2 space-y-2">
+            {sessionDates.map((date) => {
+              const override = overrideMap.get(date);
+              return (
+                <div key={date} className="grid grid-cols-[1fr,1fr,1fr,auto] items-end gap-2">
+                  <p className="text-xs font-medium text-gray-700">{date}</p>
+                  <input
+                    type="time"
+                    value={override?.startTime || globalStartTime}
+                    onChange={(e) => onSetDayOverride(date, 'startTime', e.target.value)}
+                    className="rounded-md border p-2 text-sm"
+                    aria-label={`Override start time for ${date}`}
+                    title={`Override start time for ${date}`}
+                  />
+                  <input
+                    type="time"
+                    value={override?.endTime || globalEndTime}
+                    onChange={(e) => onSetDayOverride(date, 'endTime', e.target.value)}
+                    className="rounded-md border p-2 text-sm"
+                    aria-label={`Override end time for ${date}`}
+                    title={`Override end time for ${date}`}
+                  />
+                  <button type="button" onClick={() => onClearDayOverride(date)} className="rounded-md border px-2 py-2 text-xs">
+                    Reset
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-700">
+        <p className="font-semibold text-gray-900">Production logistics snapshot</p>
+        <p className="mt-1">Parking capacity: {parkingCapacityLabel}</p>
+        <p>Power capabilities: {powerDetailsLabel}</p>
+      </div>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
+        Leave sets/equipment overnight (holding fee may apply)
+      </label>
+
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={requestScout} onChange={(e) => onRequestScoutChange(e.target.checked)} />
+        Request a 30-minute scout walkthrough before booking
+      </label>
+
+      {requestScout && (
+        <label className="text-xs font-semibold text-gray-700">
+          Scout notes
+          <textarea value={scoutNotes} onChange={(e) => onScoutNotesChange(e.target.value)} rows={2} className="mt-1 w-full rounded-md border p-2 text-sm" placeholder="Preferred day/time and what your team needs to inspect." aria-label="Scout notes" title="Scout notes" />
+        </label>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-xs font-semibold text-gray-700">Guests (max {maxEventGuests})</label>
-          <input type="number" min={1} max={maxEventGuests} value={eventGuests} onChange={(e) => onEventGuestsChange(Math.max(1, Number(e.target.value || 1)))} className="w-full rounded-md border p-2 text-sm" />
+          <input type="number" min={1} max={maxEventGuests} value={eventGuests} onChange={(e) => onEventGuestsChange(Math.max(1, Number(e.target.value || 1)))} className="w-full rounded-md border p-2 text-sm" aria-label="Event guest count" title="Event guest count" />
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-700">Vehicles (base {baseParkingCapacity})</label>
-          <input type="number" min={0} value={eventVehicles} onChange={(e) => onEventVehiclesChange(Math.max(0, Number(e.target.value || 0)))} className="w-full rounded-md border p-2 text-sm" />
+          <input type="number" min={0} value={eventVehicles} onChange={(e) => onEventVehiclesChange(Math.max(0, Number(e.target.value || 0)))} className="w-full rounded-md border p-2 text-sm" aria-label="Event vehicle count" title="Event vehicle count" />
         </div>
       </div>
 
@@ -151,7 +296,7 @@ export function EventStepThree({
     <div className="mt-3 space-y-2">
       <p className="text-sm font-semibold">Event Details</p>
       <label className="text-xs font-semibold text-gray-700">Event type</label>
-      <select value={eventType} onChange={(e) => onEventTypeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm">
+      <select value={eventType} onChange={(e) => onEventTypeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" aria-label="Event type" title="Event type">
         <option value="corporate">Corporate</option>
         <option value="private_celebration">Private celebration</option>
         <option value="intimate_wedding">Intimate wedding</option>
@@ -160,7 +305,7 @@ export function EventStepThree({
       </select>
 
       <label className="text-xs font-semibold text-gray-700">Event description (required)</label>
-      <textarea value={eventDescription} onChange={(e) => onEventDescriptionChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" rows={3} placeholder="Describe your event" />
+      <textarea value={eventDescription} onChange={(e) => onEventDescriptionChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" rows={3} placeholder="Describe your event" aria-label="Event description" title="Event description" />
 
       <div className="grid grid-cols-2 gap-2">
         <label className="text-sm">
@@ -174,17 +319,17 @@ export function EventStepThree({
       </div>
 
       <label className="text-xs font-semibold text-gray-700">Vendors (required, comma-separated or type "None")</label>
-      <input value={vendors} onChange={(e) => onVendorsChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="Caterer, DJ, Decor" />
+      <input value={vendors} onChange={(e) => onVendorsChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="Caterer, DJ, Decor" aria-label="Event vendors" title="Event vendors" />
 
       {eventType === 'production' && (
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="text-xs font-semibold text-gray-700">Crew size (required)</label>
-            <input value={crewSize} onChange={(e) => onCrewSizeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="e.g., 8" />
+            <input value={crewSize} onChange={(e) => onCrewSizeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="e.g., 8" aria-label="Production crew size" title="Production crew size" />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-700">Equipment scale (required)</label>
-            <input value={equipmentScale} onChange={(e) => onEquipmentScaleChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="e.g., light / full" />
+            <input value={equipmentScale} onChange={(e) => onEquipmentScaleChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" placeholder="e.g., light / full" aria-label="Production equipment scale" title="Production equipment scale" />
           </div>
         </div>
       )}

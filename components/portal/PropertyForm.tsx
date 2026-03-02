@@ -59,6 +59,11 @@ export default function PropertyForm({
   const [weeklyPrice, setWeeklyPrice] = useState<number>(120);
   const [monthlyDiscountPct, setMonthlyDiscountPct] = useState<number>(40);
   const [monthlyPrice, setMonthlyPrice] = useState<number>(90);
+  const [eventHourlyRate, setEventHourlyRate] = useState<number>(125);
+  const [eventMultiDayDiscountPct, setEventMultiDayDiscountPct] = useState<number>(0);
+  const [eventOvernightHoldingPct, setEventOvernightHoldingPct] = useState<number>(25);
+  const [baseParkingCapacity, setBaseParkingCapacity] = useState<number>(8);
+  const [basePowerDetails, setBasePowerDetails] = useState<string>('Standard residential supply');
   const [proximityBadge1, setProximityBadge1] = useState<string>("");
   const [proximityBadge2, setProximityBadge2] = useState<string>("");
   // Google Maps URL (Step 1)
@@ -116,6 +121,7 @@ export default function PropertyForm({
   const resolvedMinimumNights = Number.isFinite(minimumNights) ? Math.max(1, minimumNights) : 1;
   const resolvedMinimumEventHours = Number.isFinite(minimumEventHours) ? Math.max(1, minimumEventHours) : 4;
   const previewNightlyRate = Number.isFinite(nightlyPrice) && nightlyPrice > 0 ? nightlyPrice : 150;
+  const previewEventHourlyLabel = currencyFormatter.format(Math.max(0, Math.round(eventHourlyRate || 0)));
   const previewMinimumSubtotal = Math.max(0, Math.round(previewNightlyRate * resolvedMinimumNights));
   const previewMinimumSubtotalLabel = currencyFormatter.format(previewMinimumSubtotal);
   const previewNightlyRateLabel = currencyFormatter.format(previewNightlyRate);
@@ -562,6 +568,11 @@ export default function PropertyForm({
         host_bio: hostBioDerived || null,
         host_avatar_url: hostAvatarDerived || null,
         cleaning_fee_pct: Number.isFinite(cleaningFeePct) ? cleaningFeePct : null,
+        event_hourly_from_cents: Math.max(0, Math.round((eventHourlyRate || 0) * 100)),
+        event_multi_day_discount_pct: Math.max(0, eventMultiDayDiscountPct),
+        event_overnight_holding_pct: Math.max(0, eventOvernightHoldingPct),
+        base_parking_capacity: Math.max(0, baseParkingCapacity),
+        base_power_details: basePowerDetails?.trim() || null,
       };
 
       const trySave = async (body: Record<string, unknown>): Promise<string> => {
@@ -817,6 +828,11 @@ export default function PropertyForm({
       setGoogleMapsUrl("");
       setMinimumNights(1);
       setMinimumEventHours(4);
+      setEventHourlyRate(125);
+      setEventMultiDayDiscountPct(0);
+      setEventOvernightHoldingPct(25);
+      setBaseParkingCapacity(8);
+      setBasePowerDetails('Standard residential supply');
       setAboutSpace("");
       setProfessionalsDesc("");
       setSelectedAmenities(new Set());
@@ -844,6 +860,11 @@ export default function PropertyForm({
     setNightlyPrice(p.nightly_price ?? 150);
     setMinimumNights(p.minimum_nights && p.minimum_nights > 1 ? p.minimum_nights : 1);
     setMinimumEventHours(p.minimum_event_hours && p.minimum_event_hours > 0 ? p.minimum_event_hours : 4);
+    setEventHourlyRate(typeof p.event_hourly_from_cents === 'number' ? Math.round(p.event_hourly_from_cents / 100) : 125);
+    setEventMultiDayDiscountPct(typeof p.event_multi_day_discount_pct === 'number' ? p.event_multi_day_discount_pct : 0);
+    setEventOvernightHoldingPct(typeof p.event_overnight_holding_pct === 'number' ? p.event_overnight_holding_pct : 25);
+    setBaseParkingCapacity(typeof p.base_parking_capacity === 'number' ? p.base_parking_capacity : 8);
+    setBasePowerDetails(p.base_power_details ?? 'Standard residential supply');
     setWeeklyDiscountPct(p.weekly_discount_pct ?? 20);
     setWeeklyPrice(p.weekly_price ?? Math.round((p.nightly_price ?? 150) * 0.8));
     setMonthlyDiscountPct(p.monthly_discount_pct ?? 40);
@@ -1197,6 +1218,50 @@ export default function PropertyForm({
                 </div>
                 <div id="minimum-event-hours-hint" className="mt-1 text-xs text-gray-500">Default is 4 hours. This value appears on the property card under Event Pricing.</div>
               </label>
+              <label className="text-sm">Event hourly rate ($/hr)
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={eventHourlyRate}
+                  onChange={(e) => setEventHourlyRate(Math.max(0, Number(e.target.value || 0)))}
+                  min={0}
+                />
+              </label>
+              <label className="text-sm">Event multi-day discount (%)
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={eventMultiDayDiscountPct}
+                  onChange={(e) => setEventMultiDayDiscountPct(Math.max(0, Number(e.target.value || 0)))}
+                  min={0}
+                />
+              </label>
+              <label className="text-sm">Overnight holding fee (%)
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={eventOvernightHoldingPct}
+                  onChange={(e) => setEventOvernightHoldingPct(Math.max(0, Number(e.target.value || 0)))}
+                  min={0}
+                />
+              </label>
+              <label className="text-sm">Base parking capacity (vehicles)
+                <input
+                  type="number"
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={baseParkingCapacity}
+                  onChange={(e) => setBaseParkingCapacity(Math.max(0, Number(e.target.value || 0)))}
+                  min={0}
+                />
+              </label>
+              <label className="text-sm">Base power capabilities
+                <input
+                  className="mt-1 w-full border border-gray-300/50 rounded-md px-3 py-2"
+                  value={basePowerDetails}
+                  onChange={(e) => setBasePowerDetails(e.target.value)}
+                  placeholder="e.g., 200A panel + generator hookup"
+                />
+              </label>
               <label className="text-sm">Bedrooms
                 <input
                   type="number"
@@ -1411,10 +1476,13 @@ export default function PropertyForm({
                     From {previewMinimumSubtotalLabel} for {resolvedMinimumNights}{' '}
                     {resolvedMinimumNights === 1 ? 'night' : 'nights'}
                   </div>
-                  <div className="text-xs text-gray-500">Base rate {previewNightlyRateLabel} / night</div>
+                  <div className="text-xs text-gray-500 mt-1">Base rate {previewNightlyRateLabel} / night</div>
+                  <div className="text-xs text-gray-500">Event rate from {previewEventHourlyLabel} / hr</div>
+                  <div className="text-xs text-emerald-700">Event multi-day discount: {eventMultiDayDiscountPct}%</div>
+                  <div className="text-xs text-emerald-700">Overnight holding fee: {eventOvernightHoldingPct}% per overnight</div>
                   <div className="text-xs text-emerald-700 mt-1">{`7+ nights: ${weeklyDiscountPct}% off - $${weeklyPrice}/night`}</div>
                   <div className="text-xs text-emerald-700">{`Monthly: ${monthlyDiscountPct}% off - $${monthlyPrice}/night`}</div>
-                  <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft</div>
+                  <div className="text-xs text-gray-500 mt-1">{bedrooms} bd • {bathrooms} ba • {sqft || 0} sqft • parking {baseParkingCapacity}</div>
                 </div>
               </div>
 

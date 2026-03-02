@@ -19,10 +19,14 @@ Significant UX work has focused on improving the **mobile experience** while pre
 - **Mobile-first improvements**
   - Property details supports a more touch-friendly flow (full-bleed hero imagery, swipe-first gallery interactions, sticky reserve footer, and a compact mobile booking sheet).
   - Calendar selection overlays correctly above the mobile booking sheet during check-in/check-out selection.
+  - Event booking now supports session-based multi-day ranges with a global time window, per-day overrides (e.g., night shoots), overnight equipment hold toggle, and live pricing breakdown updates.
   - Property cards and pricing hierarchy have been tuned for small screens to improve legibility and reduce layout crowding.
 
 - **Desktop experience preserved**
   - Desktop layouts keep the richer, wider-screen composition (larger imagery, more breathing room, and the standard booking panel layout) while reusing the same underlying booking and pricing logic.
+
+- **Host pricing controls expanded**
+  - Hosts can configure event hourly rate, multi-day discount percentage, overnight holding percentage, base parking capacity, and base power capability details from the property editor.
 
 ## High-level product surface
 

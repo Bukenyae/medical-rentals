@@ -41,6 +41,10 @@ export interface HostPropertyRecord {
   max_event_guests?: number | null;
   event_instant_book_enabled?: boolean | null;
   event_curfew_time?: string | null;
+  event_multi_day_discount_pct?: number | null;
+  event_overnight_holding_pct?: number | null;
+  base_power_details?: string | null;
+  base_parking_capacity?: number | null;
 }
 
 export async function fetchHostProperties(

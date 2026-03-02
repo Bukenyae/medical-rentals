@@ -31,6 +31,25 @@ export async function POST(req: Request) {
       eventType: body.eventType || 'other',
       startAt: String(body.startAt || ''),
       endAt: String(body.endAt || ''),
+      startDate: body.startDate ? String(body.startDate) : undefined,
+      endDate: body.endDate ? String(body.endDate) : undefined,
+      globalStartTime: body.globalStartTime ? String(body.globalStartTime) : undefined,
+      globalEndTime: body.globalEndTime ? String(body.globalEndTime) : undefined,
+      dayOverrides: Array.isArray(body.dayOverrides)
+        ? body.dayOverrides
+            .map((override: unknown) => {
+              const item = typeof override === 'object' && override !== null ? (override as Record<string, unknown>) : {};
+              return {
+                date: String(item.date || ''),
+                startTime: String(item.startTime || ''),
+                endTime: String(item.endTime || ''),
+              };
+            })
+            .filter((override: { date: string; startTime: string; endTime: string }) => override.date && override.startTime && override.endTime)
+        : undefined,
+      overnightHold: !!body.overnightHold,
+      overnightHoldingPct: Number(body.overnightHoldingPct || 0),
+      multiDayDiscountPct: Number(body.multiDayDiscountPct || 0),
       guestCount: Number(body.guestCount || 1),
       estimatedVehicles: Number(body.estimatedVehicles || 0),
       hourlyRateCents: Number(body.hourlyRateCents || 0),

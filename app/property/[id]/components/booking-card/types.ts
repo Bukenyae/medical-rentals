@@ -9,6 +9,24 @@ export type EventQuote = {
   addonsTotalCents: number;
   totalCents: number;
   depositCents: number;
+  durationHours?: number;
+  pricingSnapshot?: {
+    productionSubtotalCents?: number;
+    multiDayDiscountPct?: number;
+    multiDayDiscountCents?: number;
+    overnightHold?: boolean;
+    overnightHoldingPct?: number;
+    overnightNights?: number;
+    overnightHoldingCents?: number;
+    sessionDays?: Array<{
+      date: string;
+      startTime: string;
+      endTime: string;
+      durationHours: number;
+      billableHours: number;
+      subtotalCents: number;
+    }>;
+  };
   riskFlags: string[];
 };
 
@@ -22,6 +40,9 @@ export type BookingCardProperty = {
   maxEventGuests?: number | null;
   eventInstantBookEnabled?: boolean;
   eventCurfewTime?: string | null;
+  eventMultiDayDiscountPct?: number | null;
+  eventOvernightHoldingPct?: number | null;
+  basePowerDetails?: string | null;
   timezone?: string | null;
   baseParkingCapacity?: number | null;
 };
