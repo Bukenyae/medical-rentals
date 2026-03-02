@@ -79,8 +79,8 @@ export default function CalendarModal({
   if (!showCalendar) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl calendar-card" style={{ width: '400px', maxHeight: '500px' }}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+      <div className="bg-white rounded-xl shadow-2xl calendar-card w-full max-w-md max-h-[500px]">
         <div className="p-6">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-6">
@@ -89,6 +89,7 @@ export default function CalendarModal({
             </h3>
             <button 
               onClick={onClose}
+              aria-label="Close calendar"
               className="text-gray-400 hover:text-gray-600 transition-colors"
             >
               ✕
@@ -99,6 +100,7 @@ export default function CalendarModal({
           <div className="flex items-center justify-between mb-4">
             <button 
               onClick={() => navigateMonth('prev')}
+              aria-label="Previous month"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />
@@ -108,6 +110,7 @@ export default function CalendarModal({
             </h4>
             <button 
               onClick={() => navigateMonth('next')}
+              aria-label="Next month"
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ChevronRight className="w-5 h-5" />
