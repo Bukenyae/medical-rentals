@@ -18,7 +18,6 @@ type StepOneProps = {
   requestScout: boolean;
   scoutNotes: string;
   maxEventGuests: number;
-  minimumEventHours: number;
   attendeePricingTiers: AttendeePricingTier[];
   selectedAttendeeTier: AttendeePricingTier;
   eventVehicles: number;
@@ -57,7 +56,6 @@ export function EventStepOne({
   requestScout,
   scoutNotes,
   maxEventGuests,
-  minimumEventHours,
   attendeePricingTiers,
   selectedAttendeeTier,
   eventVehicles,
@@ -239,11 +237,6 @@ export function EventStepOne({
           </div>
         </details>
       )}
-
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-        <p className="font-semibold">{minimumEventHours} hr minimum</p>
-        <p className="mt-1 text-amber-800">Hosts are more likely to approve requests that meet their minimum booking duration.</p>
-      </div>
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
