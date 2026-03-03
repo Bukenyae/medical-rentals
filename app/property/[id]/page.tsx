@@ -290,25 +290,19 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     }
   };
 
-  const handleDateSelect = (date: Date) => {
-    if (calendarMode === 'checkin') {
-      setSelectedCheckIn(date);
-      setCheckInDate(date.toLocaleDateString('en-US'));
-      // If checkout is before checkin, clear it
-      if (selectedCheckOut && selectedCheckOut <= date) {
-        setSelectedCheckOut(null);
-        setCheckOutDate('');
-      }
-      // Auto switch to checkout mode
-      setCalendarMode('checkout');
-    } else {
-      // Only allow checkout dates after checkin
-      if (selectedCheckIn && date > selectedCheckIn) {
-        setSelectedCheckOut(date);
-        setCheckOutDate(date.toLocaleDateString('en-US'));
-        setShowCalendar(false);
-      }
-    }
+  const handleApplyDateRange = (checkIn: Date, checkOut: Date) => {
+    setSelectedCheckIn(checkIn);
+    setSelectedCheckOut(checkOut);
+    setCheckInDate(checkIn.toLocaleDateString('en-US'));
+    setCheckOutDate(checkOut.toLocaleDateString('en-US'));
+    setShowCalendar(false);
+  };
+
+  const handleResetDateRange = () => {
+    setSelectedCheckIn(null);
+    setSelectedCheckOut(null);
+    setCheckInDate('');
+    setCheckOutDate('');
   };
 
   const openCalendar = (mode: 'checkin' | 'checkout') => {
@@ -641,11 +635,11 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
           showCalendar={showCalendar}
           onClose={() => setShowCalendar(false)}
           calendarMode={calendarMode}
-          onDateSelect={handleDateSelect}
+          onApply={handleApplyDateRange}
+          onReset={handleResetDateRange}
           selectedCheckIn={selectedCheckIn}
           unavailableDates={unavailableDates}
           selectedCheckOut={selectedCheckOut}
-          onModeChange={setCalendarMode}
         />
       </div>
 
