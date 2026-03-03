@@ -111,5 +111,5 @@ export async function fetchPublishedProperties(
     .order('created_at', { ascending: false });
 
   if (error) throw new Error(error.message);
-  return (data ?? []) as PublishedPropertyRecord[];
+  return (data ?? []) as unknown as PublishedPropertyRecord[];
 }
