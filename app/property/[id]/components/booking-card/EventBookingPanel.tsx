@@ -25,6 +25,7 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
   const { state, derived, actions } = useEventBookingFlow({ property, propertyId, user, onRequireAuth });
   const [isRiskSnapshotOpen, setIsRiskSnapshotOpen] = useState(false);
   const [isBeforeSubmitOpen, setIsBeforeSubmitOpen] = useState(false);
+  const [isMinimumHoursOpen, setIsMinimumHoursOpen] = useState(false);
   const [activePricingInfo, setActivePricingInfo] = useState<null | 'rate' | 'subtotal' | 'fees' | 'deposit'>(null);
 
   const riskReasons = (state.eventQuote?.riskFlags || []).map((flag) => RISK_REASON_MAP[flag] || flag);
@@ -67,7 +68,24 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
   return (
     <>
       <p className="text-sm font-semibold text-gray-900">Event Booking</p>
-      <p className="mt-1 text-xs text-gray-600">From {toCurrency(derived.hourlyRateCents / 100)}/hr · Timezone: {derived.timezone}</p>
+      <p className="mt-1 text-xs text-gray-600">From {toCurrency(derived.hourlyRateCents / 100)}/hr</p>
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={() => setIsMinimumHoursOpen((previous) => !previous)}
+          className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-900"
+          aria-expanded={isMinimumHoursOpen ? 'true' : 'false'}
+          aria-controls="minimum-hours-details"
+        >
+          <span>Minimum {derived.minimumEventHours} hrs</span>
+          <span className="text-[10px] leading-none text-amber-700">{isMinimumHoursOpen ? '▴' : '▾'}</span>
+        </button>
+        {isMinimumHoursOpen && (
+          <p id="minimum-hours-details" className="mt-1 text-xs text-amber-800">
+            Hosts prioritize requests that meet or exceed this minimum booking duration.
+          </p>
+        )}
+      </div>
       <p className="mt-2 text-xs font-semibold text-gray-700">Step {state.eventStep} of 3</p>
 
       {state.eventStep === 1 && (
@@ -83,7 +101,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           requestScout={state.requestScout}
           scoutNotes={state.scoutNotes}
           maxEventGuests={derived.maxEventGuests}
-          minimumEventHours={derived.minimumEventHours}
           attendeePricingTiers={derived.attendeePricingTiers}
           selectedAttendeeTier={derived.selectedAttendeeTier}
           eventVehicles={state.eventVehicles}
