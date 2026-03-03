@@ -53,6 +53,18 @@ export async function POST(req: Request) {
       guestCount: Number(body.guestCount || 1),
       estimatedVehicles: Number(body.estimatedVehicles || 0),
       hourlyRateCents: Number(body.hourlyRateCents || 0),
+      attendeePricingTiers: Array.isArray(body.attendeePricingTiers)
+        ? body.attendeePricingTiers
+            .map((tier: unknown) => {
+              const item = typeof tier === 'object' && tier !== null ? (tier as Record<string, unknown>) : {};
+              return {
+                minAttendees: Number(item.minAttendees || 1),
+                maxAttendees: Number(item.maxAttendees || 1),
+                extraHourlyCents: Number(item.extraHourlyCents || 0),
+              };
+            })
+            .filter((tier: { minAttendees: number; maxAttendees: number }) => Number.isFinite(tier.minAttendees) && Number.isFinite(tier.maxAttendees))
+        : undefined,
       minHours: Number(body.minHours || 4),
       dayRateCents: body.dayRateCents ? Number(body.dayRateCents) : null,
       dayRateHours: Number(body.dayRateHours || 8),

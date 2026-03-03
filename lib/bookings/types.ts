@@ -52,6 +52,11 @@ export interface EventQuoteInput {
   guestCount: number;
   estimatedVehicles?: number;
   hourlyRateCents: number;
+  attendeePricingTiers?: Array<{
+    minAttendees: number;
+    maxAttendees: number;
+    extraHourlyCents: number;
+  }>;
   minHours?: number;
   dayRateCents?: number | null;
   dayRateHours?: number;

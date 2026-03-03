@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import EventSessionCalendarModal from './EventSessionCalendarModal';
+import { AttendeePricingTier } from './types';
 
 type StepOneProps = {
   todayIso: string;
@@ -19,7 +20,9 @@ type StepOneProps = {
   parkingCapacityLabel: string;
   powerDetailsLabel: string;
   maxEventGuests: number;
-  eventGuests: number;
+  minimumEventHours: number;
+  attendeePricingTiers: AttendeePricingTier[];
+  selectedAttendeeTier: AttendeePricingTier;
   eventVehicles: number;
   baseParkingCapacity: number;
   endsAfterCurfew: boolean;
@@ -53,7 +56,9 @@ export function EventStepOne({
   parkingCapacityLabel,
   powerDetailsLabel,
   maxEventGuests,
-  eventGuests,
+  minimumEventHours,
+  attendeePricingTiers,
+  selectedAttendeeTier,
   eventVehicles,
   baseParkingCapacity,
   endsAfterCurfew,
@@ -181,6 +186,11 @@ export function EventStepOne({
         <p>Power capabilities: {powerDetailsLabel}</p>
       </div>
 
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <p className="font-semibold">{minimumEventHours} hr minimum</p>
+        <p className="mt-1 text-amber-800">Hosts are more likely to approve requests that meet their minimum booking duration.</p>
+      </div>
+
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
         Leave sets/equipment overnight (holding fee may apply)
@@ -200,8 +210,32 @@ export function EventStepOne({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-xs font-semibold text-gray-700">Guests (max {maxEventGuests})</label>
-          <input type="number" min={1} max={maxEventGuests} value={eventGuests} onChange={(e) => onEventGuestsChange(Math.max(1, Number(e.target.value || 1)))} className="w-full rounded-md border p-2 text-sm" aria-label="Event guest count" title="Event guest count" />
+          <label className="text-xs font-semibold text-gray-700">Attendees (max {maxEventGuests})</label>
+          <select
+            value={`${selectedAttendeeTier.minAttendees}-${selectedAttendeeTier.maxAttendees}`}
+            onChange={(e) => {
+              const [minValue] = e.target.value.split('-').map((part) => Number(part));
+              onEventGuestsChange(Math.max(1, minValue));
+            }}
+            className="w-full rounded-md border p-2 text-sm"
+            aria-label="Attendee pricing tier"
+            title="Attendee pricing tier"
+          >
+            {attendeePricingTiers.map((tier) => {
+              const value = `${tier.minAttendees}-${tier.maxAttendees}`;
+              const surchargeLabel = tier.extraHourlyCents > 0
+                ? `+$${Math.round(tier.extraHourlyCents / 100)}/hr`
+                : '+$0/hr';
+              return (
+                <option key={value} value={value}>
+                  {`${tier.minAttendees}-${tier.maxAttendees} people ${surchargeLabel}`}
+                </option>
+              );
+            })}
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Selected range: {selectedAttendeeTier.minAttendees}-{selectedAttendeeTier.maxAttendees} people
+          </p>
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-700">Vehicles (base {baseParkingCapacity})</label>

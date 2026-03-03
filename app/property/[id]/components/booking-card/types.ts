@@ -2,6 +2,12 @@ import { User } from '@supabase/supabase-js';
 
 export type BookingRail = 'stay' | 'event';
 
+export interface AttendeePricingTier {
+  minAttendees: number;
+  maxAttendees: number;
+  extraHourlyCents: number;
+}
+
 export type EventQuote = {
   mode: 'request' | 'instant';
   subtotalCents: number;
@@ -18,6 +24,14 @@ export type EventQuote = {
     overnightHoldingPct?: number;
     overnightNights?: number;
     overnightHoldingCents?: number;
+    attendeeTier?: {
+      minAttendees: number;
+      maxAttendees: number;
+      extraHourlyCents: number;
+      label: string;
+    };
+    attendeeHourlySurchargeCents?: number;
+    attendeeSurchargeCents?: number;
     sessionDays?: Array<{
       date: string;
       startTime: string;
@@ -37,7 +51,9 @@ export type BookingCardProperty = {
   weeklyDiscountRate?: number | null;
   monthlyDiscountRate?: number | null;
   eventHourlyFromCents?: number | null;
+  minimumEventHours?: number | null;
   maxEventGuests?: number | null;
+  attendeePricingTiers?: AttendeePricingTier[] | null;
   eventInstantBookEnabled?: boolean;
   eventCurfewTime?: string | null;
   eventMultiDayDiscountPct?: number | null;

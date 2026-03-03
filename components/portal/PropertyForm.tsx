@@ -9,6 +9,11 @@ import {
   PROPERTIES_REFRESH_EVENT,
   HostPropertyRecord,
 } from "@/lib/queries/properties";
+import {
+  DEFAULT_ATTENDEE_PRICING_TIERS,
+  normalizeAttendeePricingTiers,
+  AttendeePricingTier,
+} from '@/lib/bookings/attendee-pricing';
 
 interface PropertyFormProps {
   onPropertySelected?: (propertyId: string | null) => void;
@@ -29,6 +34,10 @@ interface ApprovedImageRow {
   // optional metadata
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+function cloneAttendeePricingTiers(tiers: AttendeePricingTier[]): AttendeePricingTier[] {
+  return tiers.map((tier) => ({ ...tier }));
 }
 
 export default function PropertyForm({
@@ -60,6 +69,9 @@ export default function PropertyForm({
   const [monthlyDiscountPct, setMonthlyDiscountPct] = useState<number>(40);
   const [monthlyPrice, setMonthlyPrice] = useState<number>(90);
   const [eventHourlyRate, setEventHourlyRate] = useState<number>(125);
+  const [attendeePricingTiers, setAttendeePricingTiers] = useState<AttendeePricingTier[]>(
+    cloneAttendeePricingTiers(DEFAULT_ATTENDEE_PRICING_TIERS)
+  );
   const [eventMultiDayDiscountPct, setEventMultiDayDiscountPct] = useState<number>(0);
   const [eventOvernightHoldingPct, setEventOvernightHoldingPct] = useState<number>(25);
   const [baseParkingCapacity, setBaseParkingCapacity] = useState<number>(8);
@@ -569,6 +581,7 @@ export default function PropertyForm({
         host_avatar_url: hostAvatarDerived || null,
         cleaning_fee_pct: Number.isFinite(cleaningFeePct) ? cleaningFeePct : null,
         event_hourly_from_cents: Math.max(0, Math.round((eventHourlyRate || 0) * 100)),
+        attendee_pricing_tiers: attendeePricingTiers,
         event_multi_day_discount_pct: Math.max(0, eventMultiDayDiscountPct),
         event_overnight_holding_pct: Math.max(0, eventOvernightHoldingPct),
         base_parking_capacity: Math.max(0, baseParkingCapacity),
@@ -829,6 +842,7 @@ export default function PropertyForm({
       setMinimumNights(1);
       setMinimumEventHours(4);
       setEventHourlyRate(125);
+      setAttendeePricingTiers(cloneAttendeePricingTiers(DEFAULT_ATTENDEE_PRICING_TIERS));
       setEventMultiDayDiscountPct(0);
       setEventOvernightHoldingPct(25);
       setBaseParkingCapacity(8);
@@ -861,6 +875,12 @@ export default function PropertyForm({
     setMinimumNights(p.minimum_nights && p.minimum_nights > 1 ? p.minimum_nights : 1);
     setMinimumEventHours(p.minimum_event_hours && p.minimum_event_hours > 0 ? p.minimum_event_hours : 4);
     setEventHourlyRate(typeof p.event_hourly_from_cents === 'number' ? Math.round(p.event_hourly_from_cents / 100) : 125);
+    setAttendeePricingTiers(
+      normalizeAttendeePricingTiers(
+        p.attendee_pricing_tiers,
+        typeof p.max_event_guests === 'number' && p.max_event_guests > 0 ? p.max_event_guests : 50
+      )
+    );
     setEventMultiDayDiscountPct(typeof p.event_multi_day_discount_pct === 'number' ? p.event_multi_day_discount_pct : 0);
     setEventOvernightHoldingPct(typeof p.event_overnight_holding_pct === 'number' ? p.event_overnight_holding_pct : 25);
     setBaseParkingCapacity(typeof p.base_parking_capacity === 'number' ? p.base_parking_capacity : 8);
@@ -1227,6 +1247,42 @@ export default function PropertyForm({
                   min={0}
                 />
               </label>
+              <div className="rounded-md border border-gray-200/70 bg-gray-50 p-3 sm:col-span-2">
+                <p className="text-sm font-medium text-gray-900">Attendee tier surcharges ($/hr)</p>
+                <p className="mt-1 text-xs text-gray-500">Set extra hourly cost for each attendee range. 1-9 people is typically $0/hr.</p>
+                <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {attendeePricingTiers.map((tier, index) => {
+                    const label = `${tier.minAttendees}-${tier.maxAttendees} people`;
+                    const valueInDollars = Math.round(tier.extraHourlyCents / 100);
+
+                    return (
+                      <label key={label} className="text-xs font-medium text-gray-700">
+                        {label}
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-sm text-gray-500">+$</span>
+                          <input
+                            type="number"
+                            className="w-full rounded-md border border-gray-300/60 px-2 py-1.5 text-sm"
+                            value={valueInDollars}
+                            min={0}
+                            onChange={(e) => {
+                              const nextDollar = Math.max(0, Number(e.target.value || 0));
+                              setAttendeePricingTiers((previous) =>
+                                previous.map((item, itemIndex) =>
+                                  itemIndex === index
+                                    ? { ...item, extraHourlyCents: Math.round(nextDollar * 100) }
+                                    : item
+                                )
+                              );
+                            }}
+                          />
+                          <span className="text-sm text-gray-500">/hr</span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
               <label className="text-sm">Event multi-day discount (%)
                 <input
                   type="number"

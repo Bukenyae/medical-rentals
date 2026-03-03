@@ -29,6 +29,10 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
   const sessionSubtotal = quoteSnapshot?.productionSubtotalCents ?? state.eventQuote?.subtotalCents ?? 0;
   const multiDayDiscountCents = quoteSnapshot?.multiDayDiscountCents ?? 0;
   const overnightHoldingCents = quoteSnapshot?.overnightHoldingCents ?? 0;
+  const attendeeTier = quoteSnapshot?.attendeeTier;
+  const attendeeHourlySurchargeCents = quoteSnapshot?.attendeeHourlySurchargeCents ?? 0;
+  const attendeeSurchargeCents = quoteSnapshot?.attendeeSurchargeCents ?? 0;
+  const effectiveHourlyRateCents = derived.hourlyRateCents + attendeeHourlySurchargeCents;
   const policyChecklist = [
     { label: 'Alcohol', value: state.alcohol ? 'Yes' : 'No' },
     { label: 'Amplified sound', value: state.amplifiedSound ? 'Yes' : 'No' },
@@ -61,7 +65,9 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           parkingCapacityLabel={`${derived.baseParkingCapacity} vehicles (base)`}
           powerDetailsLabel={property.basePowerDetails || 'Standard residential supply'}
           maxEventGuests={derived.maxEventGuests}
-          eventGuests={state.eventGuests}
+          minimumEventHours={derived.minimumEventHours}
+          attendeePricingTiers={derived.attendeePricingTiers}
+          selectedAttendeeTier={derived.selectedAttendeeTier}
           eventVehicles={state.eventVehicles}
           baseParkingCapacity={derived.baseParkingCapacity}
           endsAfterCurfew={derived.endsAfterCurfew}
@@ -113,7 +119,23 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
       {state.eventQuote && (
         <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm">
           <div className="flex justify-between"><span>Mode</span><span className="font-semibold">{state.eventQuote.mode === 'instant' ? 'Instant book' : 'Request to book'}</span></div>
+          <div className="flex justify-between">
+            <span className="flex items-center gap-1">
+              Hourly rate x hours
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Base event hourly rate multiplied by your billable session hours.">?</span>
+            </span>
+            <span>{toCurrency(effectiveHourlyRateCents / 100)} x {state.eventQuote.durationHours?.toFixed(1) || '0.0'}h</span>
+          </div>
           <div className="flex justify-between"><span>Production subtotal</span><span>{toCurrency(sessionSubtotal / 100)}</span></div>
+          {attendeeSurchargeCents > 0 && (
+            <div className="flex justify-between">
+              <span className="flex items-center gap-1">
+                Attendee surcharge ({attendeeTier?.label || 'selected tier'})
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Extra hourly amount based on attendee range selected by the host pricing rules.">?</span>
+              </span>
+              <span>{toCurrency(attendeeSurchargeCents / 100)}</span>
+            </div>
+          )}
           {multiDayDiscountCents > 0 && (
             <div className="flex justify-between text-emerald-700"><span>Multi-day discount</span><span>-{toCurrency(multiDayDiscountCents / 100)}</span></div>
           )}
@@ -121,8 +143,20 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
             <div className="flex justify-between"><span>Overnight holding</span><span>{toCurrency(overnightHoldingCents / 100)}</span></div>
           )}
           <div className="flex justify-between"><span>Session hours</span><span>{state.eventQuote.durationHours?.toFixed(1) || '0.0'}h</span></div>
-          <div className="flex justify-between"><span>Fees + Add-ons</span><span>{toCurrency((state.eventQuote.feesCents + state.eventQuote.addonsTotalCents) / 100)}</span></div>
-          <div className="flex justify-between"><span>Deposit authorization</span><span>{toCurrency(state.eventQuote.depositCents / 100)}</span></div>
+          <div className="flex justify-between">
+            <span className="flex items-center gap-1">
+              Fees + Add-ons
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Includes cleaning, processing, and any optional add-ons selected during booking.">?</span>
+            </span>
+            <span>{toCurrency((state.eventQuote.feesCents + state.eventQuote.addonsTotalCents) / 100)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="flex items-center gap-1">
+              Deposit authorization
+              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Temporary authorization hold used for policy and damage protection terms.">?</span>
+            </span>
+            <span>{toCurrency(state.eventQuote.depositCents / 100)}</span>
+          </div>
           <div className="mt-2 flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{toCurrency(state.eventQuote.totalCents / 100)}</span></div>
           {sessionDays.length > 1 && (
             <p className="mt-2 text-xs text-gray-600">{sessionDays.length} days selected · Global {state.globalStartTime} to {state.globalEndTime} (local)</p>

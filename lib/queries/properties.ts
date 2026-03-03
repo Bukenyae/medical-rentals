@@ -39,6 +39,7 @@ export interface HostPropertyRecord {
   event_hourly_from_cents?: number | null;
   minimum_event_hours?: number | null;
   max_event_guests?: number | null;
+  attendee_pricing_tiers?: unknown;
   event_instant_book_enabled?: boolean | null;
   event_curfew_time?: string | null;
   event_multi_day_discount_pct?: number | null;
