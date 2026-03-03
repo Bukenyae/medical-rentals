@@ -17,8 +17,6 @@ type StepOneProps = {
   overnightHold: boolean;
   requestScout: boolean;
   scoutNotes: string;
-  parkingCapacityLabel: string;
-  powerDetailsLabel: string;
   maxEventGuests: number;
   minimumEventHours: number;
   attendeePricingTiers: AttendeePricingTier[];
@@ -58,8 +56,6 @@ export function EventStepOne({
   overnightHold,
   requestScout,
   scoutNotes,
-  parkingCapacityLabel,
-  powerDetailsLabel,
   maxEventGuests,
   minimumEventHours,
   attendeePricingTiers,
@@ -244,12 +240,6 @@ export function EventStepOne({
         </details>
       )}
 
-      <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-700">
-        <p className="font-semibold text-gray-900">Production logistics snapshot</p>
-        <p className="mt-1">Parking capacity: {parkingCapacityLabel}</p>
-        <p>Power capabilities: {powerDetailsLabel}</p>
-      </div>
-
       <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
         <p className="font-semibold">{minimumEventHours} hr minimum</p>
         <p className="mt-1 text-amber-800">Hosts are more likely to approve requests that meet their minimum booking duration.</p>
@@ -390,10 +380,21 @@ export function EventStepThree({
   onCrewSizeChange,
   onEquipmentScaleChange,
 }: StepThreeProps) {
+  const [showEventTypeGuide, setShowEventTypeGuide] = useState(false);
+
   return (
     <div className="mt-3 space-y-2">
-      <p className="text-sm font-semibold">Event Details</p>
-      <p className="text-xs text-gray-600">Great for photo shoots, meetings, workshops, birthdays, weddings, graduations, pop-ups, and production events.</p>
+      <button
+        type="button"
+        onClick={() => setShowEventTypeGuide((previous) => !previous)}
+        className="flex w-full items-center justify-between rounded-md border border-gray-200 px-3 py-2 text-left"
+      >
+        <span className="text-sm font-semibold text-gray-900">Event Details</span>
+        <span className="text-sm text-gray-500">{showEventTypeGuide ? '▴' : '▾'}</span>
+      </button>
+      {showEventTypeGuide && (
+        <p className="text-xs text-gray-600">Great for photo shoots, meetings, workshops, birthdays, weddings, graduations, pop-ups, and production events.</p>
+      )}
       <label className="text-xs font-semibold text-gray-700">Event type</label>
       <select value={eventType} onChange={(e) => onEventTypeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" aria-label="Event type" title="Event type">
         <option value="corporate">Corporate</option>
