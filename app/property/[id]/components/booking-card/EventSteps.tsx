@@ -29,6 +29,9 @@ type StepOneProps = {
   eventDurationHours: number;
   availabilityError: string | null;
   eventCurfewTime?: string | null;
+  canExtendDay: boolean;
+  hasExtendedDay: boolean;
+  extendedDayDate: string;
   onEventStartDateChange: (value: string) => void;
   onEventEndDateChange: (value: string) => void;
   onGlobalStartTimeChange: (value: string) => void;
@@ -40,6 +43,8 @@ type StepOneProps = {
   onScoutNotesChange: (value: string) => void;
   onEventGuestsChange: (value: number) => void;
   onEventVehiclesChange: (value: number) => void;
+  onExtendDay: () => void;
+  onRemoveExtendedDay: () => void;
 };
 
 export function EventStepOne({
@@ -65,6 +70,9 @@ export function EventStepOne({
   eventDurationHours,
   availabilityError,
   eventCurfewTime,
+  canExtendDay,
+  hasExtendedDay,
+  extendedDayDate,
   onEventStartDateChange,
   onEventEndDateChange,
   onGlobalStartTimeChange,
@@ -76,10 +84,13 @@ export function EventStepOne({
   onScoutNotesChange,
   onEventGuestsChange,
   onEventVehiclesChange,
+  onExtendDay,
+  onRemoveExtendedDay,
 }: StepOneProps) {
   const overrideMap = new Map(dayOverrides.map((override) => [override.date, override]));
   const [showSessionCalendar, setShowSessionCalendar] = useState(false);
   const [calendarField, setCalendarField] = useState<'start' | 'end'>('start');
+  const extendedDayOverride = extendedDayDate ? overrideMap.get(extendedDayDate) : undefined;
 
   return (
     <div className="mt-3 space-y-3">
@@ -142,7 +153,60 @@ export function EventStepOne({
           </label>
         </div>
         <p className="mt-2 text-xs text-gray-500">For overnight shoots, set an end time earlier than the start time (e.g. 18:00 → 04:00).</p>
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <button
+            type="button"
+            onClick={onExtendDay}
+            disabled={!canExtendDay || hasExtendedDay}
+            className="font-medium text-[#8B1A1A] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            Extend a day
+          </button>
+          {hasExtendedDay && (
+            <button
+              type="button"
+              onClick={onRemoveExtendedDay}
+              className="font-medium text-gray-600 hover:text-gray-900"
+            >
+              Remove
+            </button>
+          )}
+        </div>
       </div>
+
+      {hasExtendedDay && extendedDayDate && (
+        <div className="rounded-lg border border-gray-200 p-3">
+          <p className="text-sm font-semibold text-gray-900">Extended day</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="rounded-md border p-2 text-xs">
+              <p className="font-semibold text-gray-700">Date</p>
+              <p className="mt-1 text-sm text-gray-900">{extendedDayDate}</p>
+            </div>
+            <label className="text-xs font-semibold text-gray-700">
+              Start time
+              <input
+                type="time"
+                value={extendedDayOverride?.startTime || globalStartTime}
+                onChange={(e) => onSetDayOverride(extendedDayDate, 'startTime', e.target.value)}
+                className="mt-1 w-full rounded-md border p-2 text-sm"
+                aria-label="Extended day start time"
+                title="Extended day start time"
+              />
+            </label>
+            <label className="text-xs font-semibold text-gray-700">
+              End time
+              <input
+                type="time"
+                value={extendedDayOverride?.endTime || globalEndTime}
+                onChange={(e) => onSetDayOverride(extendedDayDate, 'endTime', e.target.value)}
+                className="mt-1 w-full rounded-md border p-2 text-sm"
+                aria-label="Extended day end time"
+                title="Extended day end time"
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
       {sessionDates.length > 1 && (
         <div className="rounded-lg border border-gray-200 p-3">
