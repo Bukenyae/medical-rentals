@@ -77,9 +77,9 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
             />
           </div>
           <div className="min-w-0 flex flex-1 flex-col gap-1 text-sm text-gray-600">
-            <h2 className="text-base leading-tight text-black sm:text-[15px]">
-              <span className="text-[#888]">Hosted by</span>{' '}
-              <span className="font-semibold">{property.host.name}</span>
+            <h2 className="flex min-w-0 items-baseline gap-1 text-base leading-tight text-black sm:text-[15px]">
+              <span className="sr-only text-[#888] sm:not-sr-only">Hosted by</span>
+              <span className="font-semibold truncate">{property.host.name}</span>
             </h2>
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
               <div className="inline-flex items-center gap-1">
