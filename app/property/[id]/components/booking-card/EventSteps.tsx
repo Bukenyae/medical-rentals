@@ -14,9 +14,6 @@ type StepOneProps = {
     startTime: string;
     endTime: string;
   }>;
-  overnightHold: boolean;
-  requestScout: boolean;
-  scoutNotes: string;
   maxEventGuests: number;
   attendeePricingTiers: AttendeePricingTier[];
   selectedAttendeeTier: AttendeePricingTier;
@@ -34,9 +31,6 @@ type StepOneProps = {
   onGlobalEndTimeChange: (value: string) => void;
   onSetDayOverride: (date: string, field: 'startTime' | 'endTime', value: string) => void;
   onClearDayOverride: (date: string) => void;
-  onOvernightHoldChange: (value: boolean) => void;
-  onRequestScoutChange: (value: boolean) => void;
-  onScoutNotesChange: (value: string) => void;
   onEventGuestsChange: (value: number) => void;
   onEventVehiclesChange: (value: number) => void;
   onRemoveExtendedDay: () => void;
@@ -50,9 +44,6 @@ export function EventStepOne({
   globalEndTime,
   sessionDates,
   dayOverrides,
-  overnightHold,
-  requestScout,
-  scoutNotes,
   maxEventGuests,
   attendeePricingTiers,
   selectedAttendeeTier,
@@ -70,9 +61,6 @@ export function EventStepOne({
   onGlobalEndTimeChange,
   onSetDayOverride,
   onClearDayOverride,
-  onOvernightHoldChange,
-  onRequestScoutChange,
-  onScoutNotesChange,
   onEventGuestsChange,
   onEventVehiclesChange,
   onRemoveExtendedDay,
@@ -207,23 +195,6 @@ export function EventStepOne({
         </div>
       )}
 
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
-        Overnight Gear Hold
-      </label>
-
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={requestScout} onChange={(e) => onRequestScoutChange(e.target.checked)} />
-        Want a 30-min Pre-Tour
-      </label>
-
-      {requestScout && (
-        <label className="text-xs font-semibold text-gray-700">
-          Scout notes
-          <textarea value={scoutNotes} onChange={(e) => onScoutNotesChange(e.target.value)} rows={2} className="mt-1 w-full rounded-md border p-2 text-sm" placeholder="Preferred day/time and what your team needs to inspect." aria-label="Scout notes" title="Scout notes" />
-        </label>
-      )}
-
       <div className="space-y-2">
         <div>
           <label className="text-xs font-semibold text-gray-700">Attendees (max {maxEventGuests})</label>
@@ -271,18 +242,30 @@ export function EventStepOne({
 }
 
 type StepTwoProps = {
+  overnightHold: boolean;
+  requestScout: boolean;
+  scoutNotes: string;
   addonParking: boolean;
   addonEarlyAccess: boolean;
   addonLateExtension: boolean;
+  onOvernightHoldChange: (value: boolean) => void;
+  onRequestScoutChange: (value: boolean) => void;
+  onScoutNotesChange: (value: string) => void;
   onAddonParkingChange: (value: boolean) => void;
   onAddonEarlyAccessChange: (value: boolean) => void;
   onAddonLateExtensionChange: (value: boolean) => void;
 };
 
 export function EventStepTwo({
+  overnightHold,
+  requestScout,
+  scoutNotes,
   addonParking,
   addonEarlyAccess,
   addonLateExtension,
+  onOvernightHoldChange,
+  onRequestScoutChange,
+  onScoutNotesChange,
   onAddonParkingChange,
   onAddonEarlyAccessChange,
   onAddonLateExtensionChange,
@@ -290,6 +273,20 @@ export function EventStepTwo({
   return (
     <div className="mt-3 space-y-2">
       <p className="text-sm font-semibold">Logistics Add-ons</p>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
+        Overnight Gear Hold
+      </label>
+      <label className="flex items-center gap-2 text-sm">
+        <input type="checkbox" checked={requestScout} onChange={(e) => onRequestScoutChange(e.target.checked)} />
+        Want a 30-min Pre-Tour
+      </label>
+      {requestScout && (
+        <label className="text-xs font-semibold text-gray-700">
+          Scout notes
+          <textarea value={scoutNotes} onChange={(e) => onScoutNotesChange(e.target.value)} rows={2} className="mt-1 w-full rounded-md border p-2 text-sm" placeholder="Preferred day/time and what your team needs to inspect." aria-label="Scout notes" title="Scout notes" />
+        </label>
+      )}
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={addonParking} onChange={(e) => onAddonParkingChange(e.target.checked)} />
         Extended parking coordination
