@@ -1,6 +1,10 @@
 import { User } from '@supabase/supabase-js';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { BookingCardProperty, EventQuote } from './types';
+import {
+  findAttendeeTier,
+  normalizeAttendeePricingTiers,
+} from '@/lib/bookings/attendee-pricing';
 
 const MIN_EVENT_DURATION_HOURS = 2;
 
@@ -78,7 +82,7 @@ type Params = {
 
 export function useEventBookingFlow({ property, propertyId, user, onRequireAuth }: Params) {
   const [eventStep, setEventStep] = useState(1);
-  const [eventGuests, setEventGuests] = useState(10);
+  const [eventGuests, setEventGuests] = useState(1);
   const [eventVehicles, setEventVehicles] = useState(0);
   const [eventStartDate, setEventStartDate] = useState('');
   const [eventEndDate, setEventEndDate] = useState('');
@@ -108,12 +112,21 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const maxEventGuests = property.maxEventGuests ?? 20;
+  const minimumEventHours = Math.max(1, property.minimumEventHours ?? 4);
+  const attendeePricingTiers = useMemo(
+    () => normalizeAttendeePricingTiers(property.attendeePricingTiers, maxEventGuests),
+    [property.attendeePricingTiers, maxEventGuests]
+  );
   const baseParkingCapacity = property.baseParkingCapacity ?? 8;
   const timezone = property.timezone ?? 'America/Chicago';
   const hourlyRateCents = property.eventHourlyFromCents ?? 12500;
   const multiDayDiscountPct = property.eventMultiDayDiscountPct ?? 0;
   const overnightHoldingPct = property.eventOvernightHoldingPct ?? 25;
   const eventAddonsTotalCents = (addonParking ? 3500 : 0) + (addonEarlyAccess ? 5000 : 0) + (addonLateExtension ? 6500 : 0);
+  const selectedAttendeeTier = useMemo(
+    () => findAttendeeTier(attendeePricingTiers, eventGuests),
+    [attendeePricingTiers, eventGuests]
+  );
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const sessionDates = useMemo(() => enumerateSessionDates(eventStartDate, eventEndDate), [eventStartDate, eventEndDate]);
 
@@ -183,18 +196,26 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
       overnightHoldingPct,
       hourlyRateCents,
       eventAddonsTotalCents,
+      attendeePricingTiers,
+      minimumEventHours,
       curfewTime: property.eventCurfewTime,
       allowInstantBook: !!property.eventInstantBookEnabled,
       propertyId,
       alcohol,
       amplifiedSound,
-    }), [eventStartDate, eventEndDate, globalStartTime, globalEndTime, dayOverrides, overnightHold, eventType, eventStartAt, eventEndAt, eventGuests, eventVehicles, multiDayDiscountPct, overnightHoldingPct, hourlyRateCents, eventAddonsTotalCents, property.eventCurfewTime, property.eventInstantBookEnabled, propertyId, alcohol, amplifiedSound]),
+    }), [eventStartDate, eventEndDate, globalStartTime, globalEndTime, dayOverrides, overnightHold, eventType, eventStartAt, eventEndAt, eventGuests, eventVehicles, multiDayDiscountPct, overnightHoldingPct, hourlyRateCents, eventAddonsTotalCents, attendeePricingTiers, minimumEventHours, property.eventCurfewTime, property.eventInstantBookEnabled, propertyId, alcohol, amplifiedSound]),
     220
   );
   const debouncedAvailabilityInputs = useDebouncedValue(
     useMemo(() => ({ eventStartDate, eventEndDate, eventStartAt, eventEndAt, propertyId }), [eventStartDate, eventEndDate, eventStartAt, eventEndAt, propertyId]),
     220
   );
+
+  useEffect(() => {
+    if (eventGuests < 1 || eventGuests > maxEventGuests) {
+      setEventGuests(Math.min(maxEventGuests, Math.max(1, selectedAttendeeTier.minAttendees)));
+    }
+  }, [eventGuests, maxEventGuests, selectedAttendeeTier.minAttendees]);
 
   const stepOneValidation = useCallback(() => {
     if (!eventStartDate || !eventEndDate) return 'Session start and end dates are required.';
@@ -203,14 +224,15 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     if (!globalStartTime || !globalEndTime) return 'Global start and end times are required.';
     if (sessionDates.length === 0) return 'Select a valid date range.';
     if (sessionWindows.some((day) => day.durationHours <= 0)) return 'Each selected day must have a valid time window.';
-    if (eventDurationHours < MIN_EVENT_DURATION_HOURS) return `Event duration must be at least ${MIN_EVENT_DURATION_HOURS} hours.`;
+    const minimumHours = Math.max(MIN_EVENT_DURATION_HOURS, minimumEventHours);
+    if (eventDurationHours < minimumHours) return `Event duration must be at least ${minimumHours} hours.`;
     if (eventGuests < 1) return 'Guest count must be at least 1.';
     if (eventGuests > maxEventGuests) return `Guest count cannot exceed ${maxEventGuests}.`;
     if (eventVehicles < 0) return 'Vehicle count cannot be negative.';
     if (isAvailable === false) return 'This time slot is unavailable. Choose another time.';
     if (availabilityUnknown) return 'Availability could not be verified. Please retry before continuing.';
     return null;
-  }, [eventStartDate, eventEndDate, todayIso, globalStartTime, globalEndTime, sessionDates.length, sessionWindows, eventDurationHours, eventGuests, maxEventGuests, eventVehicles, isAvailable, availabilityUnknown]);
+  }, [eventStartDate, eventEndDate, todayIso, globalStartTime, globalEndTime, sessionDates.length, sessionWindows, eventDurationHours, minimumEventHours, eventGuests, maxEventGuests, eventVehicles, isAvailable, availabilityUnknown]);
 
   const availabilityPrereqError = useMemo(() => {
     if (!eventStartDate || !eventEndDate) return 'Session start and end dates are required.';
@@ -219,11 +241,12 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     if (!globalStartTime || !globalEndTime) return 'Global start and end times are required.';
     if (sessionDates.length === 0) return 'Select a valid date range.';
     if (sessionWindows.some((day) => day.durationHours <= 0)) return 'Each selected day must have a valid time window.';
-    if (eventDurationHours < MIN_EVENT_DURATION_HOURS) return `Event duration must be at least ${MIN_EVENT_DURATION_HOURS} hours.`;
+    const minimumHours = Math.max(MIN_EVENT_DURATION_HOURS, minimumEventHours);
+    if (eventDurationHours < minimumHours) return `Event duration must be at least ${minimumHours} hours.`;
     if (eventGuests < 1 || eventGuests > maxEventGuests) return 'Guest count is out of range.';
     if (eventVehicles < 0) return 'Vehicle count cannot be negative.';
     return null;
-  }, [eventStartDate, eventEndDate, todayIso, globalStartTime, globalEndTime, sessionDates.length, sessionWindows, eventDurationHours, eventGuests, maxEventGuests, eventVehicles]);
+  }, [eventStartDate, eventEndDate, todayIso, globalStartTime, globalEndTime, sessionDates.length, sessionWindows, eventDurationHours, minimumEventHours, eventGuests, maxEventGuests, eventVehicles]);
 
   const stepThreeValidation = useCallback(() => {
     if (!eventDescription.trim()) return 'Event description is required.';
@@ -258,7 +281,8 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
         guestCount: debouncedQuoteInputs.eventGuests,
         estimatedVehicles: debouncedQuoteInputs.eventVehicles,
         hourlyRateCents: debouncedQuoteInputs.hourlyRateCents,
-        minHours: 4,
+        attendeePricingTiers: debouncedQuoteInputs.attendeePricingTiers,
+        minHours: debouncedQuoteInputs.minimumEventHours,
         dayRateHours: 8,
         cleaningFeeCents: 25000,
         depositCents: 75000,
@@ -438,6 +462,7 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     derived: {
       todayIso, maxEventGuests, baseParkingCapacity, timezone, hourlyRateCents, eventDurationHours,
       endsAfterCurfew, availabilityUnknown, isAvailable, multiDayDiscountPct, overnightHoldingPct,
+      minimumEventHours, attendeePricingTiers, selectedAttendeeTier,
     },
     actions: {
       setEventStep, setEventStartDate, setEventEndDate, setGlobalStartTime, setGlobalEndTime, setDayOverride,

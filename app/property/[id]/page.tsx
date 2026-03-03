@@ -18,7 +18,7 @@ export default async function PropertyDetails({ params }: PropertyDetailsProps) 
 
   const basePropertySelect =
     'id,title,address,map_url,proximity_badge_1,proximity_badge_2,nightly_price,minimum_nights,bedrooms,bathrooms,sqft,cover_image_url,is_published,created_by,owner_id,about_space,indoor_outdoor_experiences,amenities_list,cleaning_fee_pct,weekly_discount_pct,weekly_price,monthly_discount_pct,monthly_price,host_bio,host_avatar_url';
-  const extendedPropertySelect = `${basePropertySelect},event_hourly_from_cents,max_event_guests,event_instant_book_enabled,event_curfew_time,event_multi_day_discount_pct,event_overnight_holding_pct,base_power_details,base_parking_capacity`;
+  const extendedPropertySelect = `${basePropertySelect},minimum_event_hours,event_hourly_from_cents,max_event_guests,attendee_pricing_tiers,event_instant_book_enabled,event_curfew_time,event_multi_day_discount_pct,event_overnight_holding_pct,base_power_details,base_parking_capacity`;
 
   let initialDbProperty: DbPropertyRow | null = null;
   let initialDbError: string | null = null;
@@ -39,8 +39,10 @@ export default async function PropertyDetails({ params }: PropertyDetailsProps) 
 
       const message = extendedResult.error.message ?? '';
       const missingEventColumns =
+        message.includes('minimum_event_hours') ||
         message.includes('event_hourly_from_cents') ||
         message.includes('max_event_guests') ||
+        message.includes('attendee_pricing_tiers') ||
         message.includes('event_instant_book_enabled') ||
         message.includes('event_curfew_time') ||
         message.includes('event_multi_day_discount_pct') ||

@@ -24,6 +24,7 @@ import ReviewsSection from './components/ReviewsSection';
 import PropertyLocationMap from './components/PropertyLocationMap';
 import Footer from '@/components/Footer';
 import PropertyDetailsSkeleton from './components/PropertyDetailsSkeleton';
+import { normalizeAttendeePricingTiers } from '@/lib/bookings/attendee-pricing';
 
 const FALLBACK_DETAIL_IMAGES = [
   '/images/properties/Leighton/living-room.jpg',
@@ -62,7 +63,9 @@ export interface DbPropertyRow {
   host_bio?: string | null;
   host_avatar_url?: string | null;
   event_hourly_from_cents?: number | null;
+  minimum_event_hours?: number | null;
   max_event_guests?: number | null;
+  attendee_pricing_tiers?: unknown;
   event_instant_book_enabled?: boolean | null;
   event_curfew_time?: string | null;
   event_multi_day_discount_pct?: number | null;
@@ -342,6 +345,12 @@ export default function PropertyDetailsClient({
   const cleaningFeePct = parseNumeric(propertyRow.cleaning_fee_pct);
   const weeklyDiscountPct = parseNumeric(propertyRow.weekly_discount_pct);
   const monthlyDiscountPct = parseNumeric(propertyRow.monthly_discount_pct);
+  const maxEventGuests = parseNumeric(propertyRow.max_event_guests) ?? 20;
+  const minimumEventHours = parseNumeric(propertyRow.minimum_event_hours) ?? 4;
+  const attendeePricingTiers = normalizeAttendeePricingTiers(
+    propertyRow.attendee_pricing_tiers,
+    maxEventGuests
+  );
 
   const propertyWithDefaults = {
     id: propertyRow.id,
@@ -383,7 +392,9 @@ export default function PropertyDetailsClient({
     hostBio: propertyRow.host_bio ?? null,
     hostAvatarUrl: propertyRow.host_avatar_url ?? null,
     eventHourlyFromCents: parseNumeric(propertyRow.event_hourly_from_cents) ?? 12500,
-    maxEventGuests: parseNumeric(propertyRow.max_event_guests) ?? 20,
+    minimumEventHours,
+    maxEventGuests,
+    attendeePricingTiers,
     eventInstantBookEnabled: !!propertyRow.event_instant_book_enabled,
     eventCurfewTime: propertyRow.event_curfew_time ?? null,
     eventMultiDayDiscountPct: parseNumeric(propertyRow.event_multi_day_discount_pct) ?? 0,
