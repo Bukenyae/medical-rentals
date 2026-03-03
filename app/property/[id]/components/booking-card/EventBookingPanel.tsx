@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { toCurrency } from '@/lib/pricing';
 import { BookingCardProperty } from './types';
@@ -22,17 +23,22 @@ type Props = {
 
 export default function EventBookingPanel({ property, propertyId, user, onRequireAuth }: Props) {
   const { state, derived, actions } = useEventBookingFlow({ property, propertyId, user, onRequireAuth });
+  const [isRiskSnapshotOpen, setIsRiskSnapshotOpen] = useState(false);
+  const [isBeforeSubmitOpen, setIsBeforeSubmitOpen] = useState(false);
+  const [activePricingInfo, setActivePricingInfo] = useState<null | 'rate' | 'subtotal' | 'fees' | 'deposit'>(null);
 
   const riskReasons = (state.eventQuote?.riskFlags || []).map((flag) => RISK_REASON_MAP[flag] || flag);
   const quoteSnapshot = state.eventQuote?.pricingSnapshot;
   const sessionDays = quoteSnapshot?.sessionDays || [];
-  const sessionSubtotal = quoteSnapshot?.productionSubtotalCents ?? state.eventQuote?.subtotalCents ?? 0;
-  const multiDayDiscountCents = quoteSnapshot?.multiDayDiscountCents ?? 0;
-  const overnightHoldingCents = quoteSnapshot?.overnightHoldingCents ?? 0;
-  const attendeeTier = quoteSnapshot?.attendeeTier;
   const attendeeHourlySurchargeCents = quoteSnapshot?.attendeeHourlySurchargeCents ?? 0;
-  const attendeeSurchargeCents = quoteSnapshot?.attendeeSurchargeCents ?? 0;
   const effectiveHourlyRateCents = derived.hourlyRateCents + attendeeHourlySurchargeCents;
+  const subtotalCents = state.eventQuote?.subtotalCents ?? 0;
+  const pricingInfoMap: Record<'rate' | 'subtotal' | 'fees' | 'deposit', string> = {
+    rate: 'Base amount per hour multiplied by your billable booking hours, including attendee-tier adjustments when selected.',
+    subtotal: 'Estimated booking subtotal before platform fees and add-ons are applied.',
+    fees: 'Includes platform fees plus optional logistics add-ons selected in this booking flow.',
+    deposit: 'An authorization hold for policy protection. It is not captured unless required by policy terms.',
+  };
   const policyChecklist = [
     { label: 'Alcohol', value: state.alcohol ? 'Yes' : 'No' },
     { label: 'Amplified sound', value: state.amplifiedSound ? 'Yes' : 'No' },
@@ -62,8 +68,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           overnightHold={state.overnightHold}
           requestScout={state.requestScout}
           scoutNotes={state.scoutNotes}
-          parkingCapacityLabel={`${derived.baseParkingCapacity} vehicles (base)`}
-          powerDetailsLabel={property.basePowerDetails || 'Standard residential supply'}
           maxEventGuests={derived.maxEventGuests}
           minimumEventHours={derived.minimumEventHours}
           attendeePricingTiers={derived.attendeePricingTiers}
@@ -126,42 +130,64 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           <div className="flex justify-between"><span>Mode</span><span className="font-semibold">{state.eventQuote.mode === 'instant' ? 'Instant book' : 'Request to book'}</span></div>
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
-              Hourly rate x hours
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Base event hourly rate multiplied by your billable session hours.">?</span>
+              Amt/Hr x Hrs
+              <button
+                type="button"
+                onClick={() => setActivePricingInfo((previous) => previous === 'rate' ? null : 'rate')}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500"
+                aria-label="Explain hourly amount by hours"
+              >
+                ?
+              </button>
             </span>
             <span>{toCurrency(effectiveHourlyRateCents / 100)} x {state.eventQuote.durationHours?.toFixed(1) || '0.0'}h</span>
           </div>
-          <div className="flex justify-between"><span>Production subtotal</span><span>{toCurrency(sessionSubtotal / 100)}</span></div>
-          {attendeeSurchargeCents > 0 && (
-            <div className="flex justify-between">
-              <span className="flex items-center gap-1">
-                Attendee surcharge ({attendeeTier?.label || 'selected tier'})
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Extra hourly amount based on attendee range selected by the host pricing rules.">?</span>
-              </span>
-              <span>{toCurrency(attendeeSurchargeCents / 100)}</span>
-            </div>
-          )}
-          {multiDayDiscountCents > 0 && (
-            <div className="flex justify-between text-emerald-700"><span>Multi-day discount</span><span>-{toCurrency(multiDayDiscountCents / 100)}</span></div>
-          )}
-          {overnightHoldingCents > 0 && (
-            <div className="flex justify-between"><span>Overnight holding</span><span>{toCurrency(overnightHoldingCents / 100)}</span></div>
-          )}
-          <div className="flex justify-between"><span>Session hours</span><span>{state.eventQuote.durationHours?.toFixed(1) || '0.0'}h</span></div>
+          {activePricingInfo === 'rate' && <p className="mt-1 text-xs text-gray-600">{pricingInfoMap.rate}</p>}
+          <div className="flex justify-between">
+            <span className="flex items-center gap-1">
+              Subtotal
+              <button
+                type="button"
+                onClick={() => setActivePricingInfo((previous) => previous === 'subtotal' ? null : 'subtotal')}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500"
+                aria-label="Explain subtotal"
+              >
+                ?
+              </button>
+            </span>
+            <span>{toCurrency(subtotalCents / 100)}</span>
+          </div>
+          {activePricingInfo === 'subtotal' && <p className="mt-1 text-xs text-gray-600">{pricingInfoMap.subtotal}</p>}
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
               Fees + Add-ons
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Includes cleaning, processing, and any optional add-ons selected during booking.">?</span>
+              <button
+                type="button"
+                onClick={() => setActivePricingInfo((previous) => previous === 'fees' ? null : 'fees')}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500"
+                aria-label="Explain fees and add-ons"
+              >
+                ?
+              </button>
             </span>
             <span>{toCurrency((state.eventQuote.feesCents + state.eventQuote.addonsTotalCents) / 100)}</span>
           </div>
+          {activePricingInfo === 'fees' && <p className="mt-1 text-xs text-gray-600">{pricingInfoMap.fees}</p>}
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
-              Deposit authorization
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500" title="Temporary authorization hold used for policy and damage protection terms.">?</span>
+              Deposit
+              <button
+                type="button"
+                onClick={() => setActivePricingInfo((previous) => previous === 'deposit' ? null : 'deposit')}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full border border-gray-300 text-[10px] text-gray-500"
+                aria-label="Explain deposit authorization"
+              >
+                ?
+              </button>
             </span>
             <span>{toCurrency(state.eventQuote.depositCents / 100)}</span>
           </div>
+          {activePricingInfo === 'deposit' && <p className="mt-1 text-xs text-gray-600">{pricingInfoMap.deposit}</p>}
           <div className="mt-2 flex justify-between border-t pt-2 font-semibold"><span>Total</span><span>{toCurrency(state.eventQuote.totalCents / 100)}</span></div>
           {sessionDays.length > 1 && (
             <p className="mt-2 text-xs text-gray-600">{sessionDays.length} days selected · Global {state.globalStartTime} to {state.globalEndTime} (local)</p>
@@ -171,23 +197,47 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
       )}
 
       <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
-        <p className="font-semibold text-gray-900">Live risk and policy snapshot</p>
-        <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-          {policyChecklist.map((row) => (
-            <p key={row.label} className="flex justify-between gap-2">
-              <span className="text-gray-600">{row.label}</span>
-              <span className="font-medium capitalize text-gray-900">{row.value}</span>
-            </p>
-          ))}
-        </div>
+        <button
+          type="button"
+          onClick={() => setIsRiskSnapshotOpen((previous) => !previous)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="font-semibold text-gray-900">Live risk and policy snapshot</span>
+          <span className="text-sm text-gray-500">{isRiskSnapshotOpen ? '▴' : '▾'}</span>
+        </button>
+        {!isRiskSnapshotOpen && (
+          <p className="mt-1 text-xs text-gray-500">{riskReasons.length} risk flags · {policyChecklist.find((entry) => entry.label === 'Availability')?.value}</p>
+        )}
+        {isRiskSnapshotOpen && (
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+            {policyChecklist.map((row) => (
+              <p key={row.label} className="flex justify-between gap-2">
+                <span className="text-gray-600">{row.label}</span>
+                <span className="font-medium capitalize text-gray-900">{row.value}</span>
+              </p>
+            ))}
+          </div>
+        )}
       </div>
 
       {state.eventStep === 3 && (
         <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
-          <p className="font-semibold text-gray-900">Before you submit</p>
-          <p className="mt-1">Host response target: up to 48 business hours.</p>
-          <p>Deposit is an authorization hold and is not captured unless policy terms require it.</p>
-          <p>COI/ID may be requested depending on event risk and property policy.</p>
+          <button
+            type="button"
+            onClick={() => setIsBeforeSubmitOpen((previous) => !previous)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="font-semibold text-gray-900">Before you submit</span>
+            <span className="text-sm text-gray-500">{isBeforeSubmitOpen ? '▴' : '▾'}</span>
+          </button>
+          {!isBeforeSubmitOpen && <p className="mt-1">3 quick checks before request submission.</p>}
+          {isBeforeSubmitOpen && (
+            <>
+              <p className="mt-1">Host response target: up to 48 business hours.</p>
+              <p>Deposit is an authorization hold and is not captured unless policy terms require it.</p>
+              <p>COI/ID may be requested depending on event risk and property policy.</p>
+            </>
+          )}
         </div>
       )}
 
