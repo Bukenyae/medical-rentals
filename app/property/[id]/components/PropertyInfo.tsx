@@ -87,8 +87,13 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
                 <span className="font-medium text-gray-900">{property.rating.toFixed(1)}</span>
                 <span className="text-gray-500">({property.reviewCount} reviews)</span>
               </div>
-              {property.host.joinedYear && <span className="text-gray-500">Joined in {property.host.joinedYear}</span>}
+              {property.host.joinedYear && (
+                <span className="hidden text-gray-500 sm:inline">Joined in {property.host.joinedYear}</span>
+              )}
             </div>
+            {property.host.joinedYear && (
+              <div className="text-xs text-gray-500 sm:hidden">Joined in {property.host.joinedYear}</div>
+            )}
           </div>
         </div>
         {property.hostBio && (
