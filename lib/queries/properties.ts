@@ -88,9 +88,25 @@ export interface PublishedPropertyRecord extends HostPropertyRecord {
 export async function fetchPublishedProperties(
   supabase: SupabaseClient
 ): Promise<PublishedPropertyRecord[]> {
+  const selectFields = [
+    'id',
+    'title',
+    'address',
+    'description',
+    'nightly_price',
+    'minimum_nights',
+    'bedrooms',
+    'bathrooms',
+    'sqft',
+    'cover_image_url',
+    'created_at',
+    'event_hourly_from_cents',
+    'minimum_event_hours',
+  ].join(',');
+
   const { data, error } = await supabase
     .from('properties')
-    .select('*')
+    .select(selectFields)
     .eq('is_published', true)
     .order('created_at', { ascending: false });
 
