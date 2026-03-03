@@ -209,12 +209,12 @@ export function EventStepOne({
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={overnightHold} onChange={(e) => onOvernightHoldChange(e.target.checked)} />
-        Leave sets/equipment overnight (holding fee may apply)
+        Overnight Gear Hold
       </label>
 
       <label className="flex items-center gap-2 text-sm">
         <input type="checkbox" checked={requestScout} onChange={(e) => onRequestScoutChange(e.target.checked)} />
-        Request a 30-minute scout walkthrough before booking
+        Want a 30-min Pre-Tour
       </label>
 
       {requestScout && (
