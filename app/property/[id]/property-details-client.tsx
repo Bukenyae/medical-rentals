@@ -11,7 +11,7 @@ import {
 import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -106,6 +106,9 @@ export default function PropertyDetailsClient({
   const [showCalendar, setShowCalendar] = useState(false);
   const [showMobileBookingSheet, setShowMobileBookingSheet] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'checkin' | 'checkout'>('checkin');
+  const [isMobileHeaderVisible, setIsMobileHeaderVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
+  const mobileHeaderVisibleRef = useRef(true);
   const supabase = useMemo(() => createClient(), []);
 
   const [dbProperty] = useState<DbPropertyRow | null>(initialDbProperty);
@@ -123,6 +126,39 @@ export default function PropertyDetailsClient({
     };
     getUser();
   }, [supabase.auth]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    lastScrollYRef.current = window.scrollY;
+    const minimumDelta = 8;
+    const revealAtTopY = 16;
+
+    const setHeaderVisibility = (nextVisible: boolean) => {
+      if (mobileHeaderVisibleRef.current === nextVisible) return;
+      mobileHeaderVisibleRef.current = nextVisible;
+      setIsMobileHeaderVisible(nextVisible);
+    };
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY <= revealAtTopY) {
+        setHeaderVisibility(true);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      const delta = currentScrollY - lastScrollYRef.current;
+      if (Math.abs(delta) < minimumDelta) return;
+
+      setHeaderVisibility(delta < 0);
+      lastScrollYRef.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleGuestChange = (increment: boolean) => {
     if (increment && guests < 8) {
@@ -201,10 +237,16 @@ export default function PropertyDetailsClient({
     return amenityOptions.slice(0, 6);
   })();
 
+  const headerVisibilityClass = isMobileHeaderVisible
+    ? 'translate-y-0 opacity-100'
+    : '-translate-y-full opacity-0 pointer-events-none';
+
   if (propertyMissing) {
     return (
       <div className="min-h-screen bg-white">
-        <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <header
+          className={`sticky top-0 z-50 border-b border-gray-200 bg-white transition-transform transition-opacity duration-200 lg:pointer-events-auto lg:translate-y-0 lg:opacity-100 ${headerVisibilityClass}`}
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <Link href="/" className="flex items-center">
@@ -361,7 +403,9 @@ export default function PropertyDetailsClient({
 
   return (
     <div className="min-h-screen bg-white">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <header
+        className={`sticky top-0 z-50 border-b border-gray-200 bg-white transition-transform transition-opacity duration-200 lg:pointer-events-auto lg:translate-y-0 lg:opacity-100 ${headerVisibilityClass}`}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <Link href="/" className="flex items-center">
