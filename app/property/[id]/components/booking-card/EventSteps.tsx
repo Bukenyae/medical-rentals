@@ -26,7 +26,6 @@ type StepOneProps = {
   eventDurationHours: number;
   availabilityError: string | null;
   eventCurfewTime?: string | null;
-  canExtendDay: boolean;
   hasExtendedDay: boolean;
   extendedDayDate: string;
   onEventStartDateChange: (value: string) => void;
@@ -40,7 +39,6 @@ type StepOneProps = {
   onScoutNotesChange: (value: string) => void;
   onEventGuestsChange: (value: number) => void;
   onEventVehiclesChange: (value: number) => void;
-  onExtendDay: () => void;
   onRemoveExtendedDay: () => void;
 };
 
@@ -64,7 +62,6 @@ export function EventStepOne({
   eventDurationHours,
   availabilityError,
   eventCurfewTime,
-  canExtendDay,
   hasExtendedDay,
   extendedDayDate,
   onEventStartDateChange,
@@ -78,7 +75,6 @@ export function EventStepOne({
   onScoutNotesChange,
   onEventGuestsChange,
   onEventVehiclesChange,
-  onExtendDay,
   onRemoveExtendedDay,
 }: StepOneProps) {
   const overrideMap = new Map(dayOverrides.map((override) => [override.date, override]));
@@ -137,15 +133,7 @@ export function EventStepOne({
           />
         </div>
 
-        <div className="mt-2 flex items-center justify-between text-xs">
-          <button
-            type="button"
-            onClick={onExtendDay}
-            disabled={!canExtendDay || hasExtendedDay}
-            className="font-medium text-[#8B1A1A] disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Extend a day
-          </button>
+        <div className="mt-2 flex items-center gap-3 text-xs">
           {sessionDates.length > 1 && (
             <button
               type="button"
@@ -159,7 +147,7 @@ export function EventStepOne({
             <button
               type="button"
               onClick={onRemoveExtendedDay}
-              className="font-medium text-gray-600 hover:text-gray-900"
+              className="ml-auto font-medium text-gray-600 hover:text-gray-900"
             >
               Remove
             </button>

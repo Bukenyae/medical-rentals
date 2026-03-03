@@ -109,7 +109,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           eventDurationHours={derived.eventDurationHours}
           availabilityError={state.availabilityError}
           eventCurfewTime={property.eventCurfewTime}
-          canExtendDay={derived.canExtendDay}
           hasExtendedDay={derived.hasExtendedDay}
           extendedDayDate={derived.extendedDayDate}
           onEventStartDateChange={actions.setEventStartDate}
@@ -123,7 +122,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           onScoutNotesChange={actions.setScoutNotes}
           onEventGuestsChange={actions.setEventGuests}
           onEventVehiclesChange={actions.setEventVehicles}
-          onExtendDay={actions.extendOneDay}
           onRemoveExtendedDay={actions.removeExtendedDay}
         />
       )}
