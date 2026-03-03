@@ -83,70 +83,56 @@ export function EventStepOne({
 }: StepOneProps) {
   const overrideMap = new Map(dayOverrides.map((override) => [override.date, override]));
   const [showSessionCalendar, setShowSessionCalendar] = useState(false);
-  const [calendarField, setCalendarField] = useState<'start' | 'end'>('start');
-  const extendedDayOverride = extendedDayDate ? overrideMap.get(extendedDayDate) : undefined;
+  const [showPerDayTimes, setShowPerDayTimes] = useState(false);
+
+  const formatDateLabel = (value: string) => {
+    if (!value) return '';
+    const parsed = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const dateRangeLabel = !eventStartDate || !eventEndDate
+    ? 'Select date range'
+    : eventStartDate === eventEndDate
+      ? formatDateLabel(eventStartDate)
+      : `${formatDateLabel(eventStartDate)} - ${formatDateLabel(eventEndDate)}`;
 
   return (
     <div className="mt-3 space-y-3">
       <div className="rounded-lg border border-gray-200 p-3">
-        <p className="text-sm font-semibold text-gray-900">Session dates</p>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setCalendarField('start');
-              setShowSessionCalendar(true);
-            }}
-            className="rounded-md border p-2 text-left text-sm"
-          >
-            <p className="text-xs font-semibold text-gray-700">Start date</p>
-            <p className="mt-1 text-gray-900">{eventStartDate || 'Select date'}</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setCalendarField('end');
-              setShowSessionCalendar(true);
-            }}
-            className="rounded-md border p-2 text-left text-sm"
-          >
-            <p className="text-xs font-semibold text-gray-700">End date</p>
-            <p className="mt-1 text-gray-900">{eventEndDate || 'Select date'}</p>
-          </button>
-        </div>
-        <p className="mt-2 text-xs text-gray-500">Use calendar mode for range selection, then tap Apply to confirm dates.</p>
-      </div>
+        <p className="text-sm font-semibold text-gray-900">Date and time (required)</p>
+        <button
+          type="button"
+          onClick={() => setShowSessionCalendar(true)}
+          className="mt-2 w-full rounded-md border p-2 text-left text-sm text-gray-900"
+        >
+          {dateRangeLabel}
+        </button>
 
-      <EventSessionCalendarModal
-        show={showSessionCalendar}
-        activeField={calendarField}
-        startDate={eventStartDate}
-        endDate={eventEndDate}
-        onClose={() => setShowSessionCalendar(false)}
-        onActiveFieldChange={setCalendarField}
-        onApply={(start, end) => {
-          onEventStartDateChange(start);
-          onEventEndDateChange(end);
-        }}
-        onReset={() => {
-          onEventStartDateChange('');
-          onEventEndDateChange('');
-        }}
-      />
-
-      <div className="rounded-lg border border-gray-200 p-3">
-        <p className="text-sm font-semibold text-gray-900">Global daily time window</p>
         <div className="mt-2 grid grid-cols-2 gap-2">
-          <label className="text-xs font-semibold text-gray-700">
-            Start time
-            <input type="time" value={globalStartTime} onChange={(e) => onGlobalStartTimeChange(e.target.value)} className="mt-1 w-full rounded-md border p-2 text-sm" aria-label="Global start time" title="Global start time" />
-          </label>
-          <label className="text-xs font-semibold text-gray-700">
-            End time
-            <input type="time" value={globalEndTime} onChange={(e) => onGlobalEndTimeChange(e.target.value)} className="mt-1 w-full rounded-md border p-2 text-sm" aria-label="Global end time" title="Global end time" />
-          </label>
+          <input
+            type="time"
+            value={globalStartTime}
+            onChange={(e) => onGlobalStartTimeChange(e.target.value)}
+            className="w-full rounded-md border p-2 text-sm"
+            aria-label="Global start time"
+            title="Global start time"
+          />
+          <input
+            type="time"
+            value={globalEndTime}
+            onChange={(e) => onGlobalEndTimeChange(e.target.value)}
+            className="w-full rounded-md border p-2 text-sm"
+            aria-label="Global end time"
+            title="Global end time"
+          />
         </div>
-        <p className="mt-2 text-xs text-gray-500">For overnight shoots, set an end time earlier than the start time (e.g. 18:00 → 04:00).</p>
+
         <div className="mt-2 flex items-center justify-between text-xs">
           <button
             type="button"
@@ -156,6 +142,15 @@ export function EventStepOne({
           >
             Extend a day
           </button>
+          {sessionDates.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setShowPerDayTimes((previous) => !previous)}
+              className="font-medium text-gray-600 hover:text-gray-900"
+            >
+              {showPerDayTimes ? 'Hide per-day times' : 'Customize times per day'}
+            </button>
+          )}
           {hasExtendedDay && (
             <button
               type="button"
@@ -168,65 +163,47 @@ export function EventStepOne({
         </div>
       </div>
 
-      {hasExtendedDay && extendedDayDate && (
-        <div className="rounded-lg border border-gray-200 p-3">
-          <p className="text-sm font-semibold text-gray-900">Extended day</p>
-          <div className="mt-2 grid grid-cols-3 gap-2">
-            <div className="rounded-md border p-2 text-xs">
-              <p className="font-semibold text-gray-700">Date</p>
-              <p className="mt-1 text-sm text-gray-900">{extendedDayDate}</p>
-            </div>
-            <label className="text-xs font-semibold text-gray-700">
-              Start time
-              <input
-                type="time"
-                value={extendedDayOverride?.startTime || globalStartTime}
-                onChange={(e) => onSetDayOverride(extendedDayDate, 'startTime', e.target.value)}
-                className="mt-1 w-full rounded-md border p-2 text-sm"
-                aria-label="Extended day start time"
-                title="Extended day start time"
-              />
-            </label>
-            <label className="text-xs font-semibold text-gray-700">
-              End time
-              <input
-                type="time"
-                value={extendedDayOverride?.endTime || globalEndTime}
-                onChange={(e) => onSetDayOverride(extendedDayDate, 'endTime', e.target.value)}
-                className="mt-1 w-full rounded-md border p-2 text-sm"
-                aria-label="Extended day end time"
-                title="Extended day end time"
-              />
-            </label>
-          </div>
-        </div>
-      )}
+      <EventSessionCalendarModal
+        show={showSessionCalendar}
+        activeField="start"
+        startDate={eventStartDate}
+        endDate={eventEndDate}
+        onClose={() => setShowSessionCalendar(false)}
+        onActiveFieldChange={() => undefined}
+        onApply={(start, end) => {
+          onEventStartDateChange(start);
+          onEventEndDateChange(end);
+        }}
+        onReset={() => {
+          onEventStartDateChange('');
+          onEventEndDateChange('');
+        }}
+      />
 
-      {sessionDates.length > 1 && (
-        <details className="rounded-lg border border-gray-200 p-3">
-          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Advanced per-day overrides</summary>
-          <p className="mt-2 text-xs text-gray-600">Override specific days for custom call times (e.g., night shoot).</p>
+      {sessionDates.length > 1 && showPerDayTimes && (
+        <div className="rounded-lg border border-gray-200 p-3">
+          <p className="text-sm font-semibold text-gray-900">Per-day times</p>
           <div className="mt-2 space-y-2">
             {sessionDates.map((date) => {
               const override = overrideMap.get(date);
               return (
-                <div key={date} className="grid grid-cols-[1fr,1fr,1fr,auto] items-end gap-2">
+                <div key={date} className="grid grid-cols-[1fr,1fr,1fr,auto] items-center gap-2">
                   <p className="text-xs font-medium text-gray-700">{date}</p>
                   <input
                     type="time"
                     value={override?.startTime || globalStartTime}
                     onChange={(e) => onSetDayOverride(date, 'startTime', e.target.value)}
                     className="rounded-md border p-2 text-sm"
-                    aria-label={`Override start time for ${date}`}
-                    title={`Override start time for ${date}`}
+                    aria-label={`Start time for ${date}`}
+                    title={`Start time for ${date}`}
                   />
                   <input
                     type="time"
                     value={override?.endTime || globalEndTime}
                     onChange={(e) => onSetDayOverride(date, 'endTime', e.target.value)}
                     className="rounded-md border p-2 text-sm"
-                    aria-label={`Override end time for ${date}`}
-                    title={`Override end time for ${date}`}
+                    aria-label={`End time for ${date}`}
+                    title={`End time for ${date}`}
                   />
                   <button type="button" onClick={() => onClearDayOverride(date)} className="rounded-md border px-2 py-2 text-xs">
                     Reset
@@ -235,7 +212,7 @@ export function EventStepOne({
               );
             })}
           </div>
-        </details>
+        </div>
       )}
 
       <label className="flex items-center gap-2 text-sm">
