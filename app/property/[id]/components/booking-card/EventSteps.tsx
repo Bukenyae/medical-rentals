@@ -224,7 +224,7 @@ export function EventStepOne({
         </label>
       )}
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-2">
         <div>
           <label className="text-xs font-semibold text-gray-700">Attendees (max {maxEventGuests})</label>
           <select
@@ -249,9 +249,6 @@ export function EventStepOne({
               );
             })}
           </select>
-          <p className="mt-1 text-xs text-gray-500">
-            Selected range: {selectedAttendeeTier.minAttendees}-{selectedAttendeeTier.maxAttendees} people
-          </p>
         </div>
         <div>
           <label className="text-xs font-semibold text-gray-700">Vehicles (base {baseParkingCapacity})</label>
