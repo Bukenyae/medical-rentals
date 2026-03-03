@@ -83,6 +83,7 @@ export function EventStepOne({
 }: StepOneProps) {
   const overrideMap = new Map(dayOverrides.map((override) => [override.date, override]));
   const [showSessionCalendar, setShowSessionCalendar] = useState(false);
+  const [calendarField, setCalendarField] = useState<'start' | 'end'>('start');
   const [showPerDayTimes, setShowPerDayTimes] = useState(false);
 
   const formatDateLabel = (value: string) => {
@@ -108,7 +109,10 @@ export function EventStepOne({
         <p className="text-sm font-semibold text-gray-900">Date and time (required)</p>
         <button
           type="button"
-          onClick={() => setShowSessionCalendar(true)}
+          onClick={() => {
+            setCalendarField('start');
+            setShowSessionCalendar(true);
+          }}
           className="mt-2 w-full rounded-md border p-2 text-left text-sm text-gray-900"
         >
           {dateRangeLabel}
@@ -165,11 +169,11 @@ export function EventStepOne({
 
       <EventSessionCalendarModal
         show={showSessionCalendar}
-        activeField="start"
+        activeField={calendarField}
         startDate={eventStartDate}
         endDate={eventEndDate}
         onClose={() => setShowSessionCalendar(false)}
-        onActiveFieldChange={() => undefined}
+        onActiveFieldChange={setCalendarField}
         onApply={(start, end) => {
           onEventStartDateChange(start);
           onEventEndDateChange(end);
