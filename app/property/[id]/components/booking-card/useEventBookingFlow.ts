@@ -54,6 +54,14 @@ function enumerateSessionDates(startDate: string, endDate: string) {
   return dates;
 }
 
+function addDaysToIsoDate(isoDate: string, days: number) {
+  if (!isoDate) return '';
+  const base = new Date(`${isoDate}T00:00:00`);
+  if (!Number.isFinite(base.getTime())) return '';
+  base.setDate(base.getDate() + days);
+  return base.toISOString().slice(0, 10);
+}
+
 function sanitizeGuestFacingError(message: string) {
   const lowered = message.toLowerCase();
   if (lowered.includes('supabase service role')) return 'Availability check is temporarily unavailable. Please try again shortly.';
@@ -129,6 +137,9 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
   );
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const sessionDates = useMemo(() => enumerateSessionDates(eventStartDate, eventEndDate), [eventStartDate, eventEndDate]);
+  const canExtendDay = !!eventStartDate;
+  const hasExtendedDay = sessionDates.length > 1;
+  const extendedDayDate = hasExtendedDay ? sessionDates[1] : '';
 
   const overrideMap = useMemo(() => {
     const map = new Map<string, DayOverride>();
@@ -452,6 +463,19 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     setDayOverrides((previous) => previous.filter((item) => item.date !== date));
   }, []);
 
+  const extendOneDay = useCallback(() => {
+    if (!eventStartDate) return;
+    const nextEndDate = addDaysToIsoDate(eventStartDate, 1);
+    if (!nextEndDate) return;
+    setEventEndDate(nextEndDate);
+  }, [eventStartDate]);
+
+  const removeExtendedDay = useCallback(() => {
+    if (!eventStartDate) return;
+    setEventEndDate(eventStartDate);
+    setDayOverrides((previous) => previous.filter((item) => item.date === eventStartDate));
+  }, [eventStartDate]);
+
   return {
     state: {
       eventStep, eventStartDate, eventEndDate, globalStartTime, globalEndTime, sessionDates, dayOverrides,
@@ -462,13 +486,14 @@ export function useEventBookingFlow({ property, propertyId, user, onRequireAuth 
     derived: {
       todayIso, maxEventGuests, baseParkingCapacity, timezone, hourlyRateCents, eventDurationHours,
       endsAfterCurfew, availabilityUnknown, isAvailable, multiDayDiscountPct, overnightHoldingPct,
-      minimumEventHours, attendeePricingTiers, selectedAttendeeTier,
+      minimumEventHours, attendeePricingTiers, selectedAttendeeTier, canExtendDay, hasExtendedDay, extendedDayDate,
     },
     actions: {
       setEventStep, setEventStartDate, setEventEndDate, setGlobalStartTime, setGlobalEndTime, setDayOverride,
       clearDayOverride, setOvernightHold, setRequestScout, setScoutNotes, setEventGuests, setEventVehicles, setEventType,
       setEventDescription, setAlcohol, setAmplifiedSound, setVendors, setCrewSize, setEquipmentScale,
       setAddonParking, setAddonEarlyAccess, setAddonLateExtension,
+      extendOneDay, removeExtendedDay,
       stepOneValidation, submitEventBooking, advanceStep,
     },
   };
