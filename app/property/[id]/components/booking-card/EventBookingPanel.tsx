@@ -139,8 +139,55 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
         />
       )}
 
+      {state.eventStep === 2 && (
+        <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
+          <button
+            type="button"
+            onClick={() => setIsRiskSnapshotOpen((previous) => !previous)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="font-semibold text-gray-900">Live risk and policy snapshot</span>
+            <span className="text-sm text-gray-500">{isRiskSnapshotOpen ? '▴' : '▾'}</span>
+          </button>
+          {!isRiskSnapshotOpen && (
+            <p className="mt-1 text-xs text-gray-500">{riskReasons.length} risk flags · {policyChecklist.find((entry) => entry.label === 'Availability')?.value}</p>
+          )}
+          {isRiskSnapshotOpen && (
+            <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
+              {policyChecklist.map((row) => (
+                <p key={row.label} className="flex justify-between gap-2">
+                  <span className="text-gray-600">{row.label}</span>
+                  <span className="font-medium capitalize text-gray-900">{row.value}</span>
+                </p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {state.eventStep === 3 && (
+        <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
+          <button
+            type="button"
+            onClick={() => setIsBeforeSubmitOpen((previous) => !previous)}
+            className="flex w-full items-center justify-between text-left"
+          >
+            <span className="font-semibold text-gray-900">Before you submit</span>
+            <span className="text-sm text-gray-500">{isBeforeSubmitOpen ? '▴' : '▾'}</span>
+          </button>
+          {!isBeforeSubmitOpen && <p className="mt-1">3 quick checks before request submission.</p>}
+          {isBeforeSubmitOpen && (
+            <>
+              <p className="mt-1">Host response target: up to 48 business hours.</p>
+              <p>Deposit is an authorization hold and is not captured unless policy terms require it.</p>
+              <p>COI/ID may be requested depending on event risk and property policy.</p>
+            </>
+          )}
+        </div>
+      )}
+
       {state.eventQuote && (
-        <div className="mt-4 rounded-lg bg-gray-50 p-3 text-sm">
+        <div className="mt-3 rounded-lg bg-gray-50 p-3 text-sm">
           <div className="flex justify-between"><span>Mode</span><span className="font-semibold">{state.eventQuote.mode === 'instant' ? 'Instant book' : 'Request to book'}</span></div>
           <div className="flex justify-between">
             <span className="flex items-center gap-1">
@@ -206,53 +253,11 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           {sessionDays.length > 1 && (
             <p className="mt-2 text-xs text-gray-600">{sessionDays.length} days selected · Global {state.globalStartTime} to {state.globalEndTime} (local)</p>
           )}
-          {riskReasons.length > 0 && <p className="mt-2 text-xs text-amber-700">Request reason: {riskReasons.join(' · ')}</p>}
         </div>
       )}
 
-      <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
-        <button
-          type="button"
-          onClick={() => setIsRiskSnapshotOpen((previous) => !previous)}
-          className="flex w-full items-center justify-between text-left"
-        >
-          <span className="font-semibold text-gray-900">Live risk and policy snapshot</span>
-          <span className="text-sm text-gray-500">{isRiskSnapshotOpen ? '▴' : '▾'}</span>
-        </button>
-        {!isRiskSnapshotOpen && (
-          <p className="mt-1 text-xs text-gray-500">{riskReasons.length} risk flags · {policyChecklist.find((entry) => entry.label === 'Availability')?.value}</p>
-        )}
-        {isRiskSnapshotOpen && (
-          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1">
-            {policyChecklist.map((row) => (
-              <p key={row.label} className="flex justify-between gap-2">
-                <span className="text-gray-600">{row.label}</span>
-                <span className="font-medium capitalize text-gray-900">{row.value}</span>
-              </p>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {state.eventStep === 3 && (
-        <div className="mt-3 rounded-lg border border-gray-200 bg-white p-3 text-xs text-gray-700">
-          <button
-            type="button"
-            onClick={() => setIsBeforeSubmitOpen((previous) => !previous)}
-            className="flex w-full items-center justify-between text-left"
-          >
-            <span className="font-semibold text-gray-900">Before you submit</span>
-            <span className="text-sm text-gray-500">{isBeforeSubmitOpen ? '▴' : '▾'}</span>
-          </button>
-          {!isBeforeSubmitOpen && <p className="mt-1">3 quick checks before request submission.</p>}
-          {isBeforeSubmitOpen && (
-            <>
-              <p className="mt-1">Host response target: up to 48 business hours.</p>
-              <p>Deposit is an authorization hold and is not captured unless policy terms require it.</p>
-              <p>COI/ID may be requested depending on event risk and property policy.</p>
-            </>
-          )}
-        </div>
+      {state.eventStep === 3 && riskReasons.length > 0 && (
+        <p className="mt-2 text-xs text-amber-700">{riskReasons.length} risk flags may require host review.</p>
       )}
 
       <div className="mt-4 flex gap-2">
