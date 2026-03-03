@@ -155,6 +155,7 @@ export default function Home() {
                 imageUrl={p.cover_image_url ?? '/images/placeholder/house.jpg'}
                 imageAlt={p.title ?? 'Rental property'}
                 hoverTint={index % 2 === 0 ? '#FFE9D4' : '#E6F3C2'}
+                imagePriority={index < 2}
               />
             ))}
           </div>
