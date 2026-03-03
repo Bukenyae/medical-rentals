@@ -88,7 +88,7 @@ export interface PublishedPropertyRecord extends HostPropertyRecord {
 export async function fetchPublishedProperties(
   supabase: SupabaseClient
 ): Promise<PublishedPropertyRecord[]> {
-  const selectFields = [
+  const baseSelectFields = [
     'id',
     'title',
     'address',
@@ -100,13 +100,38 @@ export async function fetchPublishedProperties(
     'sqft',
     'cover_image_url',
     'created_at',
+  ];
+
+  const eventSelectFields = [
     'event_hourly_from_cents',
     'minimum_event_hours',
-  ].join(',');
+  ];
+
+  const primarySelect = [...baseSelectFields, ...eventSelectFields].join(',');
+  const fallbackSelect = baseSelectFields.join(',');
+
+  const primaryResult = await supabase
+    .from('properties')
+    .select(primarySelect)
+    .eq('is_published', true)
+    .order('created_at', { ascending: false });
+
+  if (!primaryResult.error) {
+    return (primaryResult.data ?? []) as unknown as PublishedPropertyRecord[];
+  }
+
+  const message = primaryResult.error.message ?? '';
+  const missingEventColumns =
+    message.includes('event_hourly_from_cents') ||
+    message.includes('minimum_event_hours');
+
+  if (!missingEventColumns) {
+    throw new Error(primaryResult.error.message);
+  }
 
   const { data, error } = await supabase
     .from('properties')
-    .select(selectFields)
+    .select(fallbackSelect)
     .eq('is_published', true)
     .order('created_at', { ascending: false });
 
