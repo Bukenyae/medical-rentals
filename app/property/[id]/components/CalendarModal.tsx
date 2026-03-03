@@ -89,9 +89,9 @@ export default function CalendarModal({
   if (!showCalendar) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-      <div className="bg-white rounded-xl shadow-2xl calendar-card w-full max-w-md max-h-[500px]">
-        <div className="p-6">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+      <div className="calendar-card flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+        <div className="overflow-y-auto p-6 pb-[max(env(safe-area-inset-bottom),1rem)]">
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -207,7 +207,7 @@ export default function CalendarModal({
           </div>
 
           {/* Calendar Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-200">
+          <div className="mt-6 border-t border-gray-200 pt-4">
             <div className="space-y-3 text-sm text-gray-600">
               <div>
                 <p>Check-in: {draftCheckIn ? draftCheckIn.toLocaleDateString('en-US') : 'Select date'}</p>
