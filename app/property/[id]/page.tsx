@@ -7,8 +7,6 @@ import {
   Utensils,
   Sofa,
   WashingMachine,
-  CalendarClock,
-  Shield,
 } from 'lucide-react';
 import AuthButton from '@/components/AuthButton';
 import { createClient } from '@/lib/supabase/client';
@@ -341,18 +339,23 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
     { label: 'Full kitchen', icon: Utensils },
     { label: 'Fully furnished house', icon: Sofa },
     { label: 'In-unit washer and dryer', icon: WashingMachine },
-    { label: 'Flexible lease terms (days/weeks/months)', icon: CalendarClock },
-    { label: 'Self check-in', icon: Shield },
   ];
 
   const derivedAmenities = (() => {
+    const excludedAmenityLabels = new Set([
+      'Flexible lease terms (days/weeks/months)',
+      'Self check-in',
+    ]);
+
     if (dbProperty?.amenities_list?.length) {
       const lookup = new Map(amenityOptions.map((opt) => [opt.label, opt.icon]));
       return dbProperty.amenities_list
+        .filter((label) => !excludedAmenityLabels.has(label))
+        .slice(0, 6)
         .map((label) => ({ label, icon: lookup.get(label) ?? Wifi }))
         .map((item) => ({ label: item.label, icon: item.icon }));
     }
-    return amenityOptions;
+    return amenityOptions.slice(0, 6);
   })();
 
   if (propertyMissing) {
