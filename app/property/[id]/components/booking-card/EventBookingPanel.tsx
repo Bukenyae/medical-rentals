@@ -39,6 +39,20 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
     fees: 'Includes platform fees plus optional logistics add-ons selected in this booking flow.',
     deposit: 'An authorization hold for policy protection. It is not captured unless required by policy terms.',
   };
+  const primaryCtaLabel = state.isSubmitting
+    ? 'Submitting...'
+    : state.eventStep < 3
+      ? 'Next'
+      : state.eventQuote?.mode === 'instant'
+        ? 'Instant book event'
+        : 'Request to book';
+  const isPrimaryDisabled = state.isSubmitting || (state.eventStep === 1 && derived.availabilityUnknown);
+  const onSkipAddons = () => {
+    actions.setAddonParking(false);
+    actions.setAddonEarlyAccess(false);
+    actions.setAddonLateExtension(false);
+    actions.setEventStep(3);
+  };
   const policyChecklist = [
     { label: 'Alcohol', value: state.alcohol ? 'Yes' : 'No' },
     { label: 'Amplified sound', value: state.amplifiedSound ? 'Yes' : 'No' },
@@ -241,11 +255,54 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
         </div>
       )}
 
-      <div className="mt-4 flex gap-2">
+      <div className="mt-4 hidden gap-2 sm:flex">
         <button onClick={() => actions.setEventStep((s) => Math.max(1, s - 1))} disabled={state.eventStep === 1} className="flex-1 rounded-md border py-2 text-sm">Back</button>
-        <button onClick={actions.advanceStep} disabled={state.isSubmitting || (state.eventStep === 1 && derived.availabilityUnknown)} className="flex-1 rounded-md bg-gray-900 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
-          {state.isSubmitting ? 'Submitting...' : state.eventStep < 3 ? 'Next' : state.eventQuote?.mode === 'instant' ? 'Instant book event' : 'Request to book'}
+        {state.eventStep === 2 && (
+          <button
+            onClick={onSkipAddons}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-600 hover:text-gray-900"
+          >
+            Skip add-ons
+          </button>
+        )}
+        <button onClick={actions.advanceStep} disabled={isPrimaryDisabled} className="flex-1 rounded-md bg-gray-900 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
+          {primaryCtaLabel}
         </button>
+      </div>
+
+      <div className="h-24 sm:hidden" aria-hidden="true" />
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 backdrop-blur sm:hidden">
+        <div className="mx-auto w-full max-w-md">
+          <div className="flex items-center justify-between text-xs text-gray-600">
+            <span>Estimated total</span>
+            <span className="font-semibold text-gray-900">{toCurrency((state.eventQuote?.totalCents ?? 0) / 100)}</span>
+          </div>
+          {state.eventStep === 2 && (
+            <button
+              type="button"
+              onClick={onSkipAddons}
+              className="mt-1 text-xs font-medium text-gray-600 underline"
+            >
+              Skip add-ons
+            </button>
+          )}
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={() => actions.setEventStep((s) => Math.max(1, s - 1))}
+              disabled={state.eventStep === 1}
+              className="flex-1 rounded-md border py-2 text-sm"
+            >
+              Back
+            </button>
+            <button
+              onClick={actions.advanceStep}
+              disabled={isPrimaryDisabled}
+              className="flex-1 rounded-md bg-gray-900 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {primaryCtaLabel}
+            </button>
+          </div>
+        </div>
       </div>
 
       {state.eventError && <p className="mt-2 text-sm text-red-600">{state.eventError}</p>}
