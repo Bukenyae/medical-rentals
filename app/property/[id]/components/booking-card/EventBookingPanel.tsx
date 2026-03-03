@@ -97,9 +97,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           globalEndTime={state.globalEndTime}
           sessionDates={state.sessionDates}
           dayOverrides={state.dayOverrides}
-          overnightHold={state.overnightHold}
-          requestScout={state.requestScout}
-          scoutNotes={state.scoutNotes}
           maxEventGuests={derived.maxEventGuests}
           attendeePricingTiers={derived.attendeePricingTiers}
           selectedAttendeeTier={derived.selectedAttendeeTier}
@@ -117,9 +114,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
           onGlobalEndTimeChange={actions.setGlobalEndTime}
           onSetDayOverride={actions.setDayOverride}
           onClearDayOverride={actions.clearDayOverride}
-          onOvernightHoldChange={actions.setOvernightHold}
-          onRequestScoutChange={actions.setRequestScout}
-          onScoutNotesChange={actions.setScoutNotes}
           onEventGuestsChange={actions.setEventGuests}
           onEventVehiclesChange={actions.setEventVehicles}
           onRemoveExtendedDay={actions.removeExtendedDay}
@@ -127,9 +121,15 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
       )}
       {state.eventStep === 2 && (
         <EventStepTwo
+          overnightHold={state.overnightHold}
+          requestScout={state.requestScout}
+          scoutNotes={state.scoutNotes}
           addonParking={state.addonParking}
           addonEarlyAccess={state.addonEarlyAccess}
           addonLateExtension={state.addonLateExtension}
+          onOvernightHoldChange={actions.setOvernightHold}
+          onRequestScoutChange={actions.setRequestScout}
+          onScoutNotesChange={actions.setScoutNotes}
           onAddonParkingChange={actions.setAddonParking}
           onAddonEarlyAccessChange={actions.setAddonEarlyAccess}
           onAddonLateExtensionChange={actions.setAddonLateExtension}
