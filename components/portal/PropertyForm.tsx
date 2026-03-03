@@ -40,6 +40,33 @@ function cloneAttendeePricingTiers(tiers: AttendeePricingTier[]): AttendeePricin
   return tiers.map((tier) => ({ ...tier }));
 }
 
+const ATTENDEE_PRICING_PRESETS: Array<{
+  id: string;
+  label: string;
+  surchargesInDollars: number[];
+}> = [
+  {
+    id: 'balanced',
+    label: 'Balanced',
+    surchargesInDollars: [0, 25, 45, 65, 85, 95, 115, 135, 155],
+  },
+  {
+    id: 'social-events',
+    label: 'Social events',
+    surchargesInDollars: [0, 20, 35, 50, 70, 85, 100, 120, 140],
+  },
+  {
+    id: 'production',
+    label: 'Production heavy',
+    surchargesInDollars: [0, 30, 55, 80, 105, 125, 145, 170, 195],
+  },
+  {
+    id: 'corporate',
+    label: 'Corporate',
+    surchargesInDollars: [0, 22, 40, 58, 76, 88, 104, 122, 140],
+  },
+];
+
 export default function PropertyForm({
   onPropertySelected,
   initialPropertyId,
@@ -72,6 +99,7 @@ export default function PropertyForm({
   const [attendeePricingTiers, setAttendeePricingTiers] = useState<AttendeePricingTier[]>(
     cloneAttendeePricingTiers(DEFAULT_ATTENDEE_PRICING_TIERS)
   );
+  const [selectedAttendeePreset, setSelectedAttendeePreset] = useState<string>('balanced');
   const [eventMultiDayDiscountPct, setEventMultiDayDiscountPct] = useState<number>(0);
   const [eventOvernightHoldingPct, setEventOvernightHoldingPct] = useState<number>(25);
   const [baseParkingCapacity, setBaseParkingCapacity] = useState<number>(8);
@@ -843,6 +871,7 @@ export default function PropertyForm({
       setMinimumEventHours(4);
       setEventHourlyRate(125);
       setAttendeePricingTiers(cloneAttendeePricingTiers(DEFAULT_ATTENDEE_PRICING_TIERS));
+      setSelectedAttendeePreset('balanced');
       setEventMultiDayDiscountPct(0);
       setEventOvernightHoldingPct(25);
       setBaseParkingCapacity(8);
@@ -881,6 +910,7 @@ export default function PropertyForm({
         typeof p.max_event_guests === 'number' && p.max_event_guests > 0 ? p.max_event_guests : 50
       )
     );
+    setSelectedAttendeePreset('custom');
     setEventMultiDayDiscountPct(typeof p.event_multi_day_discount_pct === 'number' ? p.event_multi_day_discount_pct : 0);
     setEventOvernightHoldingPct(typeof p.event_overnight_holding_pct === 'number' ? p.event_overnight_holding_pct : 25);
     setBaseParkingCapacity(typeof p.base_parking_capacity === 'number' ? p.base_parking_capacity : 8);
@@ -1250,6 +1280,34 @@ export default function PropertyForm({
               <div className="rounded-md border border-gray-200/70 bg-gray-50 p-3 sm:col-span-2">
                 <p className="text-sm font-medium text-gray-900">Attendee tier surcharges ($/hr)</p>
                 <p className="mt-1 text-xs text-gray-500">Set extra hourly cost for each attendee range. 1-9 people is typically $0/hr.</p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {ATTENDEE_PRICING_PRESETS.map((preset) => {
+                    const isActive = selectedAttendeePreset === preset.id;
+                    return (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedAttendeePreset(preset.id);
+                          setAttendeePricingTiers((previous) =>
+                            previous.map((tier, index) => ({
+                              ...tier,
+                              extraHourlyCents: Math.round((preset.surchargesInDollars[index] ?? 0) * 100),
+                            }))
+                          );
+                        }}
+                        className={`rounded-full border px-2.5 py-1 text-xs ${
+                          isActive
+                            ? 'border-[#8B1A1A] bg-[#8B1A1A]/10 text-[#8B1A1A]'
+                            : 'border-gray-300/70 bg-white text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                  <span className="text-xs text-gray-500">or edit each tier manually below</span>
+                </div>
                 <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
                   {attendeePricingTiers.map((tier, index) => {
                     const label = `${tier.minAttendees}-${tier.maxAttendees} people`;
@@ -1267,6 +1325,7 @@ export default function PropertyForm({
                             min={0}
                             onChange={(e) => {
                               const nextDollar = Math.max(0, Number(e.target.value || 0));
+                              setSelectedAttendeePreset('custom');
                               setAttendeePricingTiers((previous) =>
                                 previous.map((item, itemIndex) =>
                                   itemIndex === index
