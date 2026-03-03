@@ -66,7 +66,7 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
 
       {/* Host Information */}
       <div className="border-t border-gray-200 pt-6 mt-6 flex flex-col gap-4 pb-6 border-b border-gray-200">
-        <div className="flex items-center gap-4">
+        <div className="flex items-start gap-3 sm:items-center sm:gap-4">
           <div className="flex-shrink-0">
             <Image
               src={property.host.avatar || '/images/host-avatar.jpg'}
@@ -76,20 +76,18 @@ export default function PropertyInfo({ property }: PropertyInfoProps) {
               className="h-14 w-14 rounded-lg object-cover"
             />
           </div>
-          <div className="flex flex-col gap-1 text-sm text-gray-600">
-            <h2 className="text-base text-black">
+          <div className="min-w-0 flex flex-1 flex-col gap-1 text-sm text-gray-600">
+            <h2 className="text-base leading-tight text-black sm:text-[15px]">
               <span className="text-[#888]">Hosted by</span>{' '}
               <span className="font-semibold">{property.host.name}</span>
             </h2>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm">
               <div className="inline-flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                <Star className="h-4 w-4 text-yellow-400 fill-current" />
                 <span className="font-medium text-gray-900">{property.rating.toFixed(1)}</span>
                 <span className="text-gray-500">({property.reviewCount} reviews)</span>
               </div>
-              {property.host.joinedYear && (
-                <span>• Joined in {property.host.joinedYear}</span>
-              )}
+              {property.host.joinedYear && <span className="text-gray-500">Joined in {property.host.joinedYear}</span>}
             </div>
           </div>
         </div>
