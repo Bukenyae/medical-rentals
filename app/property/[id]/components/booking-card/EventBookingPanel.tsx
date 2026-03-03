@@ -255,7 +255,7 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
         </div>
       )}
 
-      <div className="mt-4 hidden gap-2 sm:flex">
+      <div className="mt-4 flex gap-2">
         <button onClick={() => actions.setEventStep((s) => Math.max(1, s - 1))} disabled={state.eventStep === 1} className="flex-1 rounded-md border py-2 text-sm">Back</button>
         {state.eventStep === 2 && (
           <button
@@ -268,41 +268,6 @@ export default function EventBookingPanel({ property, propertyId, user, onRequir
         <button onClick={actions.advanceStep} disabled={isPrimaryDisabled} className="flex-1 rounded-md bg-gray-900 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60">
           {primaryCtaLabel}
         </button>
-      </div>
-
-      <div className="h-24 sm:hidden" aria-hidden="true" />
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-2 backdrop-blur sm:hidden">
-        <div className="mx-auto w-full max-w-md">
-          <div className="flex items-center justify-between text-xs text-gray-600">
-            <span>Estimated total</span>
-            <span className="font-semibold text-gray-900">{toCurrency((state.eventQuote?.totalCents ?? 0) / 100)}</span>
-          </div>
-          {state.eventStep === 2 && (
-            <button
-              type="button"
-              onClick={onSkipAddons}
-              className="mt-1 text-xs font-medium text-gray-600 underline"
-            >
-              Skip add-ons
-            </button>
-          )}
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={() => actions.setEventStep((s) => Math.max(1, s - 1))}
-              disabled={state.eventStep === 1}
-              className="flex-1 rounded-md border py-2 text-sm"
-            >
-              Back
-            </button>
-            <button
-              onClick={actions.advanceStep}
-              disabled={isPrimaryDisabled}
-              className="flex-1 rounded-md bg-gray-900 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {primaryCtaLabel}
-            </button>
-          </div>
-        </div>
       </div>
 
       {state.eventError && <p className="mt-2 text-sm text-red-600">{state.eventError}</p>}
