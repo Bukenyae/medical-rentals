@@ -1,16 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface CalendarModalProps {
   showCalendar: boolean;
   onClose: () => void;
   calendarMode: 'checkin' | 'checkout';
-  onDateSelect: (date: Date) => void;
+  onApply: (checkIn: Date, checkOut: Date) => void;
+  onReset: () => void;
   selectedCheckIn: Date | null;
   selectedCheckOut: Date | null;
-  onModeChange: (mode: 'checkin' | 'checkout') => void;
   unavailableDates?: string[]; // list of YYYY-MM-DD ISO dates in UTC
 }
 
@@ -18,14 +18,24 @@ export default function CalendarModal({
   showCalendar,
   onClose,
   calendarMode,
-  onDateSelect,
+  onApply,
+  onReset,
   selectedCheckIn,
   selectedCheckOut,
-  onModeChange,
   unavailableDates = []
 }: CalendarModalProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [activeField, setActiveField] = useState<'checkin' | 'checkout'>(calendarMode);
+  const [draftCheckIn, setDraftCheckIn] = useState<Date | null>(selectedCheckIn);
+  const [draftCheckOut, setDraftCheckOut] = useState<Date | null>(selectedCheckOut);
   const blocked = new Set(unavailableDates);
+
+  useEffect(() => {
+    if (!showCalendar) return;
+    setActiveField(calendarMode);
+    setDraftCheckIn(selectedCheckIn);
+    setDraftCheckOut(selectedCheckOut);
+  }, [showCalendar, calendarMode, selectedCheckIn, selectedCheckOut]);
 
   const generateCalendarDays = (month: Date) => {
     const year = month.getFullYear();
@@ -85,7 +95,7 @@ export default function CalendarModal({
           {/* Calendar Header */}
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-              {calendarMode === 'checkin' ? 'Select check-in date' : 'Select check-out date'}
+              {activeField === 'checkin' ? 'Select check-in date' : 'Select check-out date'}
             </h3>
             <button 
               onClick={onClose}
@@ -130,22 +140,41 @@ export default function CalendarModal({
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((day, index) => {
               const isSelected = 
-                (calendarMode === 'checkin' && selectedCheckIn && day.date.getTime() === selectedCheckIn.getTime()) ||
-                (calendarMode === 'checkout' && selectedCheckOut && day.date.getTime() === selectedCheckOut.getTime());
+                (draftCheckIn && day.date.getTime() === draftCheckIn.getTime()) ||
+                (draftCheckOut && day.date.getTime() === draftCheckOut.getTime());
               
-              const isInRange = selectedCheckIn && selectedCheckOut && 
-                day.date > selectedCheckIn && day.date < selectedCheckOut;
+              const isInRange = draftCheckIn && draftCheckOut &&
+                day.date > draftCheckIn && day.date < draftCheckOut;
               
               const isDisabled = Boolean(
                 day.isPast ||
                 day.isBlocked ||
-                (calendarMode === 'checkout' && selectedCheckIn && day.date <= selectedCheckIn)
+                (activeField === 'checkout' && draftCheckIn && day.date <= draftCheckIn)
               );
 
               return (
                 <button
                   key={index}
-                  onClick={() => !isDisabled && onDateSelect(day.date)}
+                  onClick={() => {
+                    if (isDisabled) return;
+                    if (activeField === 'checkin') {
+                      setDraftCheckIn(day.date);
+                      if (draftCheckOut && day.date >= draftCheckOut) {
+                        setDraftCheckOut(null);
+                      }
+                      setActiveField('checkout');
+                      return;
+                    }
+
+                    if (!draftCheckIn || day.date <= draftCheckIn) {
+                      setDraftCheckIn(day.date);
+                      setDraftCheckOut(null);
+                      setActiveField('checkout');
+                      return;
+                    }
+
+                    setDraftCheckOut(day.date);
+                  }}
                   disabled={isDisabled}
                   className={`
                     w-10 h-10 text-sm rounded-lg transition-colors relative
@@ -179,22 +208,37 @@ export default function CalendarModal({
 
           {/* Calendar Footer */}
           <div className="mt-6 pt-4 border-t border-gray-200">
-            <div className="flex items-center justify-between text-sm text-gray-600">
-              <span>
-                {calendarMode === 'checkin' ? 'Check-in' : 'Check-out'}: 
-                {calendarMode === 'checkin' 
-                  ? (selectedCheckIn ? selectedCheckIn.toLocaleDateString('en-US') : 'Select date')
-                  : (selectedCheckOut ? selectedCheckOut.toLocaleDateString('en-US') : 'Select date')
-                }
-              </span>
-              {calendarMode === 'checkout' && selectedCheckIn && (
-                <button 
-                  onClick={() => onModeChange('checkin')}
-                  className="text-blue-600 hover:text-blue-700 font-medium"
+            <div className="space-y-3 text-sm text-gray-600">
+              <div>
+                <p>Check-in: {draftCheckIn ? draftCheckIn.toLocaleDateString('en-US') : 'Select date'}</p>
+                <p className="mt-1">Check-out: {draftCheckOut ? draftCheckOut.toLocaleDateString('en-US') : 'Select date'}</p>
+              </div>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftCheckIn(null);
+                    setDraftCheckOut(null);
+                    setActiveField('checkin');
+                    onReset();
+                  }}
+                  className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 >
-                  Change check-in
+                  Reset
                 </button>
-              )}
+                <button
+                  type="button"
+                  disabled={!draftCheckIn || !draftCheckOut}
+                  onClick={() => {
+                    if (!draftCheckIn || !draftCheckOut) return;
+                    onApply(draftCheckIn, draftCheckOut);
+                    onClose();
+                  }}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
         </div>
