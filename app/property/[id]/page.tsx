@@ -542,7 +542,7 @@ export default function PropertyDetails({ params }: PropertyDetailsProps) {
       </header>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-6 pb-28 sm:px-6 lg:px-8 lg:py-8 lg:pb-8">
+      <div className="max-w-7xl mx-auto px-4 pt-0 pb-28 sm:px-6 sm:pt-6 lg:px-8 lg:pt-8 lg:pb-8">
         {/* Back Button */}
         <div className="mb-6 hidden lg:block">
           <button
