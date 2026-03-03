@@ -209,9 +209,9 @@ export function EventStepOne({
       )}
 
       {sessionDates.length > 1 && (
-        <div className="rounded-lg border border-gray-200 p-3">
-          <p className="text-sm font-semibold text-gray-900">Per-day overrides</p>
-          <p className="mt-1 text-xs text-gray-600">Override specific days for custom call times (e.g., night shoot).</p>
+        <details className="rounded-lg border border-gray-200 p-3">
+          <summary className="cursor-pointer text-sm font-semibold text-gray-900">Advanced per-day overrides</summary>
+          <p className="mt-2 text-xs text-gray-600">Override specific days for custom call times (e.g., night shoot).</p>
           <div className="mt-2 space-y-2">
             {sessionDates.map((date) => {
               const override = overrideMap.get(date);
@@ -241,7 +241,7 @@ export function EventStepOne({
               );
             })}
           </div>
-        </div>
+        </details>
       )}
 
       <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-700">
@@ -393,6 +393,7 @@ export function EventStepThree({
   return (
     <div className="mt-3 space-y-2">
       <p className="text-sm font-semibold">Event Details</p>
+      <p className="text-xs text-gray-600">Great for photo shoots, meetings, workshops, birthdays, weddings, graduations, pop-ups, and production events.</p>
       <label className="text-xs font-semibold text-gray-700">Event type</label>
       <select value={eventType} onChange={(e) => onEventTypeChange(e.target.value)} className="w-full rounded-md border p-2 text-sm" aria-label="Event type" title="Event type">
         <option value="corporate">Corporate</option>
