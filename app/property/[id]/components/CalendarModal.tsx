@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import RangeCalendarModal from './RangeCalendarModal';
 
 interface CalendarModalProps {
@@ -23,6 +24,13 @@ export default function CalendarModal({
   selectedCheckOut,
   unavailableDates = []
 }: CalendarModalProps) {
+  const [activeField, setActiveField] = useState<'start' | 'end'>('start');
+
+  useEffect(() => {
+    if (!showCalendar) return;
+    setActiveField(calendarMode === 'checkin' ? 'start' : 'end');
+  }, [showCalendar, calendarMode]);
+
   const toIsoUtc = (date: Date) =>
     new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()))
       .toISOString()
@@ -36,7 +44,7 @@ export default function CalendarModal({
   return (
     <RangeCalendarModal
       show={showCalendar}
-      activeField={calendarMode === 'checkin' ? 'start' : 'end'}
+      activeField={activeField}
       startDate={selectedCheckIn ? toIsoUtc(selectedCheckIn) : ''}
       endDate={selectedCheckOut ? toIsoUtc(selectedCheckOut) : ''}
       blockedDates={unavailableDates}
@@ -46,9 +54,7 @@ export default function CalendarModal({
       endTitle="Select check-out date"
       closeAriaLabel="Close calendar"
       onClose={onClose}
-      onActiveFieldChange={() => {
-        // Stay mode is only used as an initial focus; local selection state lives inside modal.
-      }}
+      onActiveFieldChange={setActiveField}
       onApply={(startDate, endDate) => onApply(fromIso(startDate), fromIso(endDate))}
       onReset={onReset}
     />
