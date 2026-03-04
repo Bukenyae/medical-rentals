@@ -64,14 +64,13 @@ export default function StayBookingPanel({
       new Date().toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric',
       }),
     []
   );
 
   const dateRangeLabel = checkInDate && checkOutDate
     ? `${checkInDate} - ${checkOutDate}`
-    : `Select date range · Today ${todayLabel}`;
+    : `Select dates · Today ${todayLabel}`;
 
   return (
     <>
@@ -87,7 +86,7 @@ export default function StayBookingPanel({
           className="w-full p-3 text-left"
         >
           <p className="text-xs uppercase">Check-in / Checkout</p>
-          <p>{dateRangeLabel}</p>
+          <p className="truncate text-sm" title={dateRangeLabel}>{dateRangeLabel}</p>
         </button>
 
         <div className="border-t border-gray-300 p-3">
