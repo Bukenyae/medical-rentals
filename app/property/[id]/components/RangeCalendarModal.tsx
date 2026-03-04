@@ -8,6 +8,7 @@ type RangeCalendarModalProps = {
   activeField: 'start' | 'end';
   startDate: string;
   endDate: string;
+  allowSingleDayApply?: boolean;
   onClose: () => void;
   onActiveFieldChange: (field: 'start' | 'end') => void;
   onApply: (startDate: string, endDate: string) => void;
@@ -72,6 +73,7 @@ export default function RangeCalendarModal({
   activeField,
   startDate,
   endDate,
+  allowSingleDayApply = false,
   onClose,
   onActiveFieldChange,
   onApply,
@@ -99,6 +101,8 @@ export default function RangeCalendarModal({
 
   const blockedSet = useMemo(() => new Set(blockedDates), [blockedDates]);
   const days = useMemo(() => buildCalendarDays(currentMonth, blockedSet), [currentMonth, blockedSet]);
+  const resolvedEndDate = draftEnd || (allowSingleDayApply ? draftStart : '');
+  const canApply = !!draftStart && !!resolvedEndDate;
   const monthLabel = useMemo(
     () => currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
     [currentMonth]
@@ -203,7 +207,7 @@ export default function RangeCalendarModal({
                   {startFieldLabel}: {draftStart || 'Select date'}
                 </p>
                 <p className="mt-1">
-                  {endFieldLabel}: {draftEnd || 'Select date'}
+                  {endFieldLabel}: {resolvedEndDate || 'Select date'}
                 </p>
               </div>
               <div className="flex items-center justify-between">
@@ -221,10 +225,10 @@ export default function RangeCalendarModal({
                 </button>
                 <button
                   type="button"
-                  disabled={!draftStart || !draftEnd}
+                  disabled={!canApply}
                   onClick={() => {
-                    if (!draftStart || !draftEnd) return;
-                    onApply(draftStart, draftEnd);
+                    if (!draftStart || !resolvedEndDate) return;
+                    onApply(draftStart, resolvedEndDate);
                     onClose();
                   }}
                   className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-40"
