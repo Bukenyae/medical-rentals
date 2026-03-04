@@ -29,6 +29,7 @@ export default function EventSessionCalendarModal({
       activeField={activeField}
       startDate={startDate}
       endDate={endDate}
+      allowSingleDayApply
       startFieldLabel="Start"
       endFieldLabel="End"
       startTitle="Select session start date"
