@@ -59,6 +59,20 @@ export default function StayBookingPanel({
     typeof minimumNights === 'number' ? minimumNights : property.minimumNights ?? 1
   );
 
+  const todayLabel = useMemo(
+    () =>
+      new Date().toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      }),
+    []
+  );
+
+  const dateRangeLabel = checkInDate && checkOutDate
+    ? `${checkInDate} - ${checkOutDate}`
+    : `Select date range · Today ${todayLabel}`;
+
   return (
     <>
       <p className="text-xl font-semibold">
@@ -67,16 +81,14 @@ export default function StayBookingPanel({
       </p>
 
       <div className="mt-4 rounded-lg border border-gray-300">
-        <div className="grid grid-cols-2">
-          <button onClick={() => onOpenCalendar('checkin')} className="border-r border-gray-300 p-3 text-left">
-            <p className="text-xs uppercase">Check-in</p>
-            <p>{checkInDate || 'Add date'}</p>
-          </button>
-          <button onClick={() => onOpenCalendar('checkout')} className="p-3 text-left">
-            <p className="text-xs uppercase">Checkout</p>
-            <p>{checkOutDate || 'Add date'}</p>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => onOpenCalendar('checkin')}
+          className="w-full p-3 text-left"
+        >
+          <p className="text-xs uppercase">Check-in / Checkout</p>
+          <p>{dateRangeLabel}</p>
+        </button>
 
         <div className="border-t border-gray-300 p-3">
           <p className="mb-2 text-xs uppercase">Guests</p>
@@ -87,6 +99,8 @@ export default function StayBookingPanel({
                 onClick={() => onGuestChange(false)}
                 disabled={guests <= 1}
                 className="flex h-8 w-8 items-center justify-center rounded-full border"
+                aria-label="Decrease guests"
+                title="Decrease guests"
               >
                 <Minus className="h-4 w-4" />
               </button>
@@ -94,6 +108,8 @@ export default function StayBookingPanel({
                 onClick={() => onGuestChange(true)}
                 disabled={guests >= 5}
                 className="flex h-8 w-8 items-center justify-center rounded-full border"
+                aria-label="Increase guests"
+                title="Increase guests"
               >
                 <Plus className="h-4 w-4" />
               </button>
