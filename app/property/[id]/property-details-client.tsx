@@ -432,7 +432,9 @@ export default function PropertyDetailsClient({
               />
             </Link>
             <nav className="flex items-center space-x-4">
-              <AuthButton user={user} iconVariant="user" />
+              <div className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white p-1 shadow-sm">
+                <AuthButton user={user} iconVariant="user" />
+              </div>
             </nav>
           </div>
         </div>
