@@ -1,7 +1,12 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { ClerkProvider } from '@clerk/nextjs'
 import GoogleOneTap from '@/components/GoogleOneTap'
 import { inter } from './fonts'
+
+const clerkJSUrl =
+  process.env.NEXT_PUBLIC_CLERK_JS_URL ??
+  'https://cdn.jsdelivr.net/npm/@clerk/clerk-js@6/dist/clerk.browser.js'
 
 export const metadata: Metadata = {
   title: 'BelleRouges',
@@ -28,8 +33,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-[var(--oyster)]`}>
-        <GoogleOneTap />
-        {children}
+        <ClerkProvider clerkJSUrl={clerkJSUrl}>
+          <GoogleOneTap />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   )
