@@ -6,9 +6,11 @@ import { Eye, EyeOff } from 'lucide-react'
 import {
   buildClerkContinueUrl,
   extractClerkErrorMessage,
+  isClerkNetworkError,
   recoverAlreadyVerifiedSignUp,
   syncClerkIdentity,
 } from '@/lib/auth/clerk-client'
+import LegacyAuthFallback from '@/components/LegacyAuthFallback'
 interface ClerkAuthCardProps {
   forceRole?: 'guest' | 'host'
   initialMode?: 'signin' | 'signup'
@@ -36,12 +38,12 @@ export default function ClerkAuthCard({
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [showRecoveryHint, setShowRecoveryHint] = useState(false)
+  const [legacyMode, setLegacyMode] = useState(false)
   const didRedirect = useRef(false)
   useEffect(() => {
     setMode(initialMode)
     resetVerificationState()
   }, [initialMode])
-
   useEffect(() => {
     onModeChange?.(mode)
   }, [mode, onModeChange])
@@ -67,14 +69,12 @@ export default function ClerkAuthCard({
   const finishAuth = async (sessionId?: string | null) => {
     if (!sessionId || didRedirect.current) return
     didRedirect.current = true
-
     try {
       if (mode === 'signin') {
         await setActiveSignIn?.({ session: sessionId })
       } else {
         await setActiveSignUp?.({ session: sessionId })
       }
-
       await syncClerkIdentity(forceRole)
       onClose?.()
       window.location.replace(resolvedRedirect)
@@ -86,16 +86,13 @@ export default function ClerkAuthCard({
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signInLoaded || loading) return
-
     setLoading(true)
     setMessage('')
-
     try {
       const result = await signIn.create({
         identifier: email,
         password,
       })
-
       if (result.status === 'complete') {
         await finishAuth(result.createdSessionId)
       } else {
@@ -103,7 +100,6 @@ export default function ClerkAuthCard({
       }
     } catch (error: any) {
       const rawMessage = extractClerkErrorMessage(error).toLowerCase()
-
       if (
         rawMessage.includes('password') ||
         rawMessage.includes('credentials') ||
@@ -112,68 +108,67 @@ export default function ClerkAuthCard({
         rawMessage.includes('not found')
       ) {
         enableRecoveryMode()
+      } else if (isClerkNetworkError(rawMessage)) {
+        setLegacyMode(true)
+        setMode('signin')
+        setPendingVerification(false)
+        setMessage('Clerk is temporarily unavailable. Use your legacy Belle Rouge credentials below.')
       } else {
         setMessage(error?.errors?.[0]?.message || 'Sign in failed')
         setShowRecoveryHint(false)
       }
     }
-
     setLoading(false)
   }
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signUpLoaded || loading) return
-
     setLoading(true)
     setMessage('')
-
     if (password !== confirmPassword) {
       setMessage('Passwords do not match')
       setLoading(false)
       return
     }
-
     try {
       await signUp.create({
         emailAddress: email,
         password,
         unsafeMetadata: { role: forceRole },
       })
-
       await signUp.prepareEmailAddressVerification({
         strategy: 'email_code',
       })
-
       setPendingVerification(true)
       setMessage('Enter the verification code sent to your email.')
     } catch (error: any) {
       const rawMessage = extractClerkErrorMessage(error)
       const lowered = rawMessage.toLowerCase()
-
       if (lowered.includes('already exists') || lowered.includes('already registered')) {
         setMode('signin')
         setPendingVerification(false)
         setShowRecoveryHint(false)
         setMessage('This email already has a Clerk account. Sign in with your new password or use a social provider linked to this email.')
+      } else if (isClerkNetworkError(lowered)) {
+        setLegacyMode(true)
+        setMode('signin')
+        setPendingVerification(false)
+        setMessage('Clerk is temporarily unavailable. Use your legacy Belle Rouge credentials below.')
       } else {
         setMessage(rawMessage || 'Sign up failed')
       }
     }
-
     setLoading(false)
   }
   const handleVerification = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!signUpLoaded || loading) return
-
     setLoading(true)
     setMessage('')
-
     try {
       const result = await signUp.attemptEmailAddressVerification({
         code: verificationCode,
       })
-
       if (result.status === 'complete') {
         await finishAuth(result.createdSessionId)
       } else {
@@ -182,7 +177,6 @@ export default function ClerkAuthCard({
     } catch (error: any) {
       const rawMessage = extractClerkErrorMessage(error)
       const lowered = rawMessage.toLowerCase()
-
       if (lowered.includes('already verified')) {
         const recovered = await recoverAlreadyVerifiedSignUp({
           signUp,
@@ -200,18 +194,22 @@ export default function ClerkAuthCard({
           setMessage(recovered.message)
         }
       } else {
-        setMessage(rawMessage || 'Verification failed')
+        if (isClerkNetworkError(lowered)) {
+          setLegacyMode(true)
+          setPendingVerification(false)
+          setMode('signin')
+          setMessage('Clerk is temporarily unavailable. Use your legacy Belle Rouge credentials below.')
+        } else {
+          setMessage(rawMessage || 'Verification failed')
+        }
       }
     }
-
     setLoading(false)
   }
   const handleSocial = async (strategy: 'oauth_google' | 'oauth_apple' | 'oauth_linkedin_oidc') => {
     if (!signInLoaded || loading) return
-
     setLoading(true)
     setMessage('')
-
     try {
       await signIn.authenticateWithRedirect({
         strategy,
@@ -219,11 +217,17 @@ export default function ClerkAuthCard({
         redirectUrlComplete: buildClerkContinueUrl(resolvedRedirect, forceRole),
       })
     } catch (error: any) {
-      setMessage(extractClerkErrorMessage(error) || 'Social sign in failed')
+      const rawMessage = extractClerkErrorMessage(error)
+      if (isClerkNetworkError(rawMessage)) {
+        setLegacyMode(true)
+        setMode('signin')
+        setMessage('Clerk social sign-in is unavailable. Use your legacy Belle Rouge credentials below.')
+      } else {
+        setMessage(rawMessage || 'Social sign in failed')
+      }
       setLoading(false)
     }
   }
-
   return (
     <>
       <div className="grid grid-cols-3 gap-2">
@@ -270,6 +274,15 @@ export default function ClerkAuthCard({
           {mode === 'signin' ? 'Sign up' : 'Sign in'}
         </button>
       </div>
+      {legacyMode && (
+        <LegacyAuthFallback
+          email={email}
+          password={password}
+          loading={loading}
+          onLoadingChange={setLoading}
+          onMessage={setMessage}
+        />
+      )}
       {mode === 'signin' && !pendingVerification && <div className="mt-3 text-center text-sm text-gray-600"><button type="button" onClick={() => enableRecoveryMode()} className="font-medium text-blue-600 hover:text-blue-500">Recover an older Belle Rouge account</button></div>}
       {showRecoveryHint && mode === 'signup' && !pendingVerification && <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-800">Use the same email address from your older account. After you verify the email and sign in, your legacy properties, bookings, and roles can be linked automatically.</div>}
     </>

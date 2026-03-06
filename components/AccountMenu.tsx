@@ -2,19 +2,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useClerk } from "@clerk/nextjs";
 import { createClient } from "@/lib/supabase/client";
+import { AppAuthUser } from "@/lib/auth/app-user";
 import Avatar from "@/components/ui/Avatar";
 import { ArrowRightOnRectangleIcon, Cog6ToothIcon, ShieldCheckIcon, UserCircleIcon, UserMinusIcon } from "@heroicons/react/24/outline";
-import { User } from "@supabase/supabase-js";
 import { usePathname } from "next/navigation";
 
 interface AccountMenuProps {
-  user: User;
+  user: AppAuthUser;
   variant?: "icon" | "button";
   className?: string;
 }
 
 export default function AccountMenu({ user, variant = "button", className = "" }: AccountMenuProps) {
+  const { signOut } = useClerk();
   const supabase = createClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -22,8 +24,8 @@ export default function AccountMenu({ user, variant = "button", className = "" }
   const menuItemsRef = useRef<(HTMLAnchorElement | HTMLButtonElement)[]>([]);
   const pathname = usePathname();
 
-  const avatarUrl = (user?.user_metadata as any)?.avatar_url as string | undefined;
-  const displayName = (user?.user_metadata as any)?.name as string | undefined;
+  const avatarUrl = user?.user_metadata?.avatar_url;
+  const displayName = user?.user_metadata?.name;
   const userEmail = user?.email || "";
 
   // Determine if we are in Host portal context to propagate navigation intent
@@ -31,6 +33,7 @@ export default function AccountMenu({ user, variant = "button", className = "" }
   const q = isHostContext ? "?from=host" : "";
 
   const handleSignOut = async () => {
+    try { await signOut({ redirectUrl: "/" }); } catch {}
     try { await supabase.auth.signOut(); } catch {}
     try { localStorage.removeItem("mr_session"); } catch {}
     if (typeof window !== "undefined") window.location.href = "/";
@@ -56,7 +59,7 @@ export default function AccountMenu({ user, variant = "button", className = "" }
         type="button"
         id="account-menu-button"
         aria-haspopup="menu"
-        aria-expanded={menuOpen}
+        aria-expanded={menuOpen ? "true" : "false"}
         aria-controls="account-menu"
         onClick={() => setMenuOpen((v) => !v)}
         onKeyDown={(e) => {

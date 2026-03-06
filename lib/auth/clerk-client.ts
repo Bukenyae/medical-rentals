@@ -7,6 +7,16 @@ export function extractClerkErrorMessage(error: any) {
   return String(error?.errors?.[0]?.message || error?.message || '').trim()
 }
 
+export function isClerkNetworkError(message: string) {
+  const lowered = message.toLowerCase()
+  return (
+    lowered.includes('failed to fetch') ||
+    lowered.includes('network error') ||
+    lowered.includes('failed to load clerk') ||
+    lowered.includes('.clerk.accounts.dev')
+  )
+}
+
 export async function syncClerkIdentity(role: 'guest' | 'host') {
   const response = await fetch('/api/clerk/identity', {
     method: 'POST',
